@@ -5,7 +5,7 @@ import './globals.css';
 export async function generateMetadata(): Promise<Metadata> {
     const traceData = await Sentry.getTraceData();
     return {
-        metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://daget.fun'),
+        metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://daget.luchiel.dev'),
         title: 'Daget.fun | Role-gated Onchain Giveaways',
         description: 'Secure, transparent, and automated. Reward your Discord members with Solana tokens and NFTs based on their server roles.',
         other: {
