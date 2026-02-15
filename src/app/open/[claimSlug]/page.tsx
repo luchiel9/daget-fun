@@ -32,11 +32,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             title: daget ? `${daget.name} | Daget.fun` : 'Claim Daget | Daget.fun',
             description: description,
             type: 'website',
+            images: [`/open/${claimSlug}/opengraph-image`],
         },
         twitter: {
             card: 'summary_large_image',
             title: daget ? `${daget.name} | Daget.fun` : 'Claim Daget | Daget.fun',
             description: description,
+            images: [`/open/${claimSlug}/opengraph-image`],
         },
     };
 }

@@ -87,7 +87,7 @@ export default async function Image({ params }: { params: Promise<{ claimSlug: s
                     {/* Main Content */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '40px' }}>
                         <h1 style={{
-                            fontSize: '84px',
+                            fontSize: '70px', // Reduced from 84px
                             fontWeight: 800,
                             lineHeight: 1.1,
                             margin: 0,
@@ -95,10 +95,13 @@ export default async function Image({ params }: { params: Promise<{ claimSlug: s
                             backgroundClip: 'text',
                             color: 'transparent',
                             textShadow: '0 4px 12px rgba(0,0,0,0.5)',
-                            maxWidth: '900px', // Limit width
+                            maxWidth: '900px',
                             overflow: 'hidden',
-                            whiteSpace: 'nowrap',
-                            textOverflow: 'ellipsis'
+                            // Allow wrapping (2 lines)
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            wordBreak: 'break-word',
                         }}>
                             {name}
                         </h1>
@@ -129,7 +132,7 @@ export default async function Image({ params }: { params: Promise<{ claimSlug: s
                     </div>
 
                     {/* Stats Grid at Bottom */}
-                    <div style={{
+                    < div style={{
                         display: 'flex',
                         alignItems: 'center',
                         gap: '24px',
@@ -137,7 +140,7 @@ export default async function Image({ params }: { params: Promise<{ claimSlug: s
                         paddingTop: '40px'
                     }}>
                         {/* Token Badge */}
-                        <div style={{
+                        < div style={{
                             display: 'flex',
                             alignItems: 'center',
                             gap: '12px',
@@ -145,16 +148,16 @@ export default async function Image({ params }: { params: Promise<{ claimSlug: s
                             border: '1px solid rgba(59, 130, 246, 0.3)',
                             padding: '16px 24px',
                             borderRadius: '24px',
-                        }}>
-                            <span style={{ fontSize: '24px', color: '#60a5fa', fontWeight: 'bold' }}>paid</span> {/* Blue Icon Text */}
+                        }
+                        }>
                             <div style={{ display: 'flex', flexDirection: 'column' }}>
                                 <span style={{ fontSize: '14px', color: '#93c5fd', textTransform: 'uppercase', letterSpacing: '1px' }}>Token</span>
                                 <span style={{ fontSize: '28px', color: 'white', fontWeight: 'bold' }}>{tokenSymbol}</span>
                             </div>
-                        </div>
+                        </div >
 
                         {/* Mode/Type Badge */}
-                        <div style={{
+                        < div style={{
                             display: 'flex',
                             alignItems: 'center',
                             gap: '12px',
@@ -163,15 +166,14 @@ export default async function Image({ params }: { params: Promise<{ claimSlug: s
                             padding: '16px 24px',
                             borderRadius: '24px',
                         }}>
-                            <span style={{ fontSize: '24px', color: '#34d399', fontWeight: 'bold' }}>category</span> {/* Green Icon Text */}
                             <div style={{ display: 'flex', flexDirection: 'column' }}>
                                 <span style={{ fontSize: '14px', color: '#6ee7b7', textTransform: 'uppercase', letterSpacing: '1px' }}>Mode</span>
                                 <span style={{ fontSize: '28px', color: 'white', fontWeight: 'bold' }}>{dagetType === 'fixed' ? 'Fixed' : 'Random'}</span>
                             </div>
-                        </div>
+                        </div >
 
                         {/* Spots Badge */}
-                        <div style={{
+                        < div style={{
                             display: 'flex',
                             alignItems: 'center',
                             gap: '12px',
@@ -185,12 +187,12 @@ export default async function Image({ params }: { params: Promise<{ claimSlug: s
                                 <span style={{ fontSize: '14px', color: '#a1a1aa', textTransform: 'uppercase', letterSpacing: '1px' }}>Claimed</span>
                                 <span style={{ fontSize: '28px', color: 'white', fontWeight: 'bold' }}>{claimedCount} / {totalWinners}</span>
                             </div>
-                        </div>
+                        </div >
 
-                    </div>
+                    </div >
 
                     {/* Subtle visual element */}
-                    <div style={{
+                    < div style={{
                         position: 'absolute',
                         right: '-100px',
                         top: '-100px',
@@ -201,7 +203,7 @@ export default async function Image({ params }: { params: Promise<{ claimSlug: s
                         filter: 'blur(60px)',
                         zIndex: -1
                     }} />
-                </div>
+                </div >
             ),
             {
                 ...size
