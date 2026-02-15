@@ -1,0 +1,8 @@
+node_modules
+blueprint.md
+# Sentry Config File
+.env.sentry-build-plugin
+.next/
+.claude/
+design_v2/
+.env

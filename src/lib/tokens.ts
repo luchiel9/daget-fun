@@ -1,0 +1,81 @@
+/**
+ * Token configuration per Solana cluster.
+ * Server-set: never accept arbitrary mint/decimals from user input.
+ */
+
+type TokenInfo = {
+    mint: string;
+    decimals: number;
+};
+
+type ClusterTokens = {
+    USDC: TokenInfo;
+    USDT: TokenInfo;
+};
+
+export const TOKEN_CONFIG: Record<string, ClusterTokens> = {
+    'mainnet-beta': {
+        USDC: {
+            mint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+            decimals: 6,
+        },
+        USDT: {
+            mint: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
+            decimals: 6,
+        },
+    },
+    devnet: {
+        USDC: {
+            // Devnet USDC (Circle devnet SPL token)
+            mint: '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU',
+            decimals: 6,
+        },
+        USDT: {
+            // Devnet USDT placeholder
+            mint: 'EJwZgeZrdC8TXTQbQBoL6bfuAnFUQYR3YGVp6dV1eSaj',
+            decimals: 6,
+        },
+    },
+};
+
+export function getTokenConfig(symbol: 'USDC' | 'USDT'): TokenInfo {
+    let cluster = process.env.NEXT_PUBLIC_SOLANA_CLUSTER || process.env.SOLANA_CLUSTER || 'devnet';
+
+    // Normalize cluster string
+    const normalized = cluster.toLowerCase();
+    if (normalized === 'mainnet' || normalized === 'mainnet-beta') {
+        cluster = 'mainnet-beta';
+    } else if (normalized === 'devnet') {
+        cluster = 'devnet';
+    }
+
+    const clusterTokens = TOKEN_CONFIG[cluster];
+    if (!clusterTokens) {
+        throw new Error(`Unknown SOLANA_CLUSTER: ${cluster}`);
+    }
+    return clusterTokens[symbol];
+}
+
+/**
+ * Convert display dollar amount to base units.
+ * E.g., "$10.50" with 6 decimals → 10500000
+ */
+export function displayToBaseUnits(displayAmount: string, decimals: number): number {
+    const parsed = parseFloat(displayAmount);
+    if (isNaN(parsed) || parsed <= 0) {
+        throw new Error('Invalid display amount');
+    }
+    const baseUnits = Math.round(parsed * Math.pow(10, decimals));
+    if (baseUnits > Number.MAX_SAFE_INTEGER) {
+        throw new Error('Amount exceeds safe integer range');
+    }
+    return baseUnits;
+}
+
+/**
+ * Convert base units to display dollar amount.
+ * E.g., 10500000 with 6 decimals → "10.50"
+ */
+export function baseUnitsToDisplay(baseUnits: number, decimals: number): string {
+    return (baseUnits / Math.pow(10, decimals)).toFixed(decimals > 2 ? 2 : decimals);
+}
