@@ -87,20 +87,20 @@ export default async function Image({ params }: { params: Promise<{ claimSlug: s
                     {/* Main Content */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '40px' }}>
                         <h1 style={{
-                            fontSize: '60px', // Reduced from 70px to better fit 2 lines
+                            fontSize: '64px', // Increased from 60px slightly
                             fontWeight: 800,
-                            lineHeight: 1.2, // Slightly reduced from 1.25 but enough for descenders
+                            lineHeight: 1.2,
                             margin: 0,
-                            paddingBottom: '10px', // Reduced padding
+                            paddingBottom: '10px',
                             background: 'linear-gradient(to right, #ffffff, #a1a1aa)',
                             backgroundClip: 'text',
                             color: 'transparent',
                             textShadow: '0 4px 12px rgba(0,0,0,0.5)',
-                            maxWidth: '900px',
+                            width: '100%', // Use full width
                             overflow: 'visible',
                             wordBreak: 'break-word',
                         }}>
-                            {name.length > 50 ? name.substring(0, 50) + '...' : name}
+                            {name.length > 65 ? name.substring(0, 65) + '...' : name}
                         </h1>
 
                         {/* Creator Info */}
