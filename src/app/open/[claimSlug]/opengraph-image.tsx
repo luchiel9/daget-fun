@@ -137,7 +137,7 @@ export default async function Image({ params }: { params: Promise<{ claimSlug: s
                         paddingTop: '40px'
                     }}>
                         {/* Token Badge */}
-                        < div style={{
+                        <div style={{
                             display: 'flex',
                             alignItems: 'center',
                             gap: '12px',
@@ -145,16 +145,15 @@ export default async function Image({ params }: { params: Promise<{ claimSlug: s
                             border: '1px solid rgba(59, 130, 246, 0.3)',
                             padding: '16px 24px',
                             borderRadius: '24px',
-                        }
-                        }>
+                        }}>
                             <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                <span style={{ fontSize: '14px', color: '#93c5fd', textTransform: 'uppercase', letterSpacing: '1px' }}>Token</span>
-                                <span style={{ fontSize: '28px', color: 'white', fontWeight: 'bold' }}>{tokenSymbol}</span>
+                                <span style={{ fontSize: '24px', color: '#93c5fd', textTransform: 'uppercase', letterSpacing: '1px' }}>Token</span>
+                                <span style={{ fontSize: '42px', color: 'white', fontWeight: 'bold' }}>{tokenSymbol}</span>
                             </div>
-                        </div >
+                        </div>
 
                         {/* Mode/Type Badge */}
-                        < div style={{
+                        <div style={{
                             display: 'flex',
                             alignItems: 'center',
                             gap: '12px',
@@ -164,13 +163,13 @@ export default async function Image({ params }: { params: Promise<{ claimSlug: s
                             borderRadius: '24px',
                         }}>
                             <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                <span style={{ fontSize: '14px', color: '#6ee7b7', textTransform: 'uppercase', letterSpacing: '1px' }}>Mode</span>
-                                <span style={{ fontSize: '28px', color: 'white', fontWeight: 'bold' }}>{dagetType === 'fixed' ? 'Fixed' : 'Random'}</span>
+                                <span style={{ fontSize: '24px', color: '#6ee7b7', textTransform: 'uppercase', letterSpacing: '1px' }}>Mode</span>
+                                <span style={{ fontSize: '42px', color: 'white', fontWeight: 'bold' }}>{dagetType === 'fixed' ? 'Fixed' : 'Random'}</span>
                             </div>
-                        </div >
+                        </div>
 
                         {/* Spots Badge */}
-                        < div style={{
+                        <div style={{
                             display: 'flex',
                             alignItems: 'center',
                             gap: '12px',
@@ -181,10 +180,10 @@ export default async function Image({ params }: { params: Promise<{ claimSlug: s
                             marginLeft: 'auto' // Push to right if needed, or keep inline
                         }}>
                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                                <span style={{ fontSize: '14px', color: '#a1a1aa', textTransform: 'uppercase', letterSpacing: '1px' }}>Claimed</span>
-                                <span style={{ fontSize: '28px', color: 'white', fontWeight: 'bold' }}>{claimedCount} / {totalWinners}</span>
+                                <span style={{ fontSize: '24px', color: '#a1a1aa', textTransform: 'uppercase', letterSpacing: '1px' }}>Claimed</span>
+                                <span style={{ fontSize: '42px', color: 'white', fontWeight: 'bold' }}>{claimedCount} / {totalWinners}</span>
                             </div>
-                        </div >
+                        </div>
 
                     </div >
 
