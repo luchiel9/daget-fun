@@ -29,7 +29,7 @@ export default async function Image({ params }: { params: Promise<{ claimSlug: s
             tokenSymbol: true,
             totalWinners: true,
             claimedCount: true,
-            claimedCount: true,
+
         },
         with: {
             creator: true
