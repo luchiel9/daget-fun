@@ -87,7 +87,7 @@ export default async function Image({ params }: { params: Promise<{ claimSlug: s
                     {/* Main Content */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '40px' }}>
                         <h1 style={{
-                            fontSize: '70px', // Reduced from 84px
+                            fontSize: '70px',
                             fontWeight: 800,
                             lineHeight: 1.1,
                             margin: 0,
@@ -97,13 +97,9 @@ export default async function Image({ params }: { params: Promise<{ claimSlug: s
                             textShadow: '0 4px 12px rgba(0,0,0,0.5)',
                             maxWidth: '900px',
                             overflow: 'hidden',
-                            // Allow wrapping (2 lines)
-                            display: '-webkit-box',
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: 'vertical',
                             wordBreak: 'break-word',
                         }}>
-                            {name}
+                            {name.length > 60 ? name.substring(0, 60) + '...' : name}
                         </h1>
 
                         {/* Creator Info */}
