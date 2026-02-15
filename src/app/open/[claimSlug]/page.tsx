@@ -208,7 +208,7 @@ export default function PublicClaimPage() {
         await supabase.auth.signInWithOAuth({
             provider: 'discord',
             options: {
-                redirectTo: `${window.location.origin}/auth/callback?next=/open/${claimSlug}`,
+                redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/auth/callback?next=/open/${claimSlug}`,
                 scopes: 'identify guilds guilds.members.read',
             },
         });
