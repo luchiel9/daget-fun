@@ -59,5 +59,9 @@ ENV HOSTNAME="0.0.0.0"
 # https://nextjs.org/docs/pages/api-reference/next-config-js/output
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
-RUN npm run db:migrate
-CMD ["node", "server.js"]
+
+# Copy drizzle config and migrations
+COPY --from=builder --chown=nextjs:nodejs /app/drizzle.config.ts ./drizzle.config.ts
+COPY --from=builder --chown=nextjs:nodejs /app/drizzle ./drizzle
+
+CMD ["npm", "run", "start"]
