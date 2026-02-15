@@ -16,7 +16,7 @@ const nextConfig = {
   },
 };
 
-module.exports = withSentryConfig(nextConfig, {
+export default withSentryConfig(nextConfig, {
   site: process.env.NEXT_PUBLIC_SITE_URL,
   silent: !process.env.CI,
   widenClientFileUpload: true,
