@@ -5,4 +5,5 @@ blueprint.md
 .next/
 .claude/
 design_v2/
-.envtsconfig.tsbuildinfo
+.env
+tsconfig.tsbuildinfo
