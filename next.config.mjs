@@ -16,9 +16,9 @@ const nextConfig = {
   },
 };
 
-export default withSentryConfig(nextConfig, {
-  org: 'dagetfun',
-  project: 'daget-fun',
+module.exports = withSentryConfig(nextConfig, {
+  site: process.env.NEXT_PUBLIC_SITE_URL,
   silent: !process.env.CI,
   widenClientFileUpload: true,
+  telemetry: false,
 });
