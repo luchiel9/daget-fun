@@ -55,7 +55,8 @@ export async function GET(request: NextRequest) {
             ? encodeCursor(items[items.length - 1].notification.createdAt.toISOString(), items[items.length - 1].notification.id)
             : null;
 
-        const mappedItems = items.map(({ notification, claim, claimant, daget }) => {
+        const mappedItems = items.map((item: any) => {
+            const { notification, claim, claimant, daget } = item;
             let body = notification.body;
             let icon_url = null;
 
