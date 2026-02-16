@@ -924,14 +924,22 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
                                                                                 href={botInviteLink}
                                                                                 target="_blank"
                                                                                 rel="noopener noreferrer"
-                                                                                className="mt-2 block w-full text-center py-2 bg-primary text-white text-xs font-bold rounded-lg hover:bg-primary/90 transition-all shadow-lg active:scale-[0.98]"
+                                                                                className="mt-2 inline-block px-6 py-2 bg-primary text-white text-xs font-bold rounded-lg hover:bg-primary/90 transition-all shadow-lg active:scale-[0.98]"
                                                                             >
                                                                                 Invite Bot
                                                                             </a>
                                                                         )}
                                                                     </li>
                                                                     <li>
-                                                                        Once the bot joins, click <span className="font-bold text-text-primary">Sync Servers</span> above.
+                                                                        Once the bot joins, click <span className="font-bold text-text-primary">Sync Roles</span> below.
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => fetchRoles(form.discord_guild_id)}
+                                                                            disabled={loadingRoles}
+                                                                            className="mt-2 block w-full text-center py-2 bg-background-dark/50 border border-primary/30 text-primary text-xs font-bold rounded-lg hover:bg-primary/10 transition-all"
+                                                                        >
+                                                                            {loadingRoles ? 'Syncing...' : 'Sync Roles'}
+                                                                        </button>
                                                                     </li>
                                                                 </ol>
                                                             </div>
