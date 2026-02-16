@@ -1,13 +1,13 @@
 [phases.setup]
-nixPkgs = ["node", "libsodium"]
+nixPkgs = ["node", "libsodium", "pnpm"]
 
 [phases.install]
-cmds = ["npm ci"]
-cacheDirectories = ["node_modules"]
+cmds = ["pnpm install --frozen-lockfile"]
+cacheDirectories = ["/root/.local/share/pnpm/store"]
 
 [phases.build]
-cmds = ["npm run build"]
+cmds = ["pnpm run build", "pnpm prune --prod"]
 cacheDirectories = [".next/cache"]
 
 [start]
-cmd = "npm start"
+cmd = "pnpm start"
