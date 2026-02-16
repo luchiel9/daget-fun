@@ -1,13 +1,18 @@
+[variables]
+NODE_ENV = "production"
+PNPM_HOME = "/root/.local/share/pnpm"
+PNPM_STORE_DIR = "/root/.local/share/pnpm/store"
+
 [phases.setup]
-nixPkgs = ["node", "libsodium", "pnpm"]
+nixPkgs = ["nodejs", "pnpm", "libsodium"]
 
 [phases.install]
-cmds = ["pnpm install --frozen-lockfile"]
+cmds = ["pnpm install --frozen-lockfile --prefer-offline"]
 cacheDirectories = ["/root/.local/share/pnpm/store"]
 
 [phases.build]
-cmds = ["pnpm run build", "pnpm prune --prod"]
+cmds = ["pnpm run build"]
 cacheDirectories = [".next/cache"]
 
 [start]
-cmd = "pnpm start"
+cmd = "node .next/standalone/server.js"
