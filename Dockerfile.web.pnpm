@@ -40,22 +40,22 @@ EXPOSE 3000
 
 RUN addgroup -S nodejs && adduser -S nextjs -G nodejs
 
-# standalone runtime
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+# standalone runtime (set ownership during copy, no recursive chown)
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# for running db:migrate script
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/node_modules ./node_modules
+# for db:migrate script/runtime
+COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
 
-# optional: if Drizzle needs schema/migrations files at runtime
-COPY --from=builder /app/drizzle ./drizzle
-COPY --from=builder /app/drizzle.config.* ./
+# if Drizzle migration files are needed at runtime
+COPY --from=builder --chown=nextjs:nodejs /app/drizzle ./drizzle
+# use explicit file name if possible (better than wildcard)
+# COPY --from=builder --chown=nextjs:nodejs /app/drizzle.config.ts ./drizzle.config.ts
 
-# startup script
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh && chown -R nextjs:nodejs /app /entrypoint.sh
+COPY --chown=nextjs:nodejs entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 USER nextjs
 ENTRYPOINT ["/entrypoint.sh"]
