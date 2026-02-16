@@ -20,7 +20,7 @@ import {
  * Get a Solana connection instance.
  */
 export function getSolanaConnection(): Connection {
-    const cluster = (process.env.SOLANA_CLUSTER || 'devnet') as 'mainnet-beta' | 'devnet';
+    const cluster = (process.env.SOLANA_CLUSTER || 'mainnet-beta') as 'mainnet-beta' | 'devnet';
     const rpcUrl = process.env.SOLANA_RPC_URL || clusterApiUrl(cluster);
     return new Connection(rpcUrl, 'finalized');
 }

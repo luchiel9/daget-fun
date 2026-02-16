@@ -90,6 +90,12 @@ function getTokenIcon(symbol: string): string | null {
     return null;
 }
 
+function solscanUrl(sig: string) {
+    const cluster = process.env.NEXT_PUBLIC_SOLANA_CLUSTER || 'mainnet-beta';
+    const suffix = cluster === 'mainnet-beta' ? '' : `?cluster=${cluster}`;
+    return `https://solscan.io/tx/${sig}${suffix}`;
+}
+
 export default function ClaimsHistoryPage() {
     const [claims, setClaims] = useState<ClaimItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -224,7 +230,7 @@ export default function ClaimsHistoryPage() {
                                             )}
                                             {c.tx_signature && (
                                                 <a
-                                                    href={`https://solscan.io/tx/${c.tx_signature}`}
+                                                    href={solscanUrl(c.tx_signature)}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="text-xs font-mono text-primary hover:underline bg-primary/5 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors hover:bg-primary/10"
@@ -243,6 +249,5 @@ export default function ClaimsHistoryPage() {
                 </div>
             </div>
         </div>
-
     );
 }

@@ -1213,8 +1213,12 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
                                     <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 flex gap-3">
                                         <span className="material-icons text-amber-500 text-xl">warning_amber</span>
                                         <div>
-                                            <p className="text-xs font-bold text-amber-500 uppercase">SOL Reserve Notice</p>
-                                            <p className="text-[11px] text-amber-500/80 leading-relaxed mt-1">We recommend keeping at least 0.02 SOL in your wallet to cover rent, claim fees, and storage on the Solana blockchain.</p>
+                                            <p className="text-xs font-bold text-amber-500 uppercase">SOL GAS NOTICE</p>
+                                            <p className="text-[11px] text-amber-500/80 leading-relaxed mt-1">
+                                                We recommend keeping at least 0.02 SOL in your wallet to cover rent, claim fees, and storage.
+                                                <br /><br />
+                                                <strong>Note:</strong> You may pay slightly more gas if the claimant address does not have an existing ATA for USDC/USDT.
+                                            </p>
                                         </div>
                                     </div>
                                     <div className="space-y-3">

@@ -39,7 +39,7 @@ function formatAmount(baseUnits: number | null, decimals: number) {
 }
 
 function solscanUrl(sig: string) {
-    const cluster = process.env.NEXT_PUBLIC_SOLANA_CLUSTER || 'devnet';
+    const cluster = process.env.NEXT_PUBLIC_SOLANA_CLUSTER || 'mainnet-beta';
     const suffix = cluster === 'mainnet-beta' ? '' : `?cluster=${cluster}`;
     return `https://solscan.io/tx/${sig}${suffix}`;
 }

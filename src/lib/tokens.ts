@@ -39,7 +39,7 @@ export const TOKEN_CONFIG: Record<string, ClusterTokens> = {
 };
 
 export function getTokenConfig(symbol: 'USDC' | 'USDT'): TokenInfo {
-    let cluster = process.env.NEXT_PUBLIC_SOLANA_CLUSTER || process.env.SOLANA_CLUSTER || 'devnet';
+    let cluster = process.env.NEXT_PUBLIC_SOLANA_CLUSTER || process.env.SOLANA_CLUSTER || 'mainnet-beta';
 
     // Normalize cluster string
     const normalized = cluster.toLowerCase();
