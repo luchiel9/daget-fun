@@ -1,0 +1,13 @@
+[phases.setup]
+nixPkgs = ["node", "libsodium"]
+
+[phases.install]
+cmds = ["npm ci"]
+cacheDirectories = ["node_modules"]
+
+[phases.build]
+cmds = ["npm run build"]
+cacheDirectories = [".next/cache"]
+
+[start]
+cmd = "npm start"
