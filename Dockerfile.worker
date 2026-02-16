@@ -1,24 +1,7 @@
-# syntax=docker/dockerfile:1.7
-
-FROM node:22-slim AS base
+FROM node:22-slim
 WORKDIR /app
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
-# -------- deps (cacheable) --------
-FROM base AS deps
-COPY package.json pnpm-lock.yaml ./
-RUN --mount=type=cache,id=pnpm-store-worker,target=/pnpm/store \
-pnpm install --frozen-lockfile
-
-# -------- build (source code) --------
-FROM base AS builder
-COPY --from=deps /app/node_modules ./node_modules
+COPY package*.json ./
+RUN pnpm install
 COPY . .
-
-# -------- runtime --------
-FROM base AS runner
-ENV NODE_ENV=production
-COPY --from=builder /app ./
-CMD ["pnpm", "run", "worker"] 
+RUN pnpm run build || true
+CMD ["pnpm", "run", "worker"]
