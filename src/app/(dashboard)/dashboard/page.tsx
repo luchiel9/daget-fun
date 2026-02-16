@@ -67,10 +67,11 @@ function formatAmount(baseUnits: number | null, decimals = 6): string {
 }
 
 function solscanTxUrl(sig: string): string {
-    const cluster = process.env.NEXT_PUBLIC_SOLANA_CLUSTER || 'devnet';
+    const cluster = process.env.NEXT_PUBLIC_SOLANA_CLUSTER || 'mainnet-beta';
     const base = 'https://solscan.io/tx/';
     const normalized = cluster?.toLowerCase();
-    return (normalized === 'mainnet-beta' || normalized === 'mainnet') ? `${base}${sig}` : `${base}${sig}?cluster=devnet`;
+    const suffix = (normalized === 'mainnet-beta' || normalized === 'mainnet') ? '' : `?cluster=${cluster}`;
+    return `${base}${sig}${suffix}`;
 }
 
 export default function DashboardPage() {

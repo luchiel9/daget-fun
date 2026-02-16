@@ -24,18 +24,6 @@ export const TOKEN_CONFIG: Record<string, ClusterTokens> = {
             decimals: 6,
         },
     },
-    devnet: {
-        USDC: {
-            // Devnet USDC (Circle devnet SPL token)
-            mint: '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU',
-            decimals: 6,
-        },
-        USDT: {
-            // Devnet USDT placeholder
-            mint: 'EJwZgeZrdC8TXTQbQBoL6bfuAnFUQYR3YGVp6dV1eSaj',
-            decimals: 6,
-        },
-    },
 };
 
 export function getTokenConfig(symbol: 'USDC' | 'USDT'): TokenInfo {
@@ -45,8 +33,6 @@ export function getTokenConfig(symbol: 'USDC' | 'USDT'): TokenInfo {
     const normalized = cluster.toLowerCase();
     if (normalized === 'mainnet' || normalized === 'mainnet-beta') {
         cluster = 'mainnet-beta';
-    } else if (normalized === 'devnet') {
-        cluster = 'devnet';
     }
 
     const clusterTokens = TOKEN_CONFIG[cluster];
