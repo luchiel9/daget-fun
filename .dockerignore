@@ -1,3 +1,12 @@
+.git
+.gitignore
 node_modules
 .next
-.git
+dist
+coverage
+*.log
+.env*
+Dockerfile*
+docker-compose*
+.vscode
+.idea
