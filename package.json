@@ -18,7 +18,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "worker": "tsx --env-file=.env src/worker/index.ts"
+    "worker": "tsx src/worker/index.ts",
+    "dev:worker": "tsx --env-file=.env src/worker/index.ts"
   },
   "dependencies": {
     "@floating-ui/dom": "^1.7.5",
@@ -61,7 +62,7 @@
     "@vitest/ui": "^4.0.18",
     "autoprefixer": "^10.4.0",
     "drizzle-kit": "^0.30.0",
-    "eslint": "^10.0.0",
+    "eslint": "^9.0.0",
     "eslint-config-next": "^16.1.6",
     "happy-dom": "^20.6.1",
     "postcss": "^8.4.0",
