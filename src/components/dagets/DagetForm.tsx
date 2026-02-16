@@ -328,7 +328,7 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
 
                 if (errorCode === 'BOT_NOT_IN_GUILD') {
                     setRoleError('Bot is not in this server. You can manage roles manually.');
-                    const clientId = process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID || '1471798945352126609';
+                    const clientId = process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID;
                     if (clientId) {
                         const link = `https://discord.com/oauth2/authorize?client_id=${clientId}&permissions=268435456&scope=bot`;
                         setBotInviteLink(link);
