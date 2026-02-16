@@ -16,6 +16,7 @@ const nextConfig = {
   },
   output: 'standalone',
   productionBrowserSourceMaps: false,
+  cacheMaxMemorySize: 0,
   typescript: {
     ignoreBuildErrors: true,
   },
