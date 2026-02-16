@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { GlassCard, Button, Input, Select, SearchableSelect, Modal } from '@/components/ui';
 import TipTapEditor from '../ui/TipTapEditor';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { simulateRandomClaims } from '@/lib/random-distribution';
 
 export interface FormValues {
     name: string;
@@ -579,12 +580,22 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
     const estimatedClaim = useMemo(() => {
         const amount = parseFloat(form.amount_display) || 0;
         const winners = parseInt(form.total_winners) || 1;
+
         if (form.daget_type === 'fixed') {
             if (winners <= 0) return '0.00';
             return (amount / winners).toFixed(2);
+        } else {
+            // Random Mode Simulation
+            const minPercent = parseFloat(form.random_min_percent) || 10;
+            const maxPercent = parseFloat(form.random_max_percent) || 75;
+
+            // If we don't have valid inputs yet
+            if (amount <= 0 || winners <= 0) return '0.00 - 0.00';
+
+            const result = simulateRandomClaims(amount, winners, minPercent, maxPercent);
+            return `${result.min} - ${result.max}`;
         }
-        return 'Variable';
-    }, [form.amount_display, form.total_winners, form.daget_type]);
+    }, [form.amount_display, form.total_winners, form.daget_type, form.random_min_percent, form.random_max_percent]);
 
     const totalToFund = useMemo(() => {
         const amount = parseFloat(form.amount_display) || 0;
@@ -1065,9 +1076,6 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
                                             value={form.total_winners}
                                             onChange={(e) => updateForm('total_winners', e.target.value)}
                                         />
-                                        <div className="flex justify-between text-[10px] font-bold text-text-muted px-1 uppercase tracking-tighter">
-                                            <span>Suggested: 10 - 100</span>
-                                        </div>
                                     </div>
                                 </div>
 
@@ -1186,15 +1194,19 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
                                 </div>
                                 <div className="p-6 space-y-6">
                                     <div className="space-y-4">
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-sm text-text-muted">Estimated Claim per person</span>
-                                            <span className="font-bold text-lg">{estimatedClaim} {form.token_symbol || ''}</span>
+                                        <div className="flex justify-between items-center gap-2">
+                                            <span className="text-xs text-text-muted w-[35%]">Estimated Claim per person</span>
+                                            <div className="flex-1 text-right">
+                                                <span className="font-bold text-base block leading-tight">{estimatedClaim} {form.token_symbol || ''}</span>
+                                            </div>
                                         </div>
                                         <div className="h-px bg-border-dark/60"></div>
                                         <div className="space-y-2">
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-sm font-bold">Total to Fund</span>
-                                                <span className="text-xl font-black text-primary">{totalToFund} {form.token_symbol || ''}</span>
+                                            <div className="flex justify-between items-center gap-2">
+                                                <span className="text-xs font-bold w-[35%]">Total to Fund</span>
+                                                <div className="flex-1 text-right">
+                                                    <span className="text-xl font-black text-primary block leading-tight break-all">{totalToFund} {form.token_symbol || ''}</span>
+                                                </div>
                                             </div>
                                             {tokenBalanceCheck.message && (
                                                 <div className={`text-[10px] font-semibold ${tokenBalanceCheck.color} text-right`}>
