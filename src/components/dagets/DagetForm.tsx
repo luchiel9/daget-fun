@@ -76,7 +76,7 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
     const [form, setForm] = useState<FormValues>({
         name: '',
         message_html: '',
-        discord_guild_id: '',
+        discord_guild_id: '123456789', // TEMP: Force guild ID
         discord_guild_name: '',
         discord_guild_icon: null,
         required_role_ids: '',
@@ -93,8 +93,8 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
     const [roles, setRoles] = useState<{ id: string, name: string, color: number, managed: boolean }[]>([]);
     const [loadingGuilds, setLoadingGuilds] = useState(false);
     const [loadingRoles, setLoadingRoles] = useState(false);
-    const [roleError, setRoleError] = useState<string | null>(null);
-    const [botInviteLink, setBotInviteLink] = useState<string | null>(null);
+    const [roleError, setRoleError] = useState<string | null>('BOT_NOT_IN_GUILD'); // TEMP: Force error
+    const [botInviteLink, setBotInviteLink] = useState<string | null>('https://discord.com'); // TEMP: Force link
     const [discordAuthError, setDiscordAuthError] = useState(false);
     const [manualRoles, setManualRoles] = useState<{ name: string, id: string }[]>([{ name: '', id: '' }]);
 
@@ -924,7 +924,7 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
                                                                                 href={botInviteLink}
                                                                                 target="_blank"
                                                                                 rel="noopener noreferrer"
-                                                                                className="mt-2 inline-block px-6 py-2 bg-primary text-white text-xs font-bold rounded-lg hover:bg-primary/90 transition-all shadow-lg active:scale-[0.98]"
+                                                                                className="mt-2 block w-fit px-6 text-center py-2 bg-primary text-white text-xs font-bold rounded-lg hover:bg-primary/90 transition-all shadow-lg active:scale-[0.98]"
                                                                             >
                                                                                 Invite Bot
                                                                             </a>
@@ -936,7 +936,7 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
                                                                             type="button"
                                                                             onClick={() => fetchRoles(form.discord_guild_id)}
                                                                             disabled={loadingRoles}
-                                                                            className="mt-2 block w-full text-center py-2 bg-background-dark/50 border border-primary/30 text-primary text-xs font-bold rounded-lg hover:bg-primary/10 transition-all"
+                                                                            className="mt-2 block w-fit px-6 text-center py-2 bg-background-dark/50 border border-primary/30 text-primary text-xs font-bold rounded-lg hover:bg-primary/10 transition-all"
                                                                         >
                                                                             {loadingRoles ? 'Syncing...' : 'Sync Roles'}
                                                                         </button>
