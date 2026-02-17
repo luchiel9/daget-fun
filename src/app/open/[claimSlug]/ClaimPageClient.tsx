@@ -58,6 +58,7 @@ export default function ClaimPageClient() {
     const [claiming, setClaiming] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [address, setAddress] = useState('');
+    const [showAtaModal, setShowAtaModal] = useState(false);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [eligibility, setEligibility] = useState<{
         eligible: boolean;
@@ -243,11 +244,11 @@ export default function ClaimPageClient() {
         // Let's validate first.
 
         try {
-            // Validate address
+            // Validate address + ATA check
             const validationRes = await fetch('/api/validate-address', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ address: address }),
+                body: JSON.stringify({ address: address, tokenMint: daget?.token_mint }),
             });
             const validationData = await validationRes.json();
 
@@ -259,6 +260,13 @@ export default function ClaimPageClient() {
 
             if (!validationData.exists) {
                 setError(validationData.message || 'Address not found on blockchain. Please use an active wallet.');
+                setClaiming(false);
+                return;
+            }
+
+            // Check if wallet has the required token account
+            if (!validationData.hasAta) {
+                setShowAtaModal(true);
                 setClaiming(false);
                 return;
             }
@@ -891,6 +899,84 @@ export default function ClaimPageClient() {
 
                 </div>
             </div>
+
+            {/* ═══════════ ATA MISSING MODAL ═══════════ */}
+            {showAtaModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setShowAtaModal(false)}>
+                    {/* Backdrop */}
+                    <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+
+                    {/* Modal */}
+                    <div
+                        className="relative bg-surface border border-border-dark/80 rounded-2xl shadow-2xl w-full max-w-[440px] overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Header gradient */}
+                        <div className="relative h-3 overflow-hidden">
+                            <div className="absolute inset-0 bg-gradient-to-r from-amber-500/60 via-orange-500/60 to-amber-500/60" />
+                        </div>
+
+                        <div className="p-6 space-y-5">
+                            {/* Icon + Title */}
+                            <div className="text-center space-y-2">
+                                <div className="w-14 h-14 bg-amber-500/15 rounded-full flex items-center justify-center mx-auto">
+                                    <span className="material-icons text-amber-400 text-3xl">account_balance_wallet</span>
+                                </div>
+                                <h3 className="text-lg font-bold text-text-primary">Token Account Required</h3>
+                            </div>
+
+                            {/* Explanation */}
+                            <div className="bg-background-dark/50 rounded-xl p-4 space-y-3">
+                                <p className="text-sm text-text-secondary leading-relaxed">
+                                    Your wallet doesn&apos;t have a <strong className="text-text-primary">{daget?.token_symbol}</strong> account yet.
+                                    On Solana, wallets need a token account for each type of token they receive.
+                                </p>
+                                <div className="border-t border-border-dark/40 pt-3">
+                                    <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">How to set it up</p>
+                                    <ul className="space-y-2">
+                                        <li className="flex items-start gap-2 text-sm text-text-secondary">
+                                            <span className="text-primary font-bold mt-0.5">1.</span>
+                                            <span>Open your Solana wallet (Phantom, Solflare, etc.)</span>
+                                        </li>
+                                        <li className="flex items-start gap-2 text-sm text-text-secondary">
+                                            <span className="text-primary font-bold mt-0.5">2.</span>
+                                            <span>Receive any amount of <strong className="text-text-primary">{daget?.token_symbol}</strong> — even $0.01 works</span>
+                                        </li>
+                                        <li className="flex items-start gap-2 text-sm text-text-secondary">
+                                            <span className="text-primary font-bold mt-0.5">3.</span>
+                                            <span>Come back and claim your Daget!</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            {/* Why this is needed */}
+                            <div className="flex items-start gap-2.5 bg-primary/5 border border-primary/10 rounded-xl p-3">
+                                <span className="material-icons text-primary text-sm mt-0.5">info</span>
+                                <p className="text-xs text-text-secondary leading-relaxed">
+                                    <strong className="text-text-primary">Why?</strong> Setting up a new token account costs 0.00204 SOL (~$0.20). Without this check, the giveaway creator would have to pay this fee for every new wallet — which adds up fast.
+                                </p>
+                            </div>
+
+                            {/* Tip */}
+                            <div className="flex items-start gap-2 px-1">
+                                <span className="material-icons text-amber-400 text-sm mt-0.5">lightbulb</span>
+                                <p className="text-xs text-text-secondary leading-relaxed">
+                                    <strong className="text-text-primary">Tip:</strong> If you already use {daget?.token_symbol}, try a different wallet address that has received {daget?.token_symbol} before.
+                                </p>
+                            </div>
+
+                            {/* Close button */}
+                            <button
+                                className="w-full py-3 bg-white/5 hover:bg-white/10 text-text-secondary hover:text-text-primary font-semibold text-sm rounded-xl transition-all duration-200 active:scale-[0.98]"
+                                onClick={() => setShowAtaModal(false)}
+                            >
+                                Got it
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div >
     );
 }

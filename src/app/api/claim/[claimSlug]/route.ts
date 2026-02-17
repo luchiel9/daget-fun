@@ -40,6 +40,7 @@ export async function GET(
             status: daget.status,
             token_symbol: daget.tokenSymbol,
             token_decimals: daget.tokenDecimals,
+            token_mint: daget.tokenMint,
             total_winners: daget.totalWinners,
             claimed_count: daget.claimedCount,
             daget_type: daget.dagetType,

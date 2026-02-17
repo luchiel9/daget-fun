@@ -164,3 +164,22 @@ export async function getTokenBalance(
         throw e;
     }
 }
+
+/**
+ * Check if a wallet has an Associated Token Account for the given mint.
+ * Returns true if ATA exists, false otherwise.
+ */
+export async function checkAtaExists(
+    connection: Connection,
+    owner: PublicKey,
+    mint: PublicKey,
+): Promise<boolean> {
+    try {
+        const ata = await deriveATA(owner, mint);
+        await getAccount(connection, ata);
+        return true;
+    } catch (e) {
+        if (e instanceof TokenAccountNotFoundError) return false;
+        throw e;
+    }
+}
