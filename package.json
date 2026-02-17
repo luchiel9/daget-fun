@@ -9,6 +9,8 @@
   "scripts": {
     "dev": "next dev --turbo",
     "build": "next build",
+    "analyze": "next build --experimental-analyze",
+    "analyze:webpack": "next build --webpack --profile",
     "start": "npm run db:migrate && next start",
     "lint": "next lint",
     "test": "vitest",
