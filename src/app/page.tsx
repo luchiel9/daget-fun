@@ -1,17 +1,40 @@
-import Image from 'next/image';
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import BlurText from '@/components/reactbits/BlurText';
 import Particles from '@/components/reactbits/Particles';
 import SpotlightCard from '@/components/reactbits/SpotlightCard';
 import FadeIn from '@/components/reactbits/FadeIn';
-import { DashboardLinkIfSignedIn, DiscordLoginButton } from '@/components/landing/DiscordAuthButtons';
 
 export default function LandingPage() {
+    const [hasSession, setHasSession] = useState(false);
+
+    useEffect(() => {
+        const supabase = createSupabaseBrowserClient();
+        supabase.auth.getSession().then(({ data }) => {
+            setHasSession(!!data.session);
+        });
+    }, []);
+
+    const handleLogin = async () => {
+        const supabase = createSupabaseBrowserClient();
+        await supabase.auth.signInWithOAuth({
+            provider: 'discord',
+            options: {
+                redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/auth/callback`,
+                scopes: 'identify guilds guilds.members.read',
+            },
+        });
+    };
+
     return (
         <div className="min-h-screen bg-arcade-dark grid-background text-slate-300 font-mono antialiased overflow-x-hidden">
             <nav className="fixed top-0 left-0 right-0 z-50 bg-arcade-dark/95 border-b-4 border-arcade-card">
                 <div className="max-w-7xl mx-auto px-4 h-20 flex justify-between items-center">
                     <div className="flex items-center gap-4">
-                        <Image src="/icon.png" alt="Daget.fun" width={48} height={48} className="rounded" priority />
+                        <img src="/icon.png" alt="Daget.fun" className="w-12 h-12 rounded" />
 
                     </div>
                     <div className="hidden md:flex items-center space-x-8 font-mono text-sm tracking-widest uppercase">
@@ -20,7 +43,18 @@ export default function LandingPage() {
                         <a className="hover:text-neon-cyan transition-colors" href="#faq">[ FAQ ]</a>
                     </div>
                     <div className="flex items-center gap-6">
-                        <DashboardLinkIfSignedIn />
+                        {hasSession && (
+                            <Link
+                                href="/dashboard"
+                                className="flex items-center gap-3 px-4 py-2 arcade-border-cyan text-[10px] font-arcade text-neon-cyan hover:bg-neon-cyan/10 transition-colors"
+                            >
+                                <span className="relative flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full bg-neon-cyan opacity-75"></span>
+                                    <span className="relative inline-flex h-2 w-2 bg-neon-cyan"></span>
+                                </span>
+                                DASHBOARD
+                            </Link>
+                        )}
                     </div>
                 </div>
             </nav>
@@ -59,10 +93,17 @@ export default function LandingPage() {
                     <p className="font-arcade text-xs text-neon-cyan mb-12 tracking-widest">
                         NO CONNECT WALLET NEEDED
                     </p>
-                    <DiscordLoginButton
-                        label="LOGIN WITH DISCORD"
+                    <button
+                        onClick={handleLogin}
                         className="inline-flex items-center justify-center gap-4 bg-[#5865F2] hover:brightness-110 text-white px-10 py-5 arcade-border font-arcade text-xs transition-transform active:scale-95"
-                    />
+                    >
+                        <img
+                            alt="Discord"
+                            className="w-6 h-6"
+                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuCl7InillKVvqmL7_KGDx0E2FtuvX6OjrAMNOLCZ57S2mLfPOo_NF4hCJpFDbVmp6qsJ23VW-1w4zDKsMzPQdeYpU1XvGwXAV0mj7yMWaWL_6GxXQv8MuLx2FCyFlWwcHcLPMF6qlQToqV4vKN0NMjeqbP5O-Qce-4KrQQ9HecuSqFz1XSEFhkoPvwzYz7XvfjJ1ZxVdGTHrucIrDpA8HMtgQtfGdjqnSxn71SzTzLaNPKsBVIfMBRYTVoVKL0wwFyrQPEKcwslZON6"
+                        />
+                        LOGIN WITH DISCORD
+                    </button>
                 </div>
             </main>
 
@@ -421,10 +462,17 @@ export default function LandingPage() {
                     <p className="font-mono text-sm text-slate-400 uppercase tracking-tighter max-w-lg mx-auto mb-12">
                         Your community deserves better. Set up your first Daget in under 2 minutes. Seriously, we timed it.
                     </p>
-                    <DiscordLoginButton
-                        label="GET STARTED NOW"
+                    <button
+                        onClick={handleLogin}
                         className="inline-flex items-center justify-center gap-4 bg-[#5865F2] hover:brightness-110 text-white px-12 py-5 arcade-border font-arcade text-xs transition-transform active:scale-95"
-                    />
+                    >
+                        <img
+                            alt="Discord"
+                            className="w-6 h-6"
+                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuCl7InillKVvqmL7_KGDx0E2FtuvX6OjrAMNOLCZ57S2mLfPOo_NF4hCJpFDbVmp6qsJ23VW-1w4zDKsMzPQdeYpU1XvGwXAV0mj7yMWaWL_6GxXQv8MuLx2FCyFlWwcHcLPMF6qlQToqV4vKN0NMjeqbP5O-Qce-4KrQQ9HecuSqFz1XSEFhkoPvwzYz7XvfjJ1ZxVdGTHrucIrDpA8HMtgQtfGdjqnSxn71SzTzLaNPKsBVIfMBRYTVoVKL0wwFyrQPEKcwslZON6"
+                        />
+                        GET STARTED NOW
+                    </button>
                     <p className="font-mono text-xs mt-6 uppercase tracking-tighter">
                         <span className="text-slate-600">Free to use · Only pay Solana gas fees · </span>
                         <span className="text-neon-cyan">No connect wallet needed</span>
@@ -436,7 +484,7 @@ export default function LandingPage() {
                 <div className="max-w-7xl mx-auto px-4">
                     <div className="flex flex-col md:flex-row justify-between items-center gap-12">
                         <div className="flex items-center gap-4">
-                            <Image src="/icon.png" alt="Daget.fun" width={40} height={40} className="rounded" />
+                            <img src="/icon.png" alt="Daget.fun" className="w-10 h-10 rounded" />
 
                         </div>
                         <div className="flex flex-wrap justify-center gap-8 font-mono text-[10px] tracking-widest uppercase items-center">
