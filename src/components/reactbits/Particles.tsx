@@ -34,7 +34,7 @@ const vertex = /* glsl */ `
     mPos.y += sin(t * random.y + 6.28 * random.x) * mix(0.1, 1.5, random.w);
     mPos.z += sin(t * random.w + 6.28 * random.y) * mix(0.1, 1.5, random.z);
     vec4 mvPos = viewMatrix * mPos;
-    gl_PointSize = (uBaseSize * (1.0 + uSizeRandomness * (random.x - 0.5))) / length(mvPos.xyz);
+    gl_PointSize = (uBaseSize * (1.0 + uSizeRandomness * (random.x - 0.5))) / max(length(mvPos.xyz), 5.0);
     gl_Position = projectionMatrix * mvPos;
   }
 `;

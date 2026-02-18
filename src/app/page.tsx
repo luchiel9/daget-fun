@@ -55,7 +55,7 @@ export default function LandingPage() {
                 {/* Subtle particle background */}
                 <div className="absolute inset-0 pointer-events-none">
                     <Particles
-                        particleCount={800}
+                        particleCount={1000}
                         particleSpread={10}
                         speed={0.1}
                         particleColors={['#4FD1ED', '#D16BA5', '#6E9B8A']}
