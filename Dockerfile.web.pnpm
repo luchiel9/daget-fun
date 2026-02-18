@@ -22,5 +22,6 @@ WORKDIR /app
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
-
+ENV PORT=3000
+ENV AUTO_MIGRATE_ON_STARTUP=true
 CMD ["node", "server.js"]
