@@ -47,13 +47,15 @@ const fragment = /* glsl */ `
   varying vec3 vColor;
   void main() {
     vec2 uv = gl_PointCoord.xy;
-    float d = length(uv - vec2(0.5));
+    // Pixelated square particles - no circle masking
+    vec2 edge = step(vec2(0.1), uv) * step(vec2(0.1), vec2(1.0) - uv);
+    float box = edge.x * edge.y;
+    if(box < 0.5) discard;
+    vec3 col = vColor + 0.15 * sin(uv.yxx + uTime + vRandom.y * 6.28);
     if(uAlphaParticles < 0.5) {
-      if(d > 0.5) discard;
-      gl_FragColor = vec4(vColor + 0.2 * sin(uv.yxx + uTime + vRandom.y * 6.28), 1.0);
+      gl_FragColor = vec4(col, 1.0);
     } else {
-      float circle = smoothstep(0.5, 0.4, d) * 0.8;
-      gl_FragColor = vec4(vColor + 0.2 * sin(uv.yxx + uTime + vRandom.y * 6.28), circle);
+      gl_FragColor = vec4(col, 0.7);
     }
   }
 `;
