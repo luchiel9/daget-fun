@@ -474,19 +474,19 @@ export default function ClaimPageClient() {
                                 {/* Progress Bar */}
                                 <div>
                                     <div className="flex items-center justify-between mb-2">
+                                        <span className="text-[11px] font-semibold text-primary uppercase tracking-wider">Progress</span>
                                         <div className="flex items-center gap-3">
-                                            <span className="text-[11px] font-semibold text-primary uppercase tracking-wider">Progress</span>
                                             <button
                                                 onClick={() => { setShowWinnersModal(true); fetchWinners(); }}
-                                                className="group flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 text-[10px] font-bold text-text-muted hover:text-white transition-all duration-200 border border-transparent hover:border-white/10 active:scale-95"
+                                                className="group flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-[10px] font-bold text-white transition-all duration-200 border border-white/10 hover:bg-white/20 active:scale-95"
                                             >
-                                                <span className="material-icons text-[12px] text-text-muted group-hover:text-primary transition-colors">emoji_events</span>
+                                                <span className="material-icons text-[12px] text-primary">emoji_events</span>
                                                 <span className="uppercase tracking-wide">Show Winners</span>
                                             </button>
+                                            <span className="text-[11px] font-mono font-bold text-text-muted">
+                                                {daget.claimed_count.toLocaleString()} / {daget.total_winners.toLocaleString()} Claimed
+                                            </span>
                                         </div>
-                                        <span className="text-[11px] font-mono font-bold text-text-muted">
-                                            {daget.claimed_count.toLocaleString()} / {daget.total_winners.toLocaleString()} Claimed
-                                        </span>
                                     </div>
                                     <div className="h-1.5 bg-border-dark/60 rounded-full overflow-hidden">
                                         <div
