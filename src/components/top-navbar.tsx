@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+
 
 interface TopNavbarProps {
     user: {
@@ -20,8 +20,7 @@ export function TopNavbar({ user }: TopNavbarProps) {
     const pathname = usePathname();
 
     const handleLogout = async () => {
-        const supabase = createSupabaseBrowserClient();
-        await supabase.auth.signOut();
+        await fetch('/api/auth/session', { method: 'DELETE' });
         window.location.href = '/';
     };
 

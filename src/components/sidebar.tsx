@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import React from 'react';
-import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+
 import { TopNavbar } from './top-navbar';
 
 const navItems = [

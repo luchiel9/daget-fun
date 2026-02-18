@@ -14,6 +14,7 @@ export async function GET() {
 
         return NextResponse.json({
             id: user.id,
+            discord_id: user.discordUserId,
             discord_username: user.discordUsername,
             discord_avatar_url: user.discordAvatarUrl,
             receiving_address: user.receivingAddress,

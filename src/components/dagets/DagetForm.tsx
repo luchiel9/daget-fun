@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { GlassCard, Button, Input, Select, SearchableSelect, Modal } from '@/components/ui';
 import TipTapEditor from '../ui/TipTapEditor';
-import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+
 import { simulateRandomClaims } from '@/lib/random-distribution';
 
 export interface FormValues {
@@ -300,19 +300,28 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
         }
     };
 
-    const handleDiscordLogin = async () => {
-        const supabase = createSupabaseBrowserClient();
-        const { data } = await supabase.auth.signInWithOAuth({
-            provider: 'discord',
-            options: {
-                redirectTo: `${window.location.origin}/auth/callback/popup`,
-                scopes: 'identify guilds guilds.members.read',
-                skipBrowserRedirect: true,
-            },
-        });
+    const handleDiscordLogin = () => {
+        const usePopup = process.env.NEXT_PUBLIC_DISCORD_AUTH_POP_UP === '1';
 
-        if (data?.url) {
-            window.open(data.url, 'Discord Login', 'width=500,height=800,left=200,top=200');
+        if (!usePopup) {
+            window.location.href = '/api/discord/auth?return_to=/create';
+            return;
+        }
+
+        const popup = window.open(
+            '/api/discord/auth?return_to=/create&popup=1',
+            'Discord Login',
+            'width=500,height=800,left=200,top=200',
+        );
+        if (popup) {
+            const onMessage = (event: MessageEvent) => {
+                if (event.origin !== window.location.origin) return;
+                if (event.data?.type === 'DISCORD_LOGIN_SUCCESS') {
+                    window.removeEventListener('message', onMessage);
+                    handleSyncServers();
+                }
+            };
+            window.addEventListener('message', onMessage);
         }
     };
 

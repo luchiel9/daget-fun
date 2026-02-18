@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+
 import BlurText from '@/components/reactbits/BlurText';
 import Particles from '@/components/reactbits/Particles';
 import SpotlightCard from '@/components/reactbits/SpotlightCard';
@@ -12,21 +12,13 @@ export default function LandingPage() {
     const [hasSession, setHasSession] = useState(false);
 
     useEffect(() => {
-        const supabase = createSupabaseBrowserClient();
-        supabase.auth.getSession().then(({ data }) => {
-            setHasSession(!!data.session);
-        });
+        fetch('/api/me')
+            .then(r => setHasSession(r.ok))
+            .catch(() => setHasSession(false));
     }, []);
 
-    const handleLogin = async () => {
-        const supabase = createSupabaseBrowserClient();
-        await supabase.auth.signInWithOAuth({
-            provider: 'discord',
-            options: {
-                redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/auth/callback`,
-                scopes: 'identify guilds guilds.members.read',
-            },
-        });
+    const handleLogin = () => {
+        window.location.href = '/api/discord/auth?return_to=/dashboard';
     };
 
     return (

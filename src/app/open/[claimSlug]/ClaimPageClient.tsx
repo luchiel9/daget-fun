@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { Input } from '@/components/ui';
-import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+
 import { nanoid } from 'nanoid';
 import confetti from 'canvas-confetti';
 import DOMPurify from 'isomorphic-dompurify';
@@ -146,31 +146,23 @@ export default function ClaimPageClient() {
     const [currentDiscordId, setCurrentDiscordId] = useState<string | null>(null);
 
     const checkAuth = async () => {
-        const supabase = createSupabaseBrowserClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        const loggedIn = !!user;
-        setIsLoggedIn(loggedIn);
-        if (user) {
-            const discordIdentity = user.identities?.find(i => i.provider === 'discord');
-            if (discordIdentity) {
-                setCurrentDiscordId(discordIdentity.id);
-            }
-
-            // Fetch user's saved wallet address
-            try {
-                const res = await fetch('/api/me');
-                if (res.ok) {
-                    const userData = await res.json();
-                    if (userData.receiving_address) {
-                        setAddress(userData.receiving_address);
-                    }
+        try {
+            const res = await fetch('/api/me');
+            if (res.ok) {
+                const userData = await res.json();
+                setIsLoggedIn(true);
+                setCurrentDiscordId(userData.discord_id ?? null);
+                if (userData.receiving_address) {
+                    setAddress(userData.receiving_address);
                 }
-            } catch (err) {
-                console.error('Failed to fetch user data:', err);
+                if (viewState !== 'success') {
+                    checkEligibility();
+                }
+            } else {
+                setIsLoggedIn(false);
             }
-        }
-        if (loggedIn && viewState !== 'success') {
-            checkEligibility();
+        } catch {
+            setIsLoggedIn(false);
         }
     };
 
@@ -206,18 +198,31 @@ export default function ClaimPageClient() {
         }
     };
 
-    const loginAndClaim = async () => {
-        // Store the return path in a cookie so the callback can redirect back here
-        // regardless of whether Supabase preserves query params in redirectTo
-        document.cookie = `auth_next=/open/${claimSlug}; path=/; max-age=300; SameSite=Lax`;
-        const supabase = createSupabaseBrowserClient();
-        await supabase.auth.signInWithOAuth({
-            provider: 'discord',
-            options: {
-                redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/auth/callback`,
-                scopes: 'identify guilds guilds.members.read',
-            },
-        });
+    const loginAndClaim = () => {
+        const returnTo = encodeURIComponent(`/open/${claimSlug}`);
+        const usePopup = process.env.NEXT_PUBLIC_DISCORD_AUTH_POP_UP === '1';
+
+        if (isLoggedIn || !usePopup) {
+            // Expired token OR popup disabled — full redirect, returns here after OAuth.
+            window.location.href = `/api/discord/auth?return_to=${returnTo}`;
+        } else {
+            // No session + popup enabled — open popup so this page stays open.
+            const url = `/api/discord/auth?return_to=${returnTo}&popup=1`;
+            const popup = window.open(url, 'discord-auth', 'width=500,height=800,scrollbars=yes');
+            if (!popup) {
+                // Popup blocked — fall back to full redirect.
+                window.location.href = `/api/discord/auth?return_to=${returnTo}`;
+                return;
+            }
+            const onMessage = async (event: MessageEvent) => {
+                if (event.origin !== window.location.origin) return;
+                if (event.data?.type === 'DISCORD_LOGIN_SUCCESS') {
+                    window.removeEventListener('message', onMessage);
+                    await checkAuth();
+                }
+            };
+            window.addEventListener('message', onMessage);
+        }
     };
 
     const pollClaimStatus = useCallback((claimId: string) => {

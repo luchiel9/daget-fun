@@ -1,8 +1,8 @@
-import { type NextRequest } from 'next/server';
-import { updateSession } from '@/lib/supabase/middleware';
+import { type NextRequest, NextResponse } from 'next/server';
 
+// Middleware passthrough — auth is enforced per-route via requireAuth() / layout.tsx.
 export async function proxy(request: NextRequest) {
-    return await updateSession(request);
+    return NextResponse.next({ request });
 }
 
 export const config = {

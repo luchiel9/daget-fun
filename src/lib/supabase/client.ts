@@ -1,8 +1,4 @@
-import { createBrowserClient } from '@supabase/ssr';
-
+// Supabase removed. This stub prevents broken imports during migration.
 export function createSupabaseBrowserClient() {
-    return createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    );
+    throw new Error('Supabase has been removed. Use /api/discord/auth for authentication.');
 }
