@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { verifySessionToken } from './session';
+import { decryptCookieValue } from './cookie-crypto';
 import { db } from '@/db';
 import { users, wallets } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -46,7 +47,13 @@ export async function requireAuth(): Promise<AuthUser> {
     return user;
 }
 
+/**
+ * Read and decrypt the Discord access token cookie.
+ * Returns null if the cookie is missing, tampered, or decryption fails.
+ */
 export async function getDiscordAccessToken(): Promise<string | null> {
     const cookieStore = await cookies();
-    return cookieStore.get('discord_access_token')?.value ?? null;
+    const encrypted = cookieStore.get('discord_access_token')?.value;
+    if (!encrypted) return null;
+    return decryptCookieValue(encrypted);
 }
