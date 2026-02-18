@@ -30,6 +30,14 @@ export async function GET(
             where: eq(claims.dagetId, daget.id),
             orderBy: [desc(claims.createdAt)],
             limit,
+            with: {
+                claimant: {
+                    columns: {
+                        discordUsername: true,
+                        discordAvatarUrl: true,
+                    }
+                }
+            }
         });
 
         return NextResponse.json({
@@ -39,6 +47,10 @@ export async function GET(
                 amount_base_units: c.amountBaseUnits,
                 tx_signature: c.txSignature,
                 created_at: c.createdAt.toISOString(),
+                claimant: {
+                    discord_username: c.claimant.discordUsername,
+                    discord_avatar_url: c.claimant.discordAvatarUrl,
+                }
             })),
         });
     } catch (error: unknown) {

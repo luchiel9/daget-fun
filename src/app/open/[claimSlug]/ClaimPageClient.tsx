@@ -25,6 +25,10 @@ type ActivityClaim = {
     amount_base_units: number | null;
     tx_signature: string | null;
     created_at: string;
+    claimant?: {
+        discord_username: string | null;
+        discord_avatar_url: string | null;
+    };
 };
 
 function shortenTx(sig: string | null) {
@@ -82,6 +86,22 @@ export default function ClaimPageClient() {
     // Live Activity
     const [recentClaims, setRecentClaims] = useState<ActivityClaim[]>([]);
     const activityPollRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Winners Modal State
+    const [showWinnersModal, setShowWinnersModal] = useState(false);
+    const [winnersList, setWinnersList] = useState<ActivityClaim[]>([]);
+    const [loadingWinners, setLoadingWinners] = useState(false);
+
+    const fetchWinners = async () => {
+        setLoadingWinners(true);
+        try {
+            const res = await fetch(`/api/claim/${claimSlug}/activity?limit=50`);
+            if (res.ok) {
+                const data = await res.json();
+                setWinnersList(data.claims || []);
+            }
+        } catch { } finally { setLoadingWinners(false); }
+    };
 
     useEffect(() => {
         fetchDaget();
@@ -454,7 +474,16 @@ export default function ClaimPageClient() {
                                 {/* Progress Bar */}
                                 <div>
                                     <div className="flex items-center justify-between mb-2">
-                                        <span className="text-[11px] font-semibold text-primary uppercase tracking-wider">Progress</span>
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-[11px] font-semibold text-primary uppercase tracking-wider">Progress</span>
+                                            <button
+                                                onClick={() => { setShowWinnersModal(true); fetchWinners(); }}
+                                                className="group flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 text-[10px] font-bold text-text-muted hover:text-white transition-all duration-200 border border-transparent hover:border-white/10 active:scale-95"
+                                            >
+                                                <span className="material-icons text-[12px] text-text-muted group-hover:text-primary transition-colors">emoji_events</span>
+                                                <span className="uppercase tracking-wide">Show Winners</span>
+                                            </button>
+                                        </div>
                                         <span className="text-[11px] font-mono font-bold text-text-muted">
                                             {daget.claimed_count.toLocaleString()} / {daget.total_winners.toLocaleString()} Claimed
                                         </span>
@@ -997,6 +1026,123 @@ export default function ClaimPageClient() {
                     </div>
                 </div>
             )}
+
+            {/* ═══════════ WINNERS LIST MODAL ═══════════ */}
+            {
+                showWinnersModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setShowWinnersModal(false)}>
+                        {/* Backdrop */}
+                        <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
+
+                        {/* Modal */}
+                        <div
+                            className="relative bg-surface border border-border-dark/80 rounded-2xl shadow-2xl w-full max-w-2xl h-[80vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* Header */}
+                            <div className="p-5 border-b border-border-dark/60 flex items-center justify-between bg-card-dark/50">
+                                <h3 className="text-lg font-bold text-text-primary flex items-center gap-2">
+                                    <span className="material-icons text-primary text-xl">emoji_events</span>
+                                    Recent Winners
+                                </h3>
+                                <button
+                                    onClick={() => setShowWinnersModal(false)}
+                                    className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
+                                >
+                                    <span className="material-icons text-text-muted text-lg">close</span>
+                                </button>
+                            </div>
+
+                            {/* List */}
+                            <div className="flex-1 overflow-y-auto p-0 custom-scrollbar bg-background-dark/30">
+                                {loadingWinners ? (
+                                    <div className="flex items-center justify-center h-full">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                                    </div>
+                                ) : winnersList.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center h-full text-text-muted">
+                                        <span className="material-icons text-4xl mb-2 opacity-50">inbox</span>
+                                        <p className="text-sm">No winners yet</p>
+                                    </div>
+                                ) : (
+                                    <table className="w-full text-left border-collapse">
+                                        <thead className="bg-white/5 text-[10px] uppercase tracking-wider text-text-muted font-semibold sticky top-0 z-10 backdrop-blur-md">
+                                            <tr>
+                                                <th className="px-5 py-3">Winner</th>
+                                                <th className="px-5 py-3">Amount</th>
+                                                <th className="px-5 py-3">Status</th>
+                                                <th className="px-5 py-3 text-right">Time</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-border-dark/40">
+                                            {winnersList.map((w) => (
+                                                <tr key={w.claim_id} className="hover:bg-white/5 transition-colors">
+                                                    <td className="px-5 py-3">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-8 h-8 rounded-full bg-primary/10 overflow-hidden flex-shrink-0">
+                                                                {w.claimant?.discord_avatar_url ? (
+                                                                    <img
+                                                                        src={w.claimant.discord_avatar_url}
+                                                                        alt=""
+                                                                        className="w-full h-full object-cover"
+                                                                    />
+                                                                ) : (
+                                                                    <div className="w-full h-full flex items-center justify-center text-xs font-bold text-primary">
+                                                                        {(w.claimant?.discord_username || '?').charAt(0).toUpperCase()}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            <span className="text-sm font-medium text-text-primary">
+                                                                {w.claimant?.discord_username || 'Unknown'}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-5 py-3">
+                                                        <span className="font-mono text-sm font-bold text-text-primary">
+                                                            {formatAmount(w.amount_base_units, daget?.token_decimals || 6)}
+                                                        </span>
+                                                        <span className="text-xs text-text-muted ml-1">{daget?.token_symbol}</span>
+                                                    </td>
+                                                    <td className="px-5 py-3">
+                                                        <div className="flex items-center gap-1.5">
+                                                            {w.status === 'confirmed' ? (
+                                                                <>
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                                                                    <span className="text-xs text-green-400 font-medium">Claimed</span>
+                                                                </>
+                                                            ) : w.status === 'failed_permanent' ? (
+                                                                <>
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                                                                    <span className="text-xs text-red-400 font-medium">Failed</span>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse"></span>
+                                                                    <span className="text-xs text-yellow-400 font-medium">Processing</span>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-5 py-3 text-right">
+                                                        <span className="text-xs text-text-muted font-mono">
+                                                            {new Date(w.created_at).toLocaleString(undefined, {
+                                                                month: 'short',
+                                                                day: 'numeric',
+                                                                hour: '2-digit',
+                                                                minute: '2-digit'
+                                                            })}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
         </div >
     );
 }
