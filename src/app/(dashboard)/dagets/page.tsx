@@ -3,15 +3,33 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { GlassCard, Button, EmptyState } from '@/components/ui';
+import { GlassCard, Button, EmptyState, Modal } from '@/components/ui';
+import { useUser } from '@/components/sidebar';
 
 export default function DagetsListPage() {
     const router = useRouter();
+    const { hasWallet } = useUser();
     const [dagets, setDagets] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [nextCursor, setNextCursor] = useState<string | null>(null);
     const [copiedId, setCopiedId] = useState<string | null>(null);
     const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
+
+    // Modal State
+    const [modalConfig, setModalConfig] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        actionLabel: string;
+        onAction: () => void;
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        actionLabel: '',
+        onAction: () => { },
+    });
+    const [checking, setChecking] = useState(false);
 
     useEffect(() => { fetchDagets(); }, [statusFilter]);
 
@@ -39,10 +57,55 @@ export default function DagetsListPage() {
         setTimeout(() => setCopiedId(null), 2000);
     };
 
+    const handleCreateDaget = async () => {
+        setChecking(true);
+        try {
+            // Check 1: Creator Wallet
+            if (!hasWallet) {
+                setModalConfig({
+                    isOpen: true,
+                    title: 'Creator Wallet Required',
+                    message: 'Create creator wallet from dashboard to start distributing tokens.',
+                    actionLabel: 'Go to Dashboard',
+                    onAction: () => router.push('/dashboard'),
+                });
+                return;
+            }
+
+            // Check 2: Active Daget
+            // Fetch directly to be sure
+            const res = await fetch('/api/dagets?status=active&limit=1');
+            if (res.ok) {
+                const data = await res.json();
+                if (data.items && data.items.length > 0) {
+                    const activeId = data.items[0].daget_id;
+                    setModalConfig({
+                        isOpen: true,
+                        title: 'Active Daget Found',
+                        message: 'Only one active daget is possible. You must stop or close or let it be fully claimed before creating a new one.',
+                        actionLabel: 'View Active Daget',
+                        onAction: () => router.push(`/dagets/${activeId}`),
+                    });
+                    return;
+                }
+            }
+
+            // All clear
+            router.push('/create');
+        } catch (error) {
+            console.error(error);
+            // Fallback to create if check fails? Or alert?
+            // Safer to let them try if check fails, worst case backend rejects.
+            router.push('/create');
+        } finally {
+            setChecking(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                <Spinner size="lg" />
             </div>
         );
     }
@@ -71,12 +134,16 @@ export default function DagetsListPage() {
                             <button onClick={() => setStatusFilter('stopped')} className={`px-4 py-2 rounded-full text-xs font-semibold transition-all duration-150 active:scale-[0.95] ${statusFilter === 'stopped' ? 'bg-primary/10 text-primary border border-primary/20' : 'text-text-secondary hover:text-primary hover:bg-primary/5 border border-transparent'}`}>Stopped</button>
                             <button onClick={() => setStatusFilter('closed')} className={`px-4 py-2 rounded-full text-xs font-semibold transition-all duration-150 active:scale-[0.95] ${statusFilter === 'closed' ? 'bg-primary/10 text-primary border border-primary/20' : 'text-text-secondary hover:text-primary hover:bg-primary/5 border border-transparent'}`}>Fully Claimed</button>
                         </div>
-                        <Link href="/create">
-                            <Button size="sm" variant="primary" className="rounded-full px-5">
-                                <span className="material-icons text-sm mr-2">add</span>
-                                Create Daget
-                            </Button>
-                        </Link>
+                        <Button
+                            size="sm"
+                            variant="primary"
+                            className="rounded-full px-5"
+                            onClick={handleCreateDaget}
+                            loading={checking}
+                        >
+                            <span className="material-icons text-sm mr-2">add</span>
+                            Create Daget
+                        </Button>
                     </div>
 
                     {dagets.length === 0 ? (
@@ -85,7 +152,11 @@ export default function DagetsListPage() {
                                 icon="redeem"
                                 title="No Dagets yet"
                                 description="Create your first community Daget."
-                                action={<Link href="/create"><Button variant="primary">Create Daget</Button></Link>}
+                                action={
+                                    <Button variant="primary" onClick={handleCreateDaget} loading={checking}>
+                                        Create Daget
+                                    </Button>
+                                }
                             />
                         </GlassCard>
                     ) : (
@@ -169,6 +240,25 @@ export default function DagetsListPage() {
                     )}
                 </div>
             </div>
+
+            <Modal
+                isOpen={modalConfig.isOpen}
+                onClose={() => setModalConfig({ ...modalConfig, isOpen: false })}
+                title={modalConfig.title}
+                message={modalConfig.message}
+                primaryAction={{
+                    label: modalConfig.actionLabel,
+                    onClick: modalConfig.onAction,
+                }}
+                secondaryAction={{
+                    label: 'Cancel',
+                    onClick: () => setModalConfig({ ...modalConfig, isOpen: false }),
+                }}
+            />
         </div>
     );
+}
+
+function Spinner({ size }: { size: string }) {
+    return <div className={`animate-spin rounded-full border-t-2 border-primary ${size === 'lg' ? 'h-10 w-10' : 'h-6 w-6'}`}></div>
 }
