@@ -67,6 +67,7 @@ export default function ClaimPageClient() {
         inGuild?: boolean;
         userRoles?: string[];
         claimed?: boolean;
+        isCreator?: boolean;
     }>({
         eligible: false,
         checked: false,
@@ -185,7 +186,8 @@ export default function ClaimPageClient() {
                     checked: true,
                     inGuild: data.inGuild,
                     userRoles: data.userRoles || [],
-                    claimed: data.claimed || false
+                    claimed: data.claimed || false,
+                    isCreator: data.isCreator || false,
                 });
             } else {
                 const data = await res.json();
@@ -205,11 +207,14 @@ export default function ClaimPageClient() {
     };
 
     const loginAndClaim = async () => {
+        // Store the return path in a cookie so the callback can redirect back here
+        // regardless of whether Supabase preserves query params in redirectTo
+        document.cookie = `auth_next=/open/${claimSlug}; path=/; max-age=300; SameSite=Lax`;
         const supabase = createSupabaseBrowserClient();
         await supabase.auth.signInWithOAuth({
             provider: 'discord',
             options: {
-                redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/auth/callback?next=/open/${claimSlug}`,
+                redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/auth/callback`,
                 scopes: 'identify guilds guilds.members.read',
             },
         });
@@ -341,7 +346,7 @@ export default function ClaimPageClient() {
     const progressPercent = daget.total_winners > 0 ? Math.round((daget.claimed_count / daget.total_winners) * 100) : 0;
     const isEligibilityFailure = eligibility.error === 'You are not a member of the required Discord server.' ||
         eligibility.error === 'You do not have any of the required roles in this server.';
-    const shouldPromptLogin = eligibility.error && !isEligibilityFailure && !eligibility.claimed;
+    const shouldPromptLogin = eligibility.error && !isEligibilityFailure && !eligibility.claimed && !eligibility.isCreator;
 
     // Derive processing step from claim status
     const hasTxSignature = Boolean(claimStatus?.tx_signature);
@@ -625,6 +630,16 @@ export default function ClaimPageClient() {
                                             <span className="material-icons text-base">login</span>
                                             Discord Sign in
                                         </button>
+                                    </div>
+                                )}
+
+                                {/* Creator cannot claim */}
+                                {isLoggedIn && eligibility.checked && eligibility.isCreator && (
+                                    <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                                        <div className="flex items-center gap-2">
+                                            <span className="material-icons text-amber-400 text-lg">shield</span>
+                                            <span className="text-sm text-amber-400 font-semibold">You cannot claim the daget that you created.</span>
+                                        </div>
                                     </div>
                                 )}
 

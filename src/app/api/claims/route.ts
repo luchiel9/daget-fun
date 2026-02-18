@@ -52,6 +52,11 @@ export async function POST(request: NextRequest) {
                     : 'Daget is fully claimed.');
         }
 
+        // Creators cannot claim their own Daget
+        if (daget.creatorUserId === user.id) {
+            return Errors.forbidden('You cannot claim a Daget you created.');
+        }
+
         // ── Discord Role Verification ──
         const requirements = await db.query.dagetRequirements.findMany({
             where: eq(dagetRequirements.dagetId, daget.id),

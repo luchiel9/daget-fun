@@ -24,6 +24,15 @@ export async function GET(
 
         if (!daget) return Errors.notFound('Daget');
 
+        // Creators cannot claim their own Daget
+        if (daget.creatorUserId === user.id) {
+            return NextResponse.json({
+                eligible: false,
+                isCreator: true,
+                error: 'You cannot claim a Daget you created.',
+            });
+        }
+
         // Check if user has already claimed
         const existingClaim = await db.query.claims.findFirst({
             where: and(
