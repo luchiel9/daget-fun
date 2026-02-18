@@ -79,11 +79,8 @@ export default function LandingPage() {
                         direction="top"
                     />
 
-                    <p className="font-mono text-lg text-text-secondary max-w-3xl mx-auto mb-4 uppercase tracking-tighter">
-                        Secure, transparent, and automated. Reward your Discord members with Solana tokens based on their server roles.
-                    </p>
-                    <p className="font-arcade text-xs text-primary mb-12 tracking-widest">
-                        NO CONNECT WALLET NEEDED
+                    <p className="font-mono text-lg text-text-secondary max-w-3xl mx-auto mb-12 uppercase tracking-tighter">
+                        Role-gated onchain giveaways for your community. No connect wallet needed.
                     </p>
                     <button
                         onClick={handleLogin}

@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     });
 
     // Default description from user request
-    const description = "Role-gated onchain giveaways for your community. Secure, transparent, and automated. Reward your Discord members with Solana tokens based on their server roles. NO CONNECT WALLET NEEDED";
+    const description = "Role-gated onchain giveaways for your community. No connect wallet needed.";
 
     return {
         title: daget ? `${daget.name} | Daget.fun` : 'Claim Daget | Daget.fun',
