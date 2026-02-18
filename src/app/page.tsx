@@ -80,7 +80,9 @@ export default function LandingPage() {
                     />
 
                     <p className="font-mono text-lg text-text-secondary max-w-3xl mx-auto mb-12 uppercase tracking-tighter">
-                        Role-gated onchain giveaways for your community. No connect wallet needed.
+                        SECURE, TRANSPARENT, AND AUTOMATED. REWARD YOUR DISCORD MEMBERS WITH SOLANA TOKENS BASED ON THEIR SERVER ROLES.
+                        <br className="my-4 block" />
+                        <span className="text-primary mt-2 block">NO CONNECT WALLET NEEDED</span>
                     </p>
                     <button
                         onClick={handleLogin}
