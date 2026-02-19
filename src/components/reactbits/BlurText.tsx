@@ -89,7 +89,7 @@ const BlurText = ({
     );
 
     return (
-        <p ref={ref} className={className} style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
+        <p ref={ref} className={className} style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', columnGap: animateBy === 'words' ? '0.3em' : '0' }}>
             {elements.map((segment, index) => {
                 const animateKeyframes = buildKeyframes(fromSnapshot, toSnapshots);
                 const spanTransition = {
@@ -111,7 +111,6 @@ const BlurText = ({
                         }
                     >
                         {segment === ' ' ? '\u00A0' : segment}
-                        {animateBy === 'words' && index < elements.length - 1 && '\u00A0'}
                     </motion.span>
                 );
             })}
