@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { GlassCard, EmptyState } from '@/components/ui';
+import DOMPurify from 'isomorphic-dompurify';
 
 export default function NotificationsPage() {
     const [notifications, setNotifications] = useState<any[]>([]);
@@ -74,7 +75,12 @@ export default function NotificationsPage() {
                 )}
             </div>
             <div className="flex-1 min-w-0" onClick={() => !n.is_read && markRead(n.id)}>
-                <div className="text-sm text-text-primary mb-0.5" dangerouslySetInnerHTML={{ __html: n.body || n.title }} />
+                <div
+                    className="text-sm text-text-primary mb-0.5"
+                    dangerouslySetInnerHTML={{
+                        __html: DOMPurify.sanitize(n.body || n.title, { ALLOWED_TAGS: ['b', 'i', 'strong', 'em', 'span'], ALLOWED_ATTR: ['class'] })
+                    }}
+                />
                 <span className="text-[10px] text-text-muted flex-shrink-0 mt-1 block">{new Date(n.created_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
             </div>
         </GlassCard>
