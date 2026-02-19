@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import { Input } from '@/components/ui';
 
 import { nanoid } from 'nanoid';
@@ -387,10 +388,10 @@ export default function ClaimPageClient() {
         <div className="min-h-screen bg-background-dark text-text-primary claim-bg-glow">
             {/* Header */}
             <header className="h-14 flex items-center justify-between px-6 max-w-[625px] mx-auto">
-                <div className="flex items-center gap-2">
+                <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                     <img src="/images/dagetfun_logo.png" alt="Daget.fun" className="w-6 h-6 rounded-md" />
                     <span className="text-sm font-bold text-text-primary">Daget.fun</span>
-                </div>
+                </Link>
                 {daget?.author_discord_id && currentDiscordId === daget.author_discord_id && (
                     <a
                         href={`/dashboard/edit/${daget.id}`}
