@@ -729,3 +729,59 @@ body {
     padding: 8px 12px;
   }
 }
+/* ─── Quill Editor Styles ─── */
+.quill-wrapper {
+  background-color: transparent; /* Or match theme */
+  color: var(--text-primary);
+  min-height: 200px;
+}
+
+.quill-wrapper .ql-toolbar {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  border-top-left-radius: 0.75rem;
+  border-top-right-radius: 0.75rem;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.quill-wrapper .ql-container {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  border-bottom-left-radius: 0.75rem;
+  border-bottom-right-radius: 0.75rem;
+  font-size: 1rem;
+}
+
+.quill-wrapper .ql-editor {
+  min-height: 150px;
+}
+
+.quill-wrapper .ql-editor.ql-blank::before {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Ensure images are visible and styled */
+.quill-wrapper .ql-editor img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1rem 0;
+  border-radius: 0.5rem;
+}
+
+/* Dark mode toolbar adjustments */
+.ql-snow .ql-stroke {
+  stroke: var(--text-secondary) !important;
+}
+
+.ql-snow .ql-fill {
+  fill: var(--text-secondary) !important;
+}
+
+.ql-snow .ql-picker {
+  color: var(--text-secondary) !important;
+}
+
+.ql-snow .ql-picker-options {
+  background-color: var(--surface) !important;
+  border-color: var(--border-dark) !important;
+}

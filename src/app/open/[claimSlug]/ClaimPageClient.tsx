@@ -451,7 +451,13 @@ export default function ClaimPageClient() {
                                     <div className="bg-background-dark/30 rounded-lg p-4">
                                         <div
                                             className="text-sm text-text-secondary leading-relaxed rich-text-content"
-                                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(daget.message_html) }}
+                                            dangerouslySetInnerHTML={{
+                                                __html: DOMPurify.sanitize(daget.message_html, {
+                                                    ADD_TAGS: ['img', 'iframe', 'video'],
+                                                    ADD_ATTR: ['src', 'alt', 'class', 'style', 'width', 'height', 'frameborder', 'allowfullscreen'],
+                                                    ADD_URI_SCHEMES: ['data']
+                                                } as any)
+                                            }}
                                         />
                                     </div>
                                 )}

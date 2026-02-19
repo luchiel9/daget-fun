@@ -14,8 +14,9 @@ import crypto from 'crypto';
 import DOMPurify from 'isomorphic-dompurify';
 
 const MESSAGE_SANITIZE_OPTS = {
-    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'br', 'p', 'ul', 'ol', 'li'],
-    ALLOWED_ATTR: ['href', 'target', 'rel'],
+    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'br', 'p', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'code', 'pre', 'img', 'span', 'div', 'iframe', 'video'],
+    ALLOWED_ATTR: ['href', 'target', 'rel', 'src', 'alt', 'class', 'style', 'width', 'height', 'data-id', 'frameborder', 'allowfullscreen'],
+    ADD_URI_SCHEMES: ['data'],
 };
 
 /**

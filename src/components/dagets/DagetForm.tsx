@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { GlassCard, Button, Input, Select, SearchableSelect, Modal } from '@/components/ui';
-import TipTapEditor from '../ui/TipTapEditor';
+import QuillEditor from '../ui/quill-editor';
 
 import { simulateRandomClaims } from '@/lib/random-distribution';
 
@@ -739,7 +739,7 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
                                 <div className="space-y-2">
                                     <label className="text-sm font-semibold text-text-secondary uppercase tracking-wider">Message / Description</label>
                                     <div className="bg-background-dark/50 border border-border-dark/60 rounded-xl overflow-hidden min-h-[200px]">
-                                        <TipTapEditor
+                                        <QuillEditor
                                             value={form.message_html}
                                             onChange={(html) => updateForm('message_html', html)}
                                             placeholder="Share why you're hosting this giveaway..."
