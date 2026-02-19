@@ -76,10 +76,16 @@ export default function LandingPage() {
                     {hasSession ? (
                         <Link
                             href="/dashboard"
-                            className="inline-flex items-center justify-center gap-4 bg-primary hover:brightness-110 text-white px-10 py-5 arcade-border font-arcade text-xs transition-transform active:scale-95"
+                            className="inline-block relative group py-2 pr-4 pl-0"
                         >
-                            <span className="material-symbols-outlined text-xl">dashboard</span>
-                            OPEN DASHBOARD
+                            {/* L-shaped border: Bottom and Right only */}
+                            <div className="absolute bottom-0 right-0 w-full h-[2px] bg-primary group-hover:shadow-[0_0_10px_rgba(110,155,138,0.5)] transition-all duration-300 origin-left"></div>
+                            <div className="absolute bottom-0 right-0 w-[2px] h-full bg-primary group-hover:shadow-[0_0_10px_rgba(110,155,138,0.5)] transition-all duration-300 origin-bottom"></div>
+
+                            <div className="relative flex items-center gap-4">
+                                <span className="w-3 h-3 bg-primary/80 group-hover:bg-primary shadow-[0_0_8px_rgba(110,155,138,0.5)] transition-all duration-300"></span>
+                                <span className="font-arcade text-xl text-primary group-hover:text-primary-light tracking-widest uppercase mb-1">OPEN DASHBOARD</span>
+                            </div>
                         </Link>
                     ) : (
                         <button
@@ -463,10 +469,16 @@ export default function LandingPage() {
                     {hasSession ? (
                         <Link
                             href="/dashboard"
-                            className="inline-flex items-center justify-center gap-4 bg-primary hover:brightness-110 text-white px-12 py-5 arcade-border font-arcade text-xs transition-transform active:scale-95"
+                            className="inline-block relative group py-2 pr-4 pl-0"
                         >
-                            <span className="material-symbols-outlined text-xl">dashboard</span>
-                            OPEN DASHBOARD
+                            {/* L-shaped border: Bottom and Right only */}
+                            <div className="absolute bottom-0 right-0 w-full h-[2px] bg-primary group-hover:shadow-[0_0_10px_rgba(110,155,138,0.5)] transition-all duration-300 origin-left"></div>
+                            <div className="absolute bottom-0 right-0 w-[2px] h-full bg-primary group-hover:shadow-[0_0_10px_rgba(110,155,138,0.5)] transition-all duration-300 origin-bottom"></div>
+
+                            <div className="relative flex items-center gap-4">
+                                <span className="w-3 h-3 bg-primary/80 group-hover:bg-primary shadow-[0_0_8px_rgba(110,155,138,0.5)] transition-all duration-300"></span>
+                                <span className="font-arcade text-xl text-primary group-hover:text-primary-light tracking-widest uppercase mb-1">OPEN DASHBOARD</span>
+                            </div>
                         </Link>
                     ) : (
                         <button
@@ -498,8 +510,7 @@ export default function LandingPage() {
                         <div className="flex flex-wrap justify-center gap-8 font-mono text-[10px] tracking-widest uppercase items-center">
                             <Link className="text-white hover:text-primary transition-colors px-3 py-1 arcade-border-cyan bg-background-dark" href="/terms">TERMS OF USE</Link>
                             <Link className="text-white hover:text-neon-magenta transition-colors px-3 py-1 arcade-border-magenta bg-background-dark" href="/privacy">PRIVACY POLICY</Link>
-                            <a className="text-text-muted hover:text-primary transition-colors" href="#">[ TWITTER ]</a>
-                            <a className="text-text-muted hover:text-primary transition-colors" href="#">[ DISCORD ]</a>
+                            <a className="text-text-muted hover:text-primary transition-colors" href="https://x.com/dagetfun" target="_blank" rel="noopener noreferrer">[ TWITTER ]</a>
                         </div>
                         <div className="text-right">
                             <p className="font-arcade text-[8px] text-text-muted">

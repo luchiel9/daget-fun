@@ -62,7 +62,7 @@ export default function TermsOfUsePage() {
                             Last Updated: February 18, 2026
                         </p>
                         <p className="font-mono text-xs text-text-muted mt-2 max-w-xl mx-auto leading-relaxed">
-                            Read these before you do anything else. They matter — especially the part about managed wallets.
+                            Please read these Terms carefully before using the Platform, particularly the sections regarding Managed Wallets and Eligibility.
                         </p>
                     </div>
 

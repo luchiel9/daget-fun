@@ -56,7 +56,7 @@ export default function PrivacyPolicyPage() {
                             Last Updated: February 18, 2026
                         </p>
                         <p className="font-mono text-xs text-text-muted mt-2 max-w-xl mx-auto leading-relaxed">
-                            We keep this short and honest. Here&apos;s exactly what we collect, why we collect it, and what we do with it.
+                            This Privacy Policy outlines what personal information we collect, the purposes for collection, and how we protect your data.
                         </p>
                     </div>
 
@@ -102,7 +102,7 @@ export default function PrivacyPolicyPage() {
                                 <h2 className="font-arcade text-xs text-neon-magenta mb-4 flex items-center gap-3">
                                     <span className="text-text-muted">02.</span> WHAT WE COLLECT
                                 </h2>
-                                <p>We collect only what we actually need to run the Platform. Here&apos;s the full picture:</p>
+                                We collect only the data necessary to operate the Platform, as detailed below:
 
                                 <div className="mt-4 space-y-4">
                                     <div className="bg-card-dark border border-border-dark/40 border-l-2 border-l-primary p-5">
@@ -286,7 +286,7 @@ export default function PrivacyPolicyPage() {
                                     ))}
                                 </ul>
                                 <p className="mt-3">
-                                    We want to be honest about the trade-off: this architecture means you don&apos;t have to manage keys yourself to run a giveaway, but it does mean you are trusting our infrastructure. That&apos;s a reasonable trade-off for a giveaway tool — it&apos;s the same model used by exchange hot wallets, payment processors, and many other services that automate transactions on your behalf.
+                                    It is important to understand the architecture: this design means you do not have to manage keys yourself to run a giveaway, but it does require trusting our infrastructure. This model is similar to that used by exchange hot wallets, payment processors, and other services that automate transactions.
                                 </p>
                                 <p className="mt-3">
                                     You can export your private key at any time through the dashboard. We strongly recommend doing this and storing it securely offline. If you export and self-custody your key, you retain full control of the wallet independent of our Platform.
@@ -520,7 +520,7 @@ export default function PrivacyPolicyPage() {
                                     </p>
                                 </div>
                                 <p className="mt-4">
-                                    We aim to respond to all privacy-related inquiries within 30 days. For urgent security matters, please mark your email accordingly.
+                                    We aim to respond to all privacy-related inquiries within 30 days.
                                 </p>
                             </section>
 
