@@ -1,4 +1,8 @@
-ALTER TABLE "dagets" ADD COLUMN "total_claimed_amount_base_units" bigint DEFAULT 0 NOT NULL;
+DO $$ BEGIN
+ ALTER TABLE "dagets" ADD COLUMN "total_claimed_amount_base_units" bigint DEFAULT 0 NOT NULL;
+EXCEPTION
+ WHEN duplicate_column THEN null;
+END $$;
 --> statement-breakpoint
 -- Backfill: sum all non-released claim amounts per daget.
 -- 'released' claims are slots freed after permanent failure — money was never sent,

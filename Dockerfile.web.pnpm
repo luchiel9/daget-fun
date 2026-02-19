@@ -23,12 +23,8 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/drizzle ./drizzle
-COPY --from=builder /app/migration.js ./migration.js
-
 ENV PORT=3000
 ENV AUTO_MIGRATE_ON_STARTUP=true
+# Database migrations are automatically run on container startup via src/instrumentation.ts
 
-# Create a shell script for entrypoint to support && operator in CMD
-RUN echo -e '#!/bin/sh\nnode migration.js && node server.js' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
-
-CMD ["/app/entrypoint.sh"]
+CMD ["node", "server.js"]
