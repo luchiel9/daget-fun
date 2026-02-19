@@ -11,6 +11,12 @@ import { getTokenConfig, displayToBaseUnits } from '@/lib/tokens';
 import { encodeCursor, decodeCursor } from '@/lib/cursor';
 import { nanoid } from 'nanoid';
 import crypto from 'crypto';
+import DOMPurify from 'isomorphic-dompurify';
+
+const MESSAGE_SANITIZE_OPTS = {
+    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'br', 'p', 'ul', 'ol', 'li'],
+    ALLOWED_ATTR: ['href', 'target', 'rel'],
+};
 
 /**
  * POST /api/dagets — Create a new Daget.
@@ -77,7 +83,9 @@ export async function POST(request: NextRequest) {
             creatorUserId: user.id,
             creatorWalletId: wallet.id,
             name: input.name,
-            messageHtml: input.message_html || null,
+            messageHtml: input.message_html
+                ? DOMPurify.sanitize(input.message_html, MESSAGE_SANITIZE_OPTS)
+                : null,
             tokenSymbol: input.token_symbol,
             tokenMint: tokenConfig.mint,
             tokenDecimals: tokenConfig.decimals,

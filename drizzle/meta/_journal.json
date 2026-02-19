@@ -8,6 +8,13 @@
       "when": 1771161889322,
       "tag": "0000_strange_jean_grey",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1771161900000,
+      "tag": "0001_add_total_claimed_amount",
+      "breakpoints": true
     }
   ]
 }

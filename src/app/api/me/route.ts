@@ -38,9 +38,16 @@ export async function PATCH(request: Request) {
 
         const { receiving_address } = body;
 
-        // Validate Solana address (basic check)
-        if (receiving_address && (typeof receiving_address !== 'string' || receiving_address.length < 32)) {
-            return Errors.validation('Invalid Solana address');
+        // Validate Solana address — same rules as the claims schema (base58, 32-44 chars).
+        if (receiving_address !== undefined && receiving_address !== null) {
+            if (
+                typeof receiving_address !== 'string' ||
+                receiving_address.length < 32 ||
+                receiving_address.length > 44 ||
+                !/^[1-9A-HJ-NP-Za-km-z]+$/.test(receiving_address)
+            ) {
+                return Errors.validation('Invalid Solana address');
+            }
         }
 
         // Update user

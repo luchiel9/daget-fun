@@ -7,6 +7,16 @@ import { eq, and, desc, lt } from 'drizzle-orm';
 import { paginationSchema } from '@/lib/validation';
 import { encodeCursor, decodeCursor } from '@/lib/cursor';
 
+/** Escape user/DB-sourced strings before interpolating into an HTML body. */
+function escapeHtml(s: string): string {
+    return s
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 export async function GET(request: NextRequest) {
     try {
         const user = await requireAuth();
@@ -66,7 +76,10 @@ export async function GET(request: NextRequest) {
                 const discordName = claimant.discordUsername || 'Unknown User';
 
                 // Format: [claimant_photo] [claimant name] Claimed 0.1 USDC from [Daget Name]
-                body = `<b>${discordName}</b> Claimed <b>${amount} ${daget.tokenSymbol}</b> from <b>${daget.name}</b>`;
+                // Escape creator-controlled (daget.name) and Discord-controlled (discordName)
+                // values before interpolating into HTML to prevent stored XSS.
+                // amount is a number (safe); tokenSymbol is constrained to USDC/USDT (safe).
+                body = `<b>${escapeHtml(discordName)}</b> Claimed <b>${amount} ${daget.tokenSymbol}</b> from <b>${escapeHtml(daget.name)}</b>`;
                 icon_url = claimant.discordAvatarUrl;
             }
 

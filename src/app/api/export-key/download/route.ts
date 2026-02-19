@@ -3,7 +3,7 @@ import { requireAuth } from '@/lib/auth';
 import { Errors, ErrorCodes } from '@/lib/errors';
 import { db } from '@/db';
 import { wallets, exportTokens, walletExports } from '@/db/schema';
-import { eq, and, isNull } from 'drizzle-orm';
+import { eq, and, isNull, gt } from 'drizzle-orm';
 import { checkRateLimit, rateLimiters } from '@/lib/rate-limit';
 import { decryptPrivateKey, zeroize } from '@/lib/crypto';
 import { exportKeyDownloadSchema } from '@/lib/validation';
@@ -24,32 +24,33 @@ export async function POST(request: Request) {
             return Errors.validation('Invalid export token format');
         }
 
-        // Find token
-        const tokenRecord = await db.query.exportTokens.findFirst({
-            where: eq(exportTokens.token, parsed.data.export_token),
-        });
+        // Atomically consume the token in a single statement.
+        // This prevents a TOCTOU race where two concurrent requests both pass
+        // the "already used" check before either marks it as used.
+        const now = new Date();
+        const [tokenRecord] = await db
+            .update(exportTokens)
+            .set({ usedAt: now })
+            .where(
+                and(
+                    eq(exportTokens.token, parsed.data.export_token),
+                    eq(exportTokens.userId, user.id),
+                    isNull(exportTokens.usedAt),
+                    gt(exportTokens.expiresAt, now),
+                ),
+            )
+            .returning();
 
         if (!tokenRecord) {
-            return Errors.notFound('Token');
-        }
-
-        // Verify ownership
-        if (tokenRecord.userId !== user.id) {
-            return Errors.forbidden('Token does not belong to this session');
-        }
-
-        // Check if already used or expired
-        if (tokenRecord.usedAt) {
-            return Errors.conflict(ErrorCodes.EXPORT_TOKEN_USED, 'Token already used');
-        }
-        if (new Date() > tokenRecord.expiresAt) {
+            // Distinguish between not-found, already-used, and expired for useful errors.
+            const existing = await db.query.exportTokens.findFirst({
+                where: eq(exportTokens.token, parsed.data.export_token),
+            });
+            if (!existing) return Errors.notFound('Token');
+            if (existing.userId !== user.id) return Errors.forbidden('Token does not belong to this session');
+            if (existing.usedAt) return Errors.conflict(ErrorCodes.EXPORT_TOKEN_USED, 'Token already used');
             return Errors.conflict(ErrorCodes.EXPORT_TOKEN_EXPIRED, 'Token expired');
         }
-
-        // Mark token as used
-        await db.update(exportTokens)
-            .set({ usedAt: new Date() })
-            .where(eq(exportTokens.id, tokenRecord.id));
 
         // Get wallet
         const wallet = await db.query.wallets.findFirst({

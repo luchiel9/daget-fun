@@ -32,7 +32,7 @@ export async function POST(
         // Atomic release: SELECT FOR UPDATE + status check
         const result = await db.transaction(async (tx) => {
             const [lockedClaim] = await tx.execute(sql`
-        SELECT status FROM claims WHERE id = ${claimId} FOR UPDATE
+        SELECT status, amount_base_units FROM claims WHERE id = ${claimId} FOR UPDATE
       `) as any[];
 
             if (!lockedClaim || lockedClaim.status !== 'failed_permanent') {
@@ -44,8 +44,14 @@ export async function POST(
         WHERE id = ${claimId}
       `);
 
+            // Decrement both the slot counter and the running allocated-amount total.
+            // This frees the allocation so subsequent claimers see the correct remaining pool.
+            const releasedAmount = Number(lockedClaim.amount_base_units || 0);
             await tx.execute(sql`
-        UPDATE dagets SET claimed_count = claimed_count - 1, updated_at = NOW()
+        UPDATE dagets SET
+          claimed_count = claimed_count - 1,
+          total_claimed_amount_base_units = GREATEST(0, total_claimed_amount_base_units - ${releasedAmount}),
+          updated_at = NOW()
         WHERE id = ${claim.dagetId}
       `);
 

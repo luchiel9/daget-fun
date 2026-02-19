@@ -26,7 +26,7 @@ export async function createSessionToken(payload: SessionPayload): Promise<strin
         .setIssuedAt()
         .setIssuer(JWT_ISSUER)
         .setAudience(JWT_AUDIENCE)
-        .setExpirationTime('30d')
+        .setExpirationTime('7d')
         .sign(getSecret());
 }
 

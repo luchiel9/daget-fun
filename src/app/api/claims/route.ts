@@ -20,9 +20,14 @@ export async function POST(request: NextRequest) {
     try {
         const user = await requireAuth();
 
-        // Rate limit
-        const limit = await checkRateLimit(rateLimiters.claimsPerUser, user.id);
-        if (!limit.success) return Errors.rateLimited();
+        // Rate limit — per user AND per IP to prevent multi-account bypass
+        const ipHeader = request.headers.get('x-forwarded-for');
+        const ip = ipHeader ? ipHeader.split(',')[0].trim() : 'unknown';
+        const [userLimit, ipLimit] = await Promise.all([
+            checkRateLimit(rateLimiters.claimsPerUser, user.id),
+            checkRateLimit(rateLimiters.claimsPerIp, ip),
+        ]);
+        if (!userLimit.success || !ipLimit.success) return Errors.rateLimited();
 
         const body = await request.json();
 
@@ -99,13 +104,29 @@ export async function POST(request: NextRequest) {
                 return { error: 'FULLY_CLAIMED' as const };
             }
 
-            // Check if user already claimed this daget
+            // 1. Check if user already claimed this daget (DB unique index duplicate check)
             const existingClaim = await tx.query.claims.findFirst({
                 where: and(eq(claims.dagetId, daget.id), eq(claims.claimantUserId, user.id)),
             });
 
             if (existingClaim) {
                 return { error: 'ALREADY_CLAIMED' as const, claim: existingClaim };
+            }
+
+            // 2. [SECURITY] Sybil Protection: Check if wallet address is reused for this Daget
+            // Even if using different Discord accounts, we block the same wallet.
+            const walletReuse = await tx.query.claims.findFirst({
+                where: and(
+                    eq(claims.dagetId, daget.id),
+                    eq(claims.receivingAddress, receiving_address)
+                ),
+            });
+
+            if (walletReuse) {
+                // Return ALREADY_CLAIMED to not leak that this wallet exists, or specific error
+                // Using a specific error is better for debugging, generic is better for privacy.
+                // Given the context, we'll be explicit.
+                return { error: 'WALLET_ALREADY_USED' as const };
             }
 
             // Compute amount server-side (never from client)
@@ -125,11 +146,14 @@ export async function POST(request: NextRequest) {
                 }
             } else {
                 // Random mode
+                // [CRITICAL FIX] Logic must INCLUDE released claims in 'usedAmount'
+                // We only exclude 'failed_permanent' which returns money to the pool.
+                // 'released', 'confirmed', 'submitted', 'created', 'failed_retryable' ALL count as used.
                 const claimedSoFar = await tx.execute(sql`
           SELECT COALESCE(SUM(amount_base_units), 0) as total
           FROM claims
           WHERE daget_id = ${daget.id}
-          AND status NOT IN ('released')
+          AND status != 'failed_permanent'
           AND amount_base_units IS NOT NULL
         `) as any[];
                 const usedAmount = Number(claimedSoFar[0]?.total || 0);
@@ -141,20 +165,19 @@ export async function POST(request: NextRequest) {
                     amountBaseUnits = remainingPool;
                 } else {
                     // Fair Share Algorithm
-                    // Instead of a percentage of the remaining pool (which decays),
-                    // we calculate the Fair Share (Pool / RemainingUsers) and apply variance.
                     const fairShare = Math.floor(remainingPool / remainingClaimers);
 
                     const minBps = lockedDaget.random_min_bps || 0;
                     const maxBps = lockedDaget.random_max_bps || 0;
 
                     // Use the spread between min/max as the variance factor
-                    // e.g. 1000-1500 = 500bps = 5% variance
                     const varianceBps = Math.max(0, maxBps - minBps);
                     const varianceFactor = varianceBps / 10000;
 
-                    // Random scalar between -1 and 1
-                    const randomScalar = (Math.random() * 2) - 1;
+                    // [SECURITY] Use crypto for secure randomness instead of Math.random
+                    const randomBuffer = crypto.randomBytes(4);
+                    const randomFloat = randomBuffer.readUInt32LE(0) / 0xffffffff; // 0.0 to 1.0 (approx)
+                    const randomScalar = (randomFloat * 2) - 1; // -1 to 1
 
                     // Calculate fluctuation
                     const fluctuation = Math.floor(fairShare * varianceFactor * randomScalar);
@@ -209,6 +232,9 @@ export async function POST(request: NextRequest) {
             }
             if (result.error === 'ALREADY_CLAIMED') {
                 return Errors.conflict(ErrorCodes.ALREADY_CLAIMED, 'You have already claimed this Daget.');
+            }
+            if (result.error === 'WALLET_ALREADY_USED') {
+                return Errors.conflict(ErrorCodes.ALREADY_CLAIMED, 'This wallet address has already been used for this Daget.');
             }
         }
 

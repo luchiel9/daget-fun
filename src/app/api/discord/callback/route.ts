@@ -7,7 +7,7 @@ import { encryptCookieValue } from '@/lib/cookie-crypto';
 const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID!;
 const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET!;
 
-const SESSION_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
+const SESSION_MAX_AGE = 60 * 60 * 24 * 7; // 7 days — matches Discord token lifetime
 
 /**
  * Strictly use NEXT_PUBLIC_APP_URL — never fall back to request.url.origin

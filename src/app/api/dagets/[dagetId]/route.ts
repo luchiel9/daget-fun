@@ -7,6 +7,12 @@ import { eq, and, desc, lt } from 'drizzle-orm';
 import { paginationSchema, updateDagetSchema } from '@/lib/validation';
 import { encodeCursor, decodeCursor } from '@/lib/cursor';
 import { getTokenConfig, displayToBaseUnits } from '@/lib/tokens';
+import DOMPurify from 'isomorphic-dompurify';
+
+const MESSAGE_SANITIZE_OPTS = {
+    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'br', 'p', 'ul', 'ol', 'li'],
+    ALLOWED_ATTR: ['href', 'target', 'rel'],
+};
 
 /**
  * GET /api/dagets/:dagetId — Daget detail with claim list (creator only).
@@ -146,7 +152,11 @@ export async function PATCH(
         // Prepare updates
         const updates: any = {};
         if (input.name) updates.name = input.name;
-        if (input.message_html !== undefined) updates.messageHtml = input.message_html;
+        if (input.message_html !== undefined) {
+            updates.messageHtml = input.message_html
+                ? DOMPurify.sanitize(input.message_html, MESSAGE_SANITIZE_OPTS)
+                : null;
+        }
         if (input.discord_guild_name !== undefined) updates.discordGuildName = input.discord_guild_name;
         if (input.discord_guild_icon !== undefined) updates.discordGuildIcon = input.discord_guild_icon;
 
@@ -181,46 +191,39 @@ export async function PATCH(
                 .where(eq(dagets.id, dagetId));
         }
 
-        // Handle Requirements Update
+        // Handle Requirements Update — atomic delete + insert in a transaction.
+        // Without a transaction there is a window where a claim request arrives
+        // after the delete but before the insert and sees no requirements (open to all).
         if (input.required_roles || input.required_role_ids) {
-            // Delete existing
-            await db.delete(dagetRequirements).where(eq(dagetRequirements.dagetId, dagetId));
-
-            // Insert new
-            const rolesToInsert = [];
+            const rolesToInsert: Array<{ id: string; name: string | null | undefined; color: number | null | undefined }> = [];
             if (input.required_roles && input.required_roles.length > 0) {
                 rolesToInsert.push(...input.required_roles.map(r => ({ id: r.id, name: r.name, color: r.color })));
             } else if (input.required_role_ids && input.required_role_ids.length > 0) {
                 rolesToInsert.push(...input.required_role_ids.map(id => ({ id, name: null, color: null })));
             }
 
-            if (rolesToInsert.length > 0) {
-                // If guild ID changed, use new one, else use existing (implied logic: frontend sends guild_id if roles change)
-                const guildId = input.discord_guild_id || (await db.query.dagetRequirements.findFirst({
+            await db.transaction(async (tx) => {
+                // Read the existing guild_id BEFORE deleting so we can fall back to it
+                // if the caller doesn't provide one (prevents silent guild_id erasure).
+                const existingReq = await tx.query.dagetRequirements.findFirst({
                     where: eq(dagetRequirements.dagetId, dagetId),
-                    // Wait, we just deleted them. We need to have saved the old guildId or expect it in input.
-                    // The valid schema expects discord_guild_id if roles are sent?
-                    // "discord_guild_id: z.string().min(1).optional()"
-                    // If user only updates roles but keeps same guild, we need guild ID.
-                    // Frontend should send it. But if not, we might lose it if we simply delete.
-                    // Actually, 'daget' table stores guild name/icon, but requirements store guildId.
-                    // We should probably enforce sending guild_id if updating roles.
-                }))?.discordGuildId; // This won't work because we deleted.
+                });
+                const guildId = input.discord_guild_id || existingReq?.discordGuildId;
 
-                // Solution: If input.discord_guild_id is missing, we can't insert blindly.
-                // But for now, let's assume frontend always sends guild_id when updating roles.
-                if (input.discord_guild_id) {
-                    await db.insert(dagetRequirements).values(
+                await tx.delete(dagetRequirements).where(eq(dagetRequirements.dagetId, dagetId));
+
+                if (rolesToInsert.length > 0 && guildId) {
+                    await tx.insert(dagetRequirements).values(
                         rolesToInsert.map((role) => ({
                             dagetId: dagetId,
-                            discordGuildId: input.discord_guild_id!,
+                            discordGuildId: guildId,
                             discordRoleId: role.id,
-                            discordRoleNameSnapshot: role.name,
-                            discordRoleColor: role.color,
+                            discordRoleNameSnapshot: role.name ?? null,
+                            discordRoleColor: role.color ?? null,
                         })),
                     );
                 }
-            }
+            });
         }
 
         return NextResponse.json({ success: true });

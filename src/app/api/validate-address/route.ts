@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PublicKey } from '@solana/web3.js';
 import { getSolanaConnection, checkAtaExists } from '@/lib/solana';
+import { checkRateLimit, rateLimiters } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
     try {
+        // Rate limit by IP — this endpoint makes live Solana RPC calls,
+        // so without a limit it can be used to exhaust RPC quotas for free.
+        const ipHeader = req.headers.get('x-forwarded-for');
+        const ip = ipHeader ? ipHeader.split(',')[0].trim() : 'unknown';
+        const limited = await checkRateLimit(rateLimiters.validateAddressPerIp, ip);
+        if (!limited.success) {
+            return NextResponse.json({ valid: false, exists: false, hasAta: false, message: 'Too many requests' }, { status: 429 });
+        }
+
         const { address, tokenMint } = await req.json();
 
         if (!address || typeof address !== 'string') {

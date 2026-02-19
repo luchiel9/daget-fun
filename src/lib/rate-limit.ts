@@ -52,6 +52,8 @@ export const rateLimiters = {
     retryPerUser: () => createLimiter(5, '1 h', 'retry:user'),
     /** POST /api/claims/:claimId/retry: 20/hour/ip */
     retryPerIp: () => createLimiter(20, '1 h', 'retry:ip'),
+    /** POST /api/validate-address: 60/min/ip — prevents RPC cost abuse */
+    validateAddressPerIp: () => createLimiter(60, '1 m', 'validate-address:ip'),
 };
 
 /**

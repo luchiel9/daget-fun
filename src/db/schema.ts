@@ -89,6 +89,7 @@ export const dagets = pgTable('dagets', {
     randomMaxBps: integer('random_max_bps'),
     status: dagetStatusEnum('status').notNull().default('active'),
     claimedCount: integer('claimed_count').notNull().default(0),
+    totalClaimedAmountBaseUnits: bigint('total_claimed_amount_base_units', { mode: 'number' }).notNull().default(0),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     stoppedAt: timestamp('stopped_at', { withTimezone: true }),

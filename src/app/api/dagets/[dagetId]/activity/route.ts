@@ -2,26 +2,29 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { Errors } from '@/lib/errors';
 import { db } from '@/db';
-import { claims, users } from '@/db/schema';
+import { claims, dagets, users } from '@/db/schema';
 import { eq, and, desc, lt } from 'drizzle-orm';
 import { paginationSchema } from '@/lib/validation';
 import { encodeCursor, decodeCursor } from '@/lib/cursor';
 
 /**
- * GET /api/dagets/:dagetId/activity — Recent activity feed for a Daget.
- * Publicly accessible (but maybe restricted to Daget participants/creator in future? For now public is fine or authenticated user).
- * We'll require auth since it's a dashboard feature.
+ * GET /api/dagets/:dagetId/activity — Creator-only activity feed.
+ * Returns claimant Discord usernames and avatars — restricted to the daget creator.
  */
 export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ dagetId: string }> },
 ) {
     try {
-        // Optional: Require auth? detailed info might be sensitive? 
-        // Showing "masked" name is fine public, but avatar/username... 
-        // Dashboard is authenticated, so yes.
         const user = await requireAuth();
         const { dagetId } = await params;
+
+        // Verify the caller is the daget creator before exposing claimant PII.
+        const daget = await db.query.dagets.findFirst({
+            where: eq(dagets.id, dagetId),
+        });
+        if (!daget) return Errors.notFound('Daget');
+        if (daget.creatorUserId !== user.id) return Errors.forbidden('Not the creator');
 
         const { searchParams } = new URL(request.url);
         // Default limit 10, max 50
