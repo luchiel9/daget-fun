@@ -792,6 +792,8 @@ export default function DashboardPage() {
                 message="Are you sure? This will deactivate your current wallet. Any funds remaining in the old wallet will effectively be lost unless you have exported your private key. This action cannot be undone."
                 confirmLabel="Regenerate"
                 loading={generating}
+                requireCheckbox={true}
+                checkboxLabel="I have exported my private key and can access it."
             />
         </>
     );

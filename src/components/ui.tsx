@@ -377,50 +377,78 @@ export function SearchableSelect({
 }
 
 /* ─── Modal ─── */
+interface ModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    title: string;
+    message?: string;
+    children?: React.ReactNode;
+    icon?: string;
+    iconColor?: string;
+    iconBg?: string;
+    borderColor?: string;
+    primaryAction?: {
+        label: string;
+        onClick: () => void;
+        loading?: boolean;
+        variant?: 'primary' | 'danger' | 'secondary';
+        disabled?: boolean;
+    };
+    secondaryAction?: {
+        label: string;
+        onClick: () => void;
+        variant?: 'ghost' | 'secondary';
+    };
+}
+
 export function Modal({
     isOpen,
     onClose,
     title,
     message,
+    children,
     icon = 'warning',
     iconColor = 'text-amber-400',
     iconBg = 'bg-amber-500/10',
     borderColor = 'border-amber-500/20',
     primaryAction,
     secondaryAction,
-}: {
-    isOpen: boolean;
-    onClose: () => void;
-    title: string;
-    message: string;
-    icon?: string;
-    iconColor?: string;
-    iconBg?: string;
-    borderColor?: string;
-    primaryAction?: { label: string; onClick: () => void; loading?: boolean; variant?: 'primary' | 'danger' | 'secondary' };
-    secondaryAction?: { label: string; onClick: () => void; variant?: 'ghost' | 'secondary' };
-}) {
+}: ModalProps) {
     if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-            <div className={`relative w-full max-w-md rounded-2xl border ${borderColor} bg-surface-alt p-6 shadow-2xl`}>
-                <div className="flex items-center gap-3 mb-4">
-                    <div className={`w-10 h-10 rounded-full ${iconBg} flex items-center justify-center`}>
-                        <span className={`material-symbols-outlined ${iconColor}`}>{icon}</span>
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onClick={onClose} />
+            <div className={`relative w-full max-w-md rounded-2xl border ${borderColor} bg-card-dark p-6 shadow-2xl scale-100 transition-transform`}>
+                <div className="flex items-start gap-4 mb-4">
+                    <div className={`w-12 h-12 rounded-full ${iconBg} flex items-center justify-center flex-shrink-0`}>
+                        <span className={`material-icons ${iconColor} text-2xl`}>{icon}</span>
                     </div>
-                    <h3 className="text-lg font-semibold text-text-primary">{title}</h3>
+                    <div className="flex-1">
+                        <h3 className="text-lg font-bold text-text-primary mb-1">{title}</h3>
+                        {message && <p className="text-sm text-text-secondary leading-relaxed">{message}</p>}
+                    </div>
                 </div>
-                <p className="text-sm text-text-secondary mb-6">{message}</p>
-                <div className="flex gap-3 justify-end">
+
+                {children && <div className="mb-6">{children}</div>}
+
+                <div className="flex gap-3 justify-end mt-6">
                     {secondaryAction && (
-                        <Button variant={secondaryAction.variant || 'ghost'} onClick={secondaryAction.onClick}>
+                        <button
+                            onClick={secondaryAction.onClick}
+                            className="px-4 py-2 rounded-xl text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-white/5 transition-colors"
+                        >
                             {secondaryAction.label}
-                        </Button>
+                        </button>
                     )}
                     {primaryAction && (
-                        <Button variant={primaryAction.variant || 'primary'} onClick={primaryAction.onClick} loading={primaryAction.loading}>
+                        <Button
+                            variant={primaryAction.variant || 'primary'}
+                            onClick={primaryAction.onClick}
+                            loading={primaryAction.loading}
+                            disabled={primaryAction.disabled}
+                            className="text-sm"
+                        >
                             {primaryAction.label}
                         </Button>
                     )}
@@ -430,7 +458,7 @@ export function Modal({
     );
 }
 
-/* ─── Security Modal (Export Key) ─── */
+/* ─── Security Modal (Export Key / Regenerate) ─── */
 export function SecurityModal({
     isOpen,
     onClose,
@@ -439,6 +467,8 @@ export function SecurityModal({
     message,
     confirmLabel = 'Confirm',
     loading = false,
+    requireCheckbox = false,
+    checkboxLabel = 'I understand',
 }: {
     isOpen: boolean;
     onClose: () => void;
@@ -447,7 +477,16 @@ export function SecurityModal({
     message: string;
     confirmLabel?: string;
     loading?: boolean;
+    requireCheckbox?: boolean;
+    checkboxLabel?: string;
 }) {
+    const [checked, setChecked] = React.useState(false);
+
+    // Reset checkbox when modal opens
+    React.useEffect(() => {
+        if (isOpen) setChecked(false);
+    }, [isOpen]);
+
     return (
         <Modal
             isOpen={isOpen}
@@ -463,12 +502,33 @@ export function SecurityModal({
                 onClick: onConfirm,
                 loading,
                 variant: 'danger',
+                disabled: requireCheckbox && !checked,
             }}
             secondaryAction={{
                 label: 'Cancel',
                 onClick: onClose,
             }}
-        />
+        >
+            {requireCheckbox && (
+                <div className="mt-4 p-3 rounded-lg bg-red-500/5 border border-red-500/20">
+                    <label className="flex items-start gap-3 cursor-pointer group">
+                        <div className="relative flex items-center mt-0.5">
+                            <input
+                                type="checkbox"
+                                className="peer sr-only"
+                                checked={checked}
+                                onChange={(e) => setChecked(e.target.checked)}
+                            />
+                            <div className="w-5 h-5 border-2 border-text-secondary rounded bg-transparent peer-checked:bg-red-500 peer-checked:border-red-500 transition-all"></div>
+                            <span className="material-icons absolute top-0 left-0 text-[18px] text-white opacity-0 peer-checked:opacity-100 pointer-events-none">check</span>
+                        </div>
+                        <span className="text-sm text-text-secondary group-hover:text-text-primary transition-colors select-none">
+                            {checkboxLabel}
+                        </span>
+                    </label>
+                </div>
+            )}
+        </Modal>
     );
 }
 
