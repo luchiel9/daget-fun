@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Spinner, SecurityModal } from '@/components/ui';
 import { useUser } from '@/components/sidebar';
+import { driver } from "driver.js";
+import "driver.js/dist/driver.css";
 
 /* ── Types ── */
 interface WalletData {
@@ -220,6 +222,53 @@ export default function DashboardPage() {
         return () => clearInterval(intervalId);
     }, [activeDaget?.daget_id]);
 
+    /* ── Tour Logic ── */
+    useEffect(() => {
+        // Delay slightly to ensure DOM is ready
+        const timer = setTimeout(() => {
+            const hasSeenTour = localStorage.getItem('daget_tour_seen');
+            if (!hasSeenTour) {
+                const driverObj = driver({
+                    showProgress: true,
+                    popoverClass: 'daget-theme',
+                    steps: [
+                        {
+                            popover: {
+                                title: '👋 WELCOME TO <span style="color: rgb(209, 107, 165); font-family: inherit;">DAGET.FUN</span>',
+                                description: 'Let\'s take a quick tour of your new dashboard to get you started with your first giveaway.'
+                            }
+                        },
+                        { element: '#tour-recipient-section', popover: { title: '1. Recipient Address', description: 'First, set your receiving Solana wallet address here. Every claim you made will be sent to this address.' } },
+
+                        // Condition based on wallet presence
+                        ...(wallet
+                            ? [{ element: '#tour-wallet-bar', popover: { title: '2. Managed Wallet', description: 'Monitor your transient wallet balance here. You can also export your private key or switch to a fresh wallet anytime.' } }]
+                            : [{ element: '#tour-create-wallet-section', popover: { title: '2. Create Creator Wallet', description: 'To start a giveaway, you need a creator wallet. This wallet will hold the funds for your Daget.' } }]
+                        ),
+
+                        // Condition for Daget creation/management
+                        ...(activeDaget
+                            ? [{ element: '#tour-active-daget-card', popover: { title: '3. Manage Your Daget', description: 'Here is your active Daget. You can monitor its progress, manage settings, or share the claim link.' } }]
+                            : wallet
+                                ? [{ element: '#tour-create-daget-btn', popover: { title: '3. Create Your Daget', description: 'Once your wallet is funded, you can launch a Daget here. Simply set the amount, winners, and eligible Discord roles.' } }]
+                                : [{ element: '#tour-create-daget-info', popover: { title: '3. Create Your Daget', description: 'Once you refer to the step above and generate a wallet, this section will unlock allowing you to create your first giveaway.' } }]
+                        ),
+
+                        { element: '#tour-live-activity', popover: { title: '4. Live Activity', description: 'Watch claims happen in real-time here. You will see who claimed and the transaction status live.' } }
+                    ],
+                    onDestroyStarted: () => {
+                        localStorage.setItem('daget_tour_seen', 'true');
+                        driverObj.destroy();
+                    }
+                });
+
+                driverObj.drive();
+            }
+        }, 1500); // 1.5s delay to allow initial load
+
+        return () => clearTimeout(timer);
+    }, [wallet, activeDaget]);
+
     /* ── Recipient Address Functions ── */
     const fetchRecipientAddress = async () => {
         try {
@@ -426,101 +475,104 @@ export default function DashboardPage() {
 
     return (
         <>
-            {wallet && (
-                <div className="px-4 md:px-8 py-3 border-b border-border-dark/30 bg-card-dark/60 backdrop-blur-md flex-shrink-0">
-                    <div className="max-w-7xl mx-auto glass-card rounded-xl px-4 py-3 md:px-5 flex flex-col md:flex-row items-stretch md:items-center gap-4 md:gap-6">
-                        <div className="flex items-center justify-between md:justify-start gap-2 min-w-0">
-                            <div className="flex items-center gap-2 min-w-0">
-                                <div className="w-7 h-7 bg-primary/15 rounded-lg flex items-center justify-center flex-shrink-0">
-                                    <span className="material-icons text-primary text-[16px]">account_balance_wallet</span>
-                                </div>
-                                <span className="text-sm font-mono font-medium text-text-primary truncate">
-                                    {truncateAddress(wallet.wallet_public_key, 6, 6)}
-                                </span>
-                                <button
-                                    className="p-1 hover:bg-primary/15 rounded-md transition-all text-text-muted hover:text-primary"
-                                    title={copyFeedback ? 'Copied!' : 'Copy'}
-                                    onClick={handleCopyAddress}
-                                >
-                                    <span className="material-icons text-[14px]">{copyFeedback ? 'check' : 'content_copy'}</span>
-                                </button>
-                            </div>
-                            <button
-                                className="md:hidden px-3 py-1.5 rounded-lg text-[11px] font-semibold text-green-400/70 hover:text-green-400 hover:bg-green-500/10 border border-green-400/20 hover:border-green-400/40 transition-all flex items-center gap-1.5 active:scale-[0.97]"
-                                title="Refresh balances"
-                                onClick={handleRefresh}
-                                disabled={refreshing}
-                            >
-                                <span className={`material-icons text-[14px] ${refreshing ? 'animate-spin' : ''}`}>refresh</span>
-                                Refresh
-                            </button>
-                        </div>
 
-                        <div className="hidden md:block w-px h-6 bg-border-dark/60"></div>
 
-                        <div className="flex items-center justify-between md:justify-start gap-5 flex-1 overflow-x-auto pb-1 md:pb-0">
-                            <div className="flex items-center gap-2">
-                                <img alt="SOL" className="w-5 h-5" src="https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png" />
-                                <span className="text-sm font-mono font-bold text-text-primary">{solBalance.toFixed(4)}</span>
-                                <span className="text-[10px] text-text-muted font-semibold">SOL</span>
-                                {tokenPrices.solana?.usd && (
-                                    <span className="hidden lg:inline text-[10px] text-green-500 font-medium">
-                                        ≈ ${(solBalance * tokenPrices.solana.usd).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            <div id="dashboard-content-area" className={`flex-1 overflow-y-auto ${wallet ? '' : 'p-4 md:p-8'} custom-scrollbar`}>
+                {wallet && (
+                    <div id="tour-wallet-bar" className="md:sticky md:top-0 md:z-30 px-4 md:px-8 py-3 border-b border-border-dark/30 bg-card-dark/95 flex-shrink-0 mb-6">
+                        <div className="max-w-7xl mx-auto glass-card rounded-xl px-4 py-3 md:px-5 flex flex-col md:flex-row items-stretch md:items-center gap-4 md:gap-6">
+                            <div className="flex items-center justify-between md:justify-start gap-2 min-w-0">
+                                <div className="flex items-center gap-2 min-w-0">
+                                    <div className="w-7 h-7 bg-primary/15 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <span className="material-icons text-primary text-[16px]">account_balance_wallet</span>
+                                    </div>
+                                    <span className="text-sm font-mono font-medium text-text-primary truncate">
+                                        {truncateAddress(wallet.wallet_public_key, 6, 6)}
                                     </span>
-                                )}
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <img alt="USDC" className="w-5 h-5" src="https://s2.coinmarketcap.com/static/img/coins/64x64/3408.png" />
-                                <span className="text-sm font-mono font-bold text-text-primary">{usdcBalance.toFixed(2)}</span>
-                                <span className="text-[10px] text-text-muted font-semibold">USDC</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <img alt="USDT" className="w-5 h-5" src="https://s2.coinmarketcap.com/static/img/coins/64x64/825.png" />
-                                <span className="text-sm font-mono font-bold text-text-primary">{usdtBalance.toFixed(2)}</span>
-                                <span className="text-[10px] text-text-muted font-semibold">USDT</span>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center justify-between md:justify-end gap-2 md:ml-auto border-t border-border-dark/40 pt-3 md:border-0 md:pt-0">
-                            <button
-                                className="hidden md:flex px-3 py-1.5 rounded-lg text-[11px] font-semibold text-green-400/70 hover:text-green-400 hover:bg-green-500/10 border border-green-400/20 hover:border-green-400/40 transition-all items-center gap-1.5 active:scale-[0.97]"
-                                title="Refresh balances"
-                                onClick={handleRefresh}
-                                disabled={refreshing}
-                            >
-                                <span className={`material-icons text-[14px] ${refreshing ? 'animate-spin' : ''}`}>refresh</span>
-                                Refresh
-                            </button>
-                            <div className="flex items-center gap-2 w-full md:w-auto">
+                                    <button
+                                        className="p-1 hover:bg-primary/15 rounded-md transition-all text-text-muted hover:text-primary"
+                                        title={copyFeedback ? 'Copied!' : 'Copy'}
+                                        onClick={handleCopyAddress}
+                                    >
+                                        <span className="material-icons text-[14px]">{copyFeedback ? 'check' : 'content_copy'}</span>
+                                    </button>
+                                </div>
                                 <button
-                                    className="flex-1 md:flex-none justify-center px-3 py-1.5 rounded-lg text-[11px] font-semibold text-orange-400/70 hover:text-orange-400 hover:bg-orange-500/10 border border-orange-400/20 hover:border-orange-400/40 transition-all flex items-center gap-1.5 active:scale-[0.97]"
-                                    title="Export private key"
-                                    onClick={() => setShowSecurityModal(true)}
+                                    className="md:hidden px-3 py-1.5 rounded-lg text-[11px] font-semibold text-green-400/70 hover:text-green-400 hover:bg-green-500/10 border border-green-400/20 hover:border-green-400/40 transition-all flex items-center gap-1.5 active:scale-[0.97]"
+                                    title="Refresh balances"
+                                    onClick={handleRefresh}
+                                    disabled={refreshing}
                                 >
-                                    <span className="material-icons text-[14px]">key</span>
-                                    <span className="md:hidden lg:inline">Export Key</span>
+                                    <span className={`material-icons text-[14px] ${refreshing ? 'animate-spin' : ''}`}>refresh</span>
+                                    Refresh
+                                </button>
+                            </div>
+
+                            <div className="hidden md:block w-px h-6 bg-border-dark/60"></div>
+
+                            <div className="flex items-center justify-between md:justify-start gap-5 flex-1 overflow-x-auto pb-1 md:pb-0">
+                                <div className="flex items-center gap-2">
+                                    <img alt="SOL" className="w-5 h-5" src="https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png" />
+                                    <span className="text-sm font-mono font-bold text-text-primary">{solBalance.toFixed(4)}</span>
+                                    <span className="text-[10px] text-text-muted font-semibold">SOL</span>
+                                    {tokenPrices.solana?.usd && (
+                                        <span className="hidden lg:inline text-[10px] text-green-500 font-medium">
+                                            ≈ ${(solBalance * tokenPrices.solana.usd).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </span>
+                                    )}
+                                </div>
+
+                                <div className="w-px h-4 bg-border-dark/60"></div>
+
+                                <div className="flex items-center gap-2">
+                                    <img alt="USDC" className="w-5 h-5" src="https://s2.coinmarketcap.com/static/img/coins/64x64/3408.png" />
+                                    <span className="text-sm font-mono font-bold text-text-primary">{usdcBalance.toFixed(2)}</span>
+                                    <span className="text-[10px] text-text-muted font-semibold">USDC</span>
+                                </div>
+
+                                <div className="w-px h-4 bg-border-dark/60"></div>
+
+                                <div className="flex items-center gap-2">
+                                    <img alt="USDT" className="w-5 h-5" src="https://s2.coinmarketcap.com/static/img/coins/64x64/825.png" />
+                                    <span className="text-sm font-mono font-bold text-text-primary">{usdtBalance.toFixed(2)}</span>
+                                    <span className="text-[10px] text-text-muted font-semibold">USDT</span>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-3 justify-end flex-shrink-0 border-t border-border-dark/30 md:border-0 pt-3 md:pt-0">
+                                <button
+                                    className="hidden md:flex px-3 py-1.5 rounded-lg text-xs font-semibold text-text-muted hover:text-text-primary hover:bg-white/5 border border-transparent hover:border-white/10 transition-all items-center gap-1.5 active:scale-[0.97]"
+                                    title="Refresh balances"
+                                    onClick={handleRefresh}
+                                    disabled={refreshing}
+                                >
+                                    <span className={`material-icons text-[16px] ${refreshing ? 'animate-spin' : ''}`}>refresh</span>
+                                    Refresh
                                 </button>
                                 <button
-                                    onClick={() => setShowRotateModal(true)}
-                                    className="flex-1 md:flex-none justify-center px-3 py-1.5 rounded-lg text-[11px] font-semibold text-yellow-400/70 hover:text-yellow-400 hover:bg-yellow-500/10 border border-yellow-400/20 hover:border-yellow-400/40 transition-all flex items-center gap-1.5 active:scale-[0.97]"
-                                    title="Change wallet"
+                                    onClick={handleExportKey}
+                                    className="flex-1 md:flex-none px-4 py-2 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 border border-yellow-500/20 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-2 active:scale-[0.97]"
                                 >
-                                    <span className="material-icons text-[14px]">swap_horiz</span>
-                                    <span className="md:hidden lg:inline">Change Wallet</span>
+                                    <span className="material-icons text-[16px]">vpn_key</span>
+                                    Export Key
+                                </button>
+                                <button
+                                    onClick={() => setWallet(null)}
+                                    className="flex-1 md:flex-none px-4 py-2 bg-card-dark hover:bg-white/5 text-text-secondary border border-border-dark rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-2 active:scale-[0.97]"
+                                >
+                                    <span className="material-icons text-[16px]">logout</span>
+                                    Change Wallet
                                 </button>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
-
-            <div className={`flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar`}>
-                <div className="max-w-7xl mx-auto space-y-6 md:space-y-8">
+                )}
+                <div className={`max-w-7xl mx-auto space-y-6 md:space-y-8 ${wallet ? 'px-4 md:px-8 pb-8' : ''}`}>
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
                         {/* Left Column: Recipient Address + Active Daget */}
                         <div className="lg:col-span-2 space-y-6 md:space-y-8">
                             {/* Recipient Address Section */}
-                            <section>
+                            <section id="tour-recipient-section">
                                 <div className="glass-card rounded-xl p-4 md:p-6 border border-border-dark/60">
                                     <div className="flex flex-col md:flex-row items-start gap-4">
                                         <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0 hidden md:flex">
@@ -588,7 +640,7 @@ export default function DashboardPage() {
                             </section>
 
                             {!wallet && (
-                                <section>
+                                <section id="tour-create-wallet-section">
                                     <div className="glass-card rounded-xl p-6 md:p-8 text-center border border-border-dark/60">
                                         <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                                             <span className="material-icons text-3xl text-primary">account_balance_wallet</span>
@@ -612,21 +664,21 @@ export default function DashboardPage() {
                             {/* Active Daget Card */}
                             <div>
                                 {!activeDaget && !loading ? (
-                                    <div className="bg-card-dark rounded-xl border border-border-dark/40 p-8 md:p-12 text-center">
+                                    <div id="tour-create-daget-info" className="bg-card-dark rounded-xl border border-border-dark/40 p-8 md:p-12 text-center">
                                         <span className="material-icons text-5xl text-primary/30 mb-4 block">redeem</span>
                                         <h3 className="text-lg font-bold mb-2 text-text-primary">No Active Daget</h3>
                                         <p className="text-sm text-text-secondary mb-6">
                                             {wallet ? 'Create your first community Daget to get started.' : 'Generate a wallet first, then create a Daget.'}
                                         </p>
                                         {wallet && (
-                                            <Link href="/create" className="inline-flex items-center gap-2 bg-primary hover:bg-primary/85 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 active:scale-[0.98]">
+                                            <Link id="tour-create-daget-btn" href="/create" className="inline-flex items-center gap-2 bg-primary hover:bg-primary/85 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 active:scale-[0.98]">
                                                 <span className="material-icons text-sm">add</span>
                                                 Create Daget
                                             </Link>
                                         )}
                                     </div>
                                 ) : activeDaget ? (
-                                    <div className="bg-card-dark rounded-xl border border-border-dark/40 overflow-hidden">
+                                    <div id="tour-active-daget-card" className="bg-card-dark rounded-xl border border-border-dark/40 overflow-hidden">
                                         {/* Header banner */}
                                         <div className="h-32 relative overflow-hidden">
                                             <div className="absolute inset-0 animated-hero-bg"></div>
@@ -720,7 +772,7 @@ export default function DashboardPage() {
 
                         {/* Right Column: Live Activity Feed */}
                         <div className="lg:col-span-1">
-                            <div className="bg-card-dark rounded-xl border border-border-dark/40 flex flex-col h-full min-h-[400px] md:min-h-[480px]">
+                            <div id="tour-live-activity" className="bg-card-dark rounded-xl border border-border-dark/40 flex flex-col h-full min-h-[400px] md:min-h-[480px]">
                                 <div className="p-4 md:p-5 border-b border-border-dark/40 flex justify-between items-center">
                                     <h4 className="font-bold text-text-primary text-sm">Live Activity</h4>
                                     {activeDaget && (

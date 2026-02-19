@@ -593,3 +593,139 @@ body {
     border-radius: 0.5rem;
   }
 }
+
+/* ─── Driver.js Custom Theme ─── */
+.driver-popover.daget-theme {
+  background-color: #16171D;
+  color: #F5F2ED;
+  border: 1px solid #262830;
+  border-left: 2px solid #6E9B8A;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(38, 40, 48, 0.5);
+  font-family: 'Inter', sans-serif;
+  padding: 24px;
+  max-width: 400px;
+  width: 100%;
+  box-sizing: border-box;
+  z-index: 2147483647 !important;
+  position: fixed;
+  /* Ensure it stays independent of scroll context if possible, though driver handles positioning */
+}
+
+.driver-popover.daget-theme .driver-popover-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 14px;
+  color: #6E9B8A;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: bold;
+  padding-right: 20px;
+  /* Space for close button */
+}
+
+.driver-popover.daget-theme .driver-popover-description {
+  font-family: monospace;
+  font-size: 15px;
+  /* Increased from 13px */
+  line-height: 1.6;
+  color: #A8A3B0;
+  margin-bottom: 24px;
+}
+
+.driver-popover.daget-theme button {
+  background-color: transparent;
+  color: #A8A3B0;
+  border: 1px solid #262830;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 11px;
+  font-family: monospace;
+  text-shadow: none;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.driver-popover.daget-theme button:hover {
+  background-color: #262830;
+  color: #F5F2ED;
+  border-color: #6E9B8A;
+}
+
+.driver-popover.daget-theme .driver-popover-next-btn {
+  background-color: #6E9B8A !important;
+  color: #121318 !important;
+  border-color: #6E9B8A !important;
+  font-weight: bold;
+}
+
+.driver-popover.daget-theme .driver-popover-next-btn:hover {
+  background-color: #5A8A7A !important;
+}
+
+.driver-popover.daget-theme .driver-popover-navigation-btns {
+  display: flex !important;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.driver-popover.daget-theme .driver-popover-progress-text {
+  color: #5E5B66;
+  font-size: 12px;
+  /* Increased from 10px */
+  font-family: monospace;
+}
+
+.driver-popover.daget-theme .driver-popover-close-btn {
+  color: #5E5B66;
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  padding: 4px !important;
+  background: transparent !important;
+  border: none !important;
+  width: auto !important;
+  height: auto !important;
+  line-height: 1;
+  font-size: 18px !important;
+}
+
+.driver-popover.daget-theme .driver-popover-close-btn:hover {
+  color: #F5F2ED !important;
+  background: transparent !important;
+}
+
+/* Ensure backdrop is dark enough */
+.driver-overlay {
+  background-color: rgba(0, 0, 0, 0.85) !important;
+  opacity: 0.85 !important;
+}
+
+/* Highlight the active element */
+.driver-active-element {
+  background-color: #16171D !important;
+  /* Reverted to opaque background */
+  filter: brightness(1.2) !important;
+  z-index: 2147483646 !important;
+  position: relative !important;
+}
+
+/* Mobile optimizations for tour */
+@media (max-width: 640px) {
+  .driver-popover.daget-theme {
+    max-width: 92vw !important;
+    padding: 20px !important;
+    left: 4vw !important;
+    /* Center horizontally if driver positioning fails */
+  }
+
+  .driver-popover.daget-theme .driver-popover-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .driver-popover.daget-theme button {
+    padding: 8px 12px;
+  }
+}
