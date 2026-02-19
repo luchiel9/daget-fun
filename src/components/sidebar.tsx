@@ -79,7 +79,7 @@ export function Sidebar() {
                 md:translate-x-0 md:flex
             `}>
                 <Link href="/" className="p-6 flex items-center gap-3 hover:opacity-80 transition-opacity">
-                    <img src="/icon.png" alt="Daget.fun" className="w-8 h-8 rounded-lg" />
+                    <img src="/images/dagetfun_logo.png" alt="Daget.fun" className="w-8 h-8 rounded-lg" />
                     <h1 className="text-xl font-bold tracking-tight text-text-primary">Daget.fun</h1>
                 </Link>
                 <nav className="flex-1 px-4 space-y-1 mt-4">

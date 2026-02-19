@@ -33,7 +33,7 @@ export default function TermsOfUsePage() {
             <nav className="fixed top-0 left-0 right-0 z-50 bg-background-dark/95 backdrop-blur-md border-b border-border-dark/60">
                 <div className="max-w-7xl mx-auto px-4 h-20 flex justify-between items-center">
                     <Link href="/" className="flex items-center gap-4">
-                        <img src="/icon.png" alt="Daget.fun" className="w-12 h-12 rounded" />
+                        <img src="/images/dagetfun_logo.png" alt="Daget.fun" className="w-12 h-12 rounded" />
                     </Link>
                     <div className="flex items-center gap-6">
                         <Link
@@ -96,7 +96,7 @@ export default function TermsOfUsePage() {
                                     <span className="text-text-muted">01.</span> AGREEMENT TO TERMS
                                 </h2>
                                 <p>
-                                    By opening <strong className="text-white">daget.fun</strong> — whether you&apos;re browsing, creating a giveaway, or claiming tokens — you&apos;re agreeing to everything written here. If something doesn&apos;t sit right with you, the honest answer is: don&apos;t use the Platform.
+                                    By opening <strong className="text-white">daget.fun</strong> — whether you&apos;re browsing, creating a giveaway, or claiming tokens — you&apos;re agreeing to these Terms of Use. If you do not agree with any part of these Terms, you must discontinue use of the Platform immediately.
                                 </p>
                                 <p className="mt-3">
                                     These Terms apply to everyone: visitors, giveaway creators, and claimers. We may update them when needed. When we do, the &quot;Last Updated&quot; date at the top changes. For changes that materially affect your rights — such as new fees, changes to how managed wallet funds are handled, or changes to data rights — we will require explicit re-acknowledgment before you can continue using the Platform. For minor clarifications, continued use constitutes acceptance.
@@ -142,7 +142,7 @@ export default function TermsOfUsePage() {
                                     ))}
                                 </ul>
                                 <p className="mt-3">
-                                    By using the Platform, you&apos;re confirming that all of the above applies to you. We reserve the right to refuse access or terminate accounts that don&apos;t meet these requirements — no hard feelings, just compliance.
+                                    By using the Platform, you&apos;re confirming that all of the above applies to you. We reserve the right to refuse access or terminate accounts that don&apos;t meet these requirements.
                                 </p>
                             </section>
 
@@ -158,7 +158,7 @@ export default function TermsOfUsePage() {
                                     When you authenticate, we request the following from Discord: your user ID, username, and avatar; a list of servers you belong to; and your membership roles within those servers. We use this data solely to verify your eligibility for role-gated giveaways. We don&apos;t read your messages, access your DMs, or do anything else with your Discord account.
                                 </p>
                                 <p className="mt-3">
-                                    Your Discord account security is your responsibility. If someone else gets into your Discord and uses it on our Platform, we can&apos;t be held liable for what happens. Enable two-factor authentication on Discord — seriously, it takes two minutes.
+                                    Your Discord account security is your responsibility. If someone else accesses your Discord account and uses it on our Platform, we cannot be held liable for their actions. We strongly recommend enabling two-factor authentication on your Discord account for enhanced security.
                                 </p>
                             </section>
 
@@ -504,7 +504,7 @@ export default function TermsOfUsePage() {
                                 </h2>
                                 <p>
                                     Questions about these Terms? Reach out through our Discord community or email us at{' '}
-                                    <span className="text-primary">legal@daget.fun</span>. We&apos;re real people and we actually read these.
+                                    <span className="text-primary">legal@daget.fun</span>.
                                 </p>
                             </section>
 
@@ -518,7 +518,7 @@ export default function TermsOfUsePage() {
                 <div className="max-w-7xl mx-auto px-4">
                     <div className="flex flex-col md:flex-row justify-between items-center gap-12">
                         <div className="flex items-center gap-4">
-                            <img src="/icon.png" alt="Daget.fun" className="w-10 h-10 rounded" />
+                            <img src="/images/dagetfun_logo.png" alt="Daget.fun" className="w-10 h-10 rounded" />
                         </div>
                         <div className="flex flex-wrap justify-center gap-8 font-mono text-[10px] tracking-widest uppercase items-center">
                             <span className="text-primary px-3 py-1 arcade-border-cyan bg-background-dark">TERMS OF USE</span>

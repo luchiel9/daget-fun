@@ -27,7 +27,7 @@ export default function PrivacyPolicyPage() {
             <nav className="fixed top-0 left-0 right-0 z-50 bg-background-dark/95 backdrop-blur-md border-b border-border-dark/60">
                 <div className="max-w-7xl mx-auto px-4 h-20 flex justify-between items-center">
                     <Link href="/" className="flex items-center gap-4">
-                        <img src="/icon.png" alt="Daget.fun" className="w-12 h-12 rounded" />
+                        <img src="/images/dagetfun_logo.png" alt="Daget.fun" className="w-12 h-12 rounded" />
                     </Link>
                     <div className="flex items-center gap-6">
                         <Link
@@ -534,7 +534,7 @@ export default function PrivacyPolicyPage() {
                 <div className="max-w-7xl mx-auto px-4">
                     <div className="flex flex-col md:flex-row justify-between items-center gap-12">
                         <div className="flex items-center gap-4">
-                            <img src="/icon.png" alt="Daget.fun" className="w-10 h-10 rounded" />
+                            <img src="/images/dagetfun_logo.png" alt="Daget.fun" className="w-10 h-10 rounded" />
                         </div>
                         <div className="flex flex-wrap justify-center gap-8 font-mono text-[10px] tracking-widest uppercase items-center">
                             <Link className="text-white hover:text-primary transition-colors px-3 py-1 arcade-border-cyan bg-background-dark" href="/terms">TERMS OF USE</Link>

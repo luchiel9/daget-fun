@@ -388,7 +388,7 @@ export default function ClaimPageClient() {
             {/* Header */}
             <header className="h-14 flex items-center justify-between px-6 max-w-[625px] mx-auto">
                 <div className="flex items-center gap-2">
-                    <img src="/icon.png" alt="Daget.fun" className="w-6 h-6 rounded-md" />
+                    <img src="/images/dagetfun_logo.png" alt="Daget.fun" className="w-6 h-6 rounded-md" />
                     <span className="text-sm font-bold text-text-primary">Daget.fun</span>
                 </div>
                 {daget?.author_discord_id && currentDiscordId === daget.author_discord_id && (

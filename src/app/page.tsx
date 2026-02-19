@@ -26,7 +26,7 @@ export default function LandingPage() {
             <nav className="fixed top-0 left-0 right-0 z-50 bg-background-dark/95 backdrop-blur-md border-b border-border-dark/60">
                 <div className="max-w-7xl mx-auto px-4 h-20 flex justify-between items-center">
                     <div className="flex items-center gap-4">
-                        <img src="/icon.png" alt="Daget.fun" className="w-12 h-12 rounded" />
+                        <img src="/images/dagetfun_logo.png" alt="Daget.fun" className="w-12 h-12 rounded" />
 
                     </div>
                     <div className="hidden md:flex items-center space-x-8 font-mono text-sm tracking-widest uppercase">
@@ -35,18 +35,7 @@ export default function LandingPage() {
                         <a className="hover:text-primary transition-colors" href="#faq">[ FAQ ]</a>
                     </div>
                     <div className="flex items-center gap-6">
-                        {hasSession && (
-                            <Link
-                                href="/dashboard"
-                                className="flex items-center gap-3 px-4 py-2 arcade-border-cyan text-[10px] font-arcade text-primary hover:bg-primary/10 transition-colors"
-                            >
-                                <span className="relative flex h-2 w-2">
-                                    <span className="animate-ping absolute inline-flex h-full w-full bg-primary opacity-75"></span>
-                                    <span className="relative inline-flex h-2 w-2 bg-primary"></span>
-                                </span>
-                                DASHBOARD
-                            </Link>
-                        )}
+
                     </div>
                 </div>
             </nav>
@@ -84,17 +73,27 @@ export default function LandingPage() {
                         <br className="my-4 block" />
                         <span className="text-primary mt-2 block">NO CONNECT WALLET NEEDED</span>
                     </p>
-                    <button
-                        onClick={handleLogin}
-                        className="inline-flex items-center justify-center gap-4 bg-[#5865F2] hover:brightness-110 text-white px-10 py-5 arcade-border font-arcade text-xs transition-transform active:scale-95"
-                    >
-                        <img
-                            alt="Discord"
-                            className="w-6 h-6"
-                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuCl7InillKVvqmL7_KGDx0E2FtuvX6OjrAMNOLCZ57S2mLfPOo_NF4hCJpFDbVmp6qsJ23VW-1w4zDKsMzPQdeYpU1XvGwXAV0mj7yMWaWL_6GxXQv8MuLx2FCyFlWwcHcLPMF6qlQToqV4vKN0NMjeqbP5O-Qce-4KrQQ9HecuSqFz1XSEFhkoPvwzYz7XvfjJ1ZxVdGTHrucIrDpA8HMtgQtfGdjqnSxn71SzTzLaNPKsBVIfMBRYTVoVKL0wwFyrQPEKcwslZON6"
-                        />
-                        LOGIN WITH DISCORD
-                    </button>
+                    {hasSession ? (
+                        <Link
+                            href="/dashboard"
+                            className="inline-flex items-center justify-center gap-4 bg-primary hover:brightness-110 text-white px-10 py-5 arcade-border font-arcade text-xs transition-transform active:scale-95"
+                        >
+                            <span className="material-symbols-outlined text-xl">dashboard</span>
+                            OPEN DASHBOARD
+                        </Link>
+                    ) : (
+                        <button
+                            onClick={handleLogin}
+                            className="inline-flex items-center justify-center gap-4 bg-[#5865F2] hover:brightness-110 text-white px-10 py-5 arcade-border font-arcade text-xs transition-transform active:scale-95"
+                        >
+                            <img
+                                alt="Discord"
+                                className="w-6 h-6"
+                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCl7InillKVvqmL7_KGDx0E2FtuvX6OjrAMNOLCZ57S2mLfPOo_NF4hCJpFDbVmp6qsJ23VW-1w4zDKsMzPQdeYpU1XvGwXAV0mj7yMWaWL_6GxXQv8MuLx2FCyFlWwcHcLPMF6qlQToqV4vKN0NMjeqbP5O-Qce-4KrQQ9HecuSqFz1XSEFhkoPvwzYz7XvfjJ1ZxVdGTHrucIrDpA8HMtgQtfGdjqnSxn71SzTzLaNPKsBVIfMBRYTVoVKL0wwFyrQPEKcwslZON6"
+                            />
+                            LOGIN WITH DISCORD
+                        </button>
+                    )}
                 </div>
             </main>
 
@@ -461,17 +460,27 @@ export default function LandingPage() {
                     <p className="font-mono text-sm text-text-secondary uppercase tracking-tighter max-w-lg mx-auto mb-12">
                         Your community deserves better. Set up your first Daget in under 2 minutes. Seriously, we timed it.
                     </p>
-                    <button
-                        onClick={handleLogin}
-                        className="inline-flex items-center justify-center gap-4 bg-[#5865F2] hover:brightness-110 text-white px-12 py-5 arcade-border font-arcade text-xs transition-transform active:scale-95"
-                    >
-                        <img
-                            alt="Discord"
-                            className="w-6 h-6"
-                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuCl7InillKVvqmL7_KGDx0E2FtuvX6OjrAMNOLCZ57S2mLfPOo_NF4hCJpFDbVmp6qsJ23VW-1w4zDKsMzPQdeYpU1XvGwXAV0mj7yMWaWL_6GxXQv8MuLx2FCyFlWwcHcLPMF6qlQToqV4vKN0NMjeqbP5O-Qce-4KrQQ9HecuSqFz1XSEFhkoPvwzYz7XvfjJ1ZxVdGTHrucIrDpA8HMtgQtfGdjqnSxn71SzTzLaNPKsBVIfMBRYTVoVKL0wwFyrQPEKcwslZON6"
-                        />
-                        GET STARTED NOW
-                    </button>
+                    {hasSession ? (
+                        <Link
+                            href="/dashboard"
+                            className="inline-flex items-center justify-center gap-4 bg-primary hover:brightness-110 text-white px-12 py-5 arcade-border font-arcade text-xs transition-transform active:scale-95"
+                        >
+                            <span className="material-symbols-outlined text-xl">dashboard</span>
+                            OPEN DASHBOARD
+                        </Link>
+                    ) : (
+                        <button
+                            onClick={handleLogin}
+                            className="inline-flex items-center justify-center gap-4 bg-[#5865F2] hover:brightness-110 text-white px-12 py-5 arcade-border font-arcade text-xs transition-transform active:scale-95"
+                        >
+                            <img
+                                alt="Discord"
+                                className="w-6 h-6"
+                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCl7InillKVvqmL7_KGDx0E2FtuvX6OjrAMNOLCZ57S2mLfPOo_NF4hCJpFDbVmp6qsJ23VW-1w4zDKsMzPQdeYpU1XvGwXAV0mj7yMWaWL_6GxXQv8MuLx2FCyFlWwcHcLPMF6qlQToqV4vKN0NMjeqbP5O-Qce-4KrQQ9HecuSqFz1XSEFhkoPvwzYz7XvfjJ1ZxVdGTHrucIrDpA8HMtgQtfGdjqnSxn71SzTzLaNPKsBVIfMBRYTVoVKL0wwFyrQPEKcwslZON6"
+                            />
+                            GET STARTED NOW
+                        </button>
+                    )}
                     <p className="font-mono text-xs mt-6 uppercase tracking-tighter">
                         <span className="text-text-muted">Free to use · Only pay Solana gas fees · </span>
                         <span className="text-primary">No connect wallet needed</span>
@@ -483,7 +492,7 @@ export default function LandingPage() {
                 <div className="max-w-7xl mx-auto px-4">
                     <div className="flex flex-col md:flex-row justify-between items-center gap-12">
                         <div className="flex items-center gap-4">
-                            <img src="/icon.png" alt="Daget.fun" className="w-10 h-10 rounded" />
+                            <img src="/images/dagetfun_logo.png" alt="Daget.fun" className="w-10 h-10 rounded" />
 
                         </div>
                         <div className="flex flex-wrap justify-center gap-8 font-mono text-[10px] tracking-widest uppercase items-center">
