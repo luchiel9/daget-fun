@@ -15,6 +15,13 @@
       "when": 1771161900000,
       "tag": "0001_add_total_claimed_amount",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1771472164881,
+      "tag": "0002_special_legion",
+      "breakpoints": true
     }
   ]
 }

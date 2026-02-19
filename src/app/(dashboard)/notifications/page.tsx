@@ -14,14 +14,11 @@ export default function NotificationsPage() {
             .then((r) => r.json())
             .then((data) => {
                 setNotifications(data.items || []);
-                // Mark all as read in background after fetching
-                if (data.items?.some((n: any) => !n.is_read)) {
-                    fetch('/api/notifications/mark-all-read', { method: 'POST' })
-                        .then(() => {
-                            // Dispatch event to update sidebar count
-                            window.dispatchEvent(new Event('notifications-updated'));
-                        });
-                }
+                // Mark all as read when visiting the page (clears badge for all notifications, including old ones)
+                fetch('/api/notifications/mark-all-read', { method: 'POST' })
+                    .then(() => {
+                        window.dispatchEvent(new Event('notifications-updated'));
+                    });
             })
             .finally(() => setLoading(false));
     }, []);
@@ -88,12 +85,12 @@ export default function NotificationsPage() {
 
     return (
         <div className="flex-1 flex flex-col overflow-hidden">
-            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
                 <div className="max-w-3xl mx-auto space-y-6">
-                    <div className="flex items-center gap-2">
-                        <button onClick={() => setFilter('all')} className={`px-4 py-2 rounded-full text-xs font-semibold transition-all duration-150 active:scale-[0.95] ${filter === 'all' ? 'bg-primary/10 text-primary border border-primary/20' : 'text-text-secondary hover:text-primary hover:bg-primary/5 border border-transparent'}`}>All</button>
-                        <button onClick={() => setFilter('claims')} className={`px-4 py-2 rounded-full text-xs font-semibold transition-all duration-150 active:scale-[0.95] ${filter === 'claims' ? 'bg-primary/10 text-primary border border-primary/20' : 'text-text-secondary hover:text-primary hover:bg-primary/5 border border-transparent'}`}>Claims</button>
-                        <button onClick={() => setFilter('system')} className={`px-4 py-2 rounded-full text-xs font-semibold transition-all duration-150 active:scale-[0.95] ${filter === 'system' ? 'bg-primary/10 text-primary border border-primary/20' : 'text-text-secondary hover:text-primary hover:bg-primary/5 border border-transparent'}`}>System</button>
+                    <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
+                        <button onClick={() => setFilter('all')} className={`whitespace-nowrap px-4 py-2 rounded-full text-xs font-semibold transition-all duration-150 active:scale-[0.95] ${filter === 'all' ? 'bg-primary/10 text-primary border border-primary/20' : 'text-text-secondary hover:text-primary hover:bg-primary/5 border border-transparent'}`}>All</button>
+                        <button onClick={() => setFilter('claims')} className={`whitespace-nowrap px-4 py-2 rounded-full text-xs font-semibold transition-all duration-150 active:scale-[0.95] ${filter === 'claims' ? 'bg-primary/10 text-primary border border-primary/20' : 'text-text-secondary hover:text-primary hover:bg-primary/5 border border-transparent'}`}>Claims</button>
+                        <button onClick={() => setFilter('system')} className={`whitespace-nowrap px-4 py-2 rounded-full text-xs font-semibold transition-all duration-150 active:scale-[0.95] ${filter === 'system' ? 'bg-primary/10 text-primary border border-primary/20' : 'text-text-secondary hover:text-primary hover:bg-primary/5 border border-transparent'}`}>System</button>
                     </div>
 
                     {notifications.length === 0 ? (

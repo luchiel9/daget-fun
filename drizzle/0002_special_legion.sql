@@ -1,0 +1,1 @@
+ALTER TABLE "dagets" ADD COLUMN IF NOT EXISTS "total_claimed_amount_base_units" bigint DEFAULT 0 NOT NULL;

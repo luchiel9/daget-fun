@@ -169,6 +169,13 @@ body {
     animation: gradient-shift 12s ease-in-out infinite;
   }
 
+  @media (max-width: 768px) {
+    .animated-hero-bg {
+      animation-duration: 20s;
+      background-size: 200% 200%;
+    }
+  }
+
   .animated-hero-bg::before {
     content: '';
     position: absolute;

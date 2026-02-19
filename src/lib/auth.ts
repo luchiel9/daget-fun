@@ -12,6 +12,7 @@ export type AuthUser = {
     discordAvatarUrl: string | null;
     receivingAddress: string | null;
     hasWallet: boolean;
+    walletPublicKey?: string;
 };
 
 export async function getAuthenticatedUser(): Promise<AuthUser | null> {
@@ -38,6 +39,7 @@ export async function getAuthenticatedUser(): Promise<AuthUser | null> {
         discordAvatarUrl: dbUser.discordAvatarUrl,
         receivingAddress: dbUser.receivingAddress,
         hasWallet: !!wallet,
+        walletPublicKey: wallet?.publicKey,
     };
 }
 

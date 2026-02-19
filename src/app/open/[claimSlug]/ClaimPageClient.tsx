@@ -409,7 +409,7 @@ export default function ClaimPageClient() {
                     {viewState === 'claim' && (
                         <div className="bg-surface border border-border-dark/80 rounded-2xl shadow-2xl overflow-hidden">
                             {/* Hero with Title and Creator */}
-                            <div className="relative overflow-hidden h-56">
+                            <div className="relative overflow-hidden h-40 md:h-56">
                                 <div className="absolute inset-0 animated-hero-bg"></div>
                                 <div className="absolute inset-0 dot-pattern"></div>
                                 <div className="hero-overlay absolute inset-0"></div>

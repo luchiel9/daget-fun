@@ -87,24 +87,26 @@ export default function WalletBar({ onRefresh, onExportKey, onChangeWallet }: Wa
     const usdtBalance = parseFloat(wallet.usdt);
 
     return (
-        <div className="px-8 py-3 border-b border-border-dark/30 bg-card-dark/60 backdrop-blur-md flex-shrink-0">
-            <div className="max-w-7xl mx-auto glass-card rounded-xl px-5 py-3 flex flex-wrap items-center gap-x-6 gap-y-3">
-                <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-7 h-7 bg-primary/15 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <span className="material-icons text-primary text-[16px]">account_balance_wallet</span>
+        <div className="px-4 md:px-8 py-3 border-b border-border-dark/30 bg-card-dark/60 backdrop-blur-md flex-shrink-0">
+            <div className="max-w-7xl mx-auto glass-card rounded-xl px-4 py-3 md:px-5 flex flex-col md:flex-row items-stretch md:items-center gap-4 md:gap-6">
+                <div className="flex items-center justify-between md:justify-start gap-2 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-7 h-7 bg-primary/15 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <span className="material-icons text-primary text-[16px]">account_balance_wallet</span>
+                        </div>
+                        <span className="text-sm font-mono font-medium text-text-primary truncate">
+                            {truncateAddress(wallet.wallet_public_key, 6, 6)}
+                        </span>
+                        <button
+                            className="p-1 hover:bg-primary/15 rounded-md transition-all text-text-muted hover:text-primary"
+                            title={copyFeedback ? 'Copied!' : 'Copy'}
+                            onClick={handleCopyAddress}
+                        >
+                            <span className="material-icons text-[14px]">{copyFeedback ? 'check' : 'content_copy'}</span>
+                        </button>
                     </div>
-                    <span className="text-sm font-mono font-medium text-text-primary truncate">
-                        {truncateAddress(wallet.wallet_public_key, 6, 6)}
-                    </span>
                     <button
-                        className="p-1 hover:bg-primary/15 rounded-md transition-all text-text-muted hover:text-primary"
-                        title={copyFeedback ? 'Copied!' : 'Copy'}
-                        onClick={handleCopyAddress}
-                    >
-                        <span className="material-icons text-[14px]">{copyFeedback ? 'check' : 'content_copy'}</span>
-                    </button>
-                    <button
-                        className="px-3 py-1.5 rounded-lg text-[11px] font-semibold text-green-400/70 hover:text-green-400 hover:bg-green-500/10 border border-green-400/20 hover:border-green-400/40 transition-all flex items-center gap-1.5 active:scale-[0.97]"
+                        className="md:hidden px-3 py-1.5 rounded-lg text-[11px] font-semibold text-green-400/70 hover:text-green-400 hover:bg-green-500/10 border border-green-400/20 hover:border-green-400/40 transition-all flex items-center gap-1.5 active:scale-[0.97]"
                         title="Refresh balances"
                         onClick={handleRefresh}
                         disabled={refreshing}
@@ -113,14 +115,16 @@ export default function WalletBar({ onRefresh, onExportKey, onChangeWallet }: Wa
                         Refresh
                     </button>
                 </div>
+
                 <div className="hidden md:block w-px h-6 bg-border-dark/60"></div>
-                <div className="flex items-center gap-5 flex-1">
+
+                <div className="flex items-center justify-between md:justify-start gap-5 flex-1 overflow-x-auto pb-1 md:pb-0">
                     <div className="flex items-center gap-2">
                         <img alt="SOL" className="w-5 h-5" src="https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png" />
                         <span className="text-sm font-mono font-bold text-text-primary">{solBalance.toFixed(4)}</span>
                         <span className="text-[10px] text-text-muted font-semibold">SOL</span>
                         {tokenPrices.solana?.usd && (
-                            <span className="text-[10px] text-green-500 font-medium">
+                            <span className="hidden lg:inline text-[10px] text-green-500 font-medium">
                                 ≈ ${(solBalance * tokenPrices.solana.usd).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
                         )}
@@ -136,27 +140,39 @@ export default function WalletBar({ onRefresh, onExportKey, onChangeWallet }: Wa
                         <span className="text-[10px] text-text-muted font-semibold">USDT</span>
                     </div>
                 </div>
-                <div className="flex items-center gap-2 ml-auto">
-                    {onExportKey && (
-                        <button
-                            className="px-3 py-1.5 rounded-lg text-[11px] font-semibold text-orange-400/70 hover:text-orange-400 hover:bg-orange-500/10 border border-orange-400/20 hover:border-orange-400/40 transition-all flex items-center gap-1.5 active:scale-[0.97]"
-                            title="Export private key"
-                            onClick={onExportKey}
-                        >
-                            <span className="material-icons text-[14px]">key</span>
-                            Export Key
-                        </button>
-                    )}
-                    {onChangeWallet && (
-                        <button
-                            onClick={onChangeWallet}
-                            className="px-3 py-1.5 rounded-lg text-[11px] font-semibold text-text-muted hover:text-primary hover:bg-primary/5 border border-border-dark/60 hover:border-primary/30 transition-all flex items-center gap-1.5 active:scale-[0.97]"
-                            title="Change wallet"
-                        >
-                            <span className="material-icons text-[14px]">swap_horiz</span>
-                            Change Wallet
-                        </button>
-                    )}
+
+                <div className="flex items-center justify-between md:justify-end gap-2 md:ml-auto border-t border-border-dark/40 pt-3 md:border-0 md:pt-0">
+                    <button
+                        className="hidden md:flex px-3 py-1.5 rounded-lg text-[11px] font-semibold text-green-400/70 hover:text-green-400 hover:bg-green-500/10 border border-green-400/20 hover:border-green-400/40 transition-all items-center gap-1.5 active:scale-[0.97]"
+                        title="Refresh balances"
+                        onClick={handleRefresh}
+                        disabled={refreshing}
+                    >
+                        <span className={`material-icons text-[14px] ${refreshing ? 'animate-spin' : ''}`}>refresh</span>
+                        Refresh
+                    </button>
+                    <div className="flex items-center gap-2 w-full md:w-auto">
+                        {onExportKey && (
+                            <button
+                                className="flex-1 md:flex-none justify-center px-3 py-1.5 rounded-lg text-[11px] font-semibold text-orange-400/70 hover:text-orange-400 hover:bg-orange-500/10 border border-orange-400/20 hover:border-orange-400/40 transition-all flex items-center gap-1.5 active:scale-[0.97]"
+                                title="Export private key"
+                                onClick={onExportKey}
+                            >
+                                <span className="material-icons text-[14px]">key</span>
+                                <span className="md:hidden lg:inline">Export Key</span>
+                            </button>
+                        )}
+                        {onChangeWallet && (
+                            <button
+                                onClick={onChangeWallet}
+                                className="flex-1 md:flex-none justify-center px-3 py-1.5 rounded-lg text-[11px] font-semibold text-text-muted hover:text-primary hover:bg-primary/5 border border-border-dark/60 hover:border-primary/30 transition-all flex items-center gap-1.5 active:scale-[0.97]"
+                                title="Change wallet"
+                            >
+                                <span className="material-icons text-[14px]">swap_horiz</span>
+                                <span className="md:hidden lg:inline">Change Wallet</span>
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

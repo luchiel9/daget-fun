@@ -134,25 +134,25 @@ export default function ClaimsHistoryPage() {
 
     return (
         <div className="flex-1 flex flex-col overflow-hidden">
-            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
                 <div className="max-w-7xl mx-auto space-y-6">
                     {/* Lifetime Earnings */}
                     {Object.keys(totals).length > 0 && (
-                        <div className="mb-8">
+                        <div className="mb-6 md:mb-8">
                             <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider mb-3">Lifetime Earnings</h3>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                                 {Object.entries(totals).map(([symbol, amount]) => (
                                     <GlassCard key={symbol} className="p-4 flex items-center gap-3">
-                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center bg-primary/10`}>
+                                        <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center bg-primary/10 flex-shrink-0`}>
                                             {getTokenIcon(symbol) ? (
-                                                <img src={getTokenIcon(symbol)!} alt={symbol} className="w-6 h-6 object-contain" />
+                                                <img src={getTokenIcon(symbol)!} alt={symbol} className="w-5 h-5 md:w-6 md:h-6 object-contain" />
                                             ) : (
-                                                <span className={`material-icons text-xl ${tokenColor(symbol)}`}>savings</span>
+                                                <span className={`material-icons text-lg md:text-xl ${tokenColor(symbol)}`}>savings</span>
                                             )}
                                         </div>
-                                        <div>
-                                            <p className="text-xs text-text-muted font-semibold uppercase">{symbol}</p>
-                                            <p className="text-lg font-bold text-text-primary font-mono">{amount.toFixed(2)}</p>
+                                        <div className="min-w-0">
+                                            <p className="text-[10px] md:text-xs text-text-muted font-semibold uppercase">{symbol}</p>
+                                            <p className="text-base md:text-lg font-bold text-text-primary font-mono truncate">{amount.toFixed(2)}</p>
                                         </div>
                                     </GlassCard>
                                 ))}
@@ -161,12 +161,12 @@ export default function ClaimsHistoryPage() {
                     )}
 
                     {/* Filter Pills */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
                         {FILTERS.map((f) => (
                             <button
                                 key={f.key}
                                 onClick={() => setFilter(f.key)}
-                                className={`px-4 py-2 rounded-full text-xs font-semibold transition-all duration-150 active:scale-[0.95] ${filter === f.key
+                                className={`whitespace-nowrap px-4 py-2 rounded-full text-xs font-semibold transition-all duration-150 active:scale-[0.95] ${filter === f.key
                                     ? 'bg-primary/10 text-primary border border-primary/20'
                                     : 'text-text-secondary hover:text-primary hover:bg-primary/5 border border-transparent'
                                     }`}
@@ -204,42 +204,47 @@ export default function ClaimsHistoryPage() {
                                             <div className="flex items-center gap-3 mb-1.5">
                                                 <Link
                                                     href={`/dagets/${c.daget_id}`}
-                                                    className="font-semibold text-text-primary hover:text-primary transition-colors hover:underline decoration-primary/50 underline-offset-4"
+                                                    className="font-semibold text-text-primary hover:text-primary transition-colors hover:underline decoration-primary/50 underline-offset-4 truncate block"
                                                 >
                                                     {c.daget_name}
                                                 </Link>
                                             </div>
                                             <p className="text-xs text-text-muted">Claimed {new Date(c.created_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                                         </div>
-                                        <div className="flex items-center gap-4 flex-shrink-0">
+
+                                        <div className="flex items-center justify-between md:justify-end gap-3 md:gap-4 flex-shrink-0 mt-2 md:mt-0 border-t border-border-dark/40 pt-3 md:border-0 md:pt-0">
                                             <span
                                                 className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${badge.className}`}
                                             >
                                                 {badge.label}
                                             </span>
-                                            {c.amount_base_units != null && (
-                                                <div className="flex items-center gap-2 bg-background-dark/30 px-3 py-1.5 rounded-lg border border-border-dark/30">
-                                                    <span className="text-md font-bold font-mono text-text-primary">
-                                                        {c.status === 'confirmed' ? '' : ''}
-                                                        {formatAmount(c.amount_base_units, c.token_decimals)}
-                                                    </span>
-                                                    <span className={`text-xs font-semibold ${tokenColor(c.token_symbol)}`}>
-                                                        {c.token_symbol}
-                                                    </span>
-                                                </div>
-                                            )}
-                                            {c.tx_signature && (
-                                                <a
-                                                    href={solscanUrl(c.tx_signature)}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-xs font-mono text-primary hover:underline bg-primary/5 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors hover:bg-primary/10"
-                                                    title="View on Solscan"
-                                                >
-                                                    {c.tx_signature.slice(0, 4)}...{c.tx_signature.slice(-4)}{' '}
-                                                    <span className="material-icons text-[14px]">open_in_new</span>
-                                                </a>
-                                            )}
+
+                                            <div className="flex items-center gap-3">
+                                                {c.amount_base_units != null && (
+                                                    <div className="flex items-center gap-2 bg-background-dark/30 px-3 py-1.5 rounded-lg border border-border-dark/30">
+                                                        <span className="text-md font-bold font-mono text-text-primary">
+                                                            {c.status === 'confirmed' ? '' : ''}
+                                                            {formatAmount(c.amount_base_units, c.token_decimals)}
+                                                        </span>
+                                                        <span className={`text-xs font-semibold ${tokenColor(c.token_symbol)}`}>
+                                                            {c.token_symbol}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                {c.tx_signature && (
+                                                    <a
+                                                        href={solscanUrl(c.tx_signature)}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-xs font-mono text-primary hover:underline bg-primary/5 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors hover:bg-primary/10"
+                                                        title="View on Solscan"
+                                                    >
+                                                        <span className="hidden md:inline">{c.tx_signature.slice(0, 4)}...{c.tx_signature.slice(-4)}</span>
+                                                        <span className="md:hidden">TX</span>
+                                                        <span className="material-icons text-[14px]">open_in_new</span>
+                                                    </a>
+                                                )}
+                                            </div>
                                         </div>
                                     </GlassCard>
                                 );

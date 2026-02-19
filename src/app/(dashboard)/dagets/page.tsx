@@ -125,19 +125,19 @@ export default function DagetsListPage() {
 
     return (
         <div className="flex-1 flex flex-col overflow-hidden">
-            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
                 <div className="max-w-7xl mx-auto space-y-6">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <button onClick={() => setStatusFilter(undefined)} className={`px-4 py-2 rounded-full text-xs font-semibold transition-all duration-150 active:scale-[0.95] ${!statusFilter ? 'bg-primary/10 text-primary border border-primary/20' : 'text-text-secondary hover:text-primary hover:bg-primary/5 border border-transparent'}`}>All</button>
-                            <button onClick={() => setStatusFilter('active')} className={`px-4 py-2 rounded-full text-xs font-semibold transition-all duration-150 active:scale-[0.95] ${statusFilter === 'active' ? 'bg-primary/10 text-primary border border-primary/20' : 'text-text-secondary hover:text-primary hover:bg-primary/5 border border-transparent'}`}>Active</button>
-                            <button onClick={() => setStatusFilter('stopped')} className={`px-4 py-2 rounded-full text-xs font-semibold transition-all duration-150 active:scale-[0.95] ${statusFilter === 'stopped' ? 'bg-primary/10 text-primary border border-primary/20' : 'text-text-secondary hover:text-primary hover:bg-primary/5 border border-transparent'}`}>Stopped</button>
-                            <button onClick={() => setStatusFilter('closed')} className={`px-4 py-2 rounded-full text-xs font-semibold transition-all duration-150 active:scale-[0.95] ${statusFilter === 'closed' ? 'bg-primary/10 text-primary border border-primary/20' : 'text-text-secondary hover:text-primary hover:bg-primary/5 border border-transparent'}`}>Fully Claimed</button>
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
+                            <button onClick={() => setStatusFilter(undefined)} className={`whitespace-nowrap px-4 py-2 rounded-full text-xs font-semibold transition-all duration-150 active:scale-[0.95] ${!statusFilter ? 'bg-primary/10 text-primary border border-primary/20' : 'text-text-secondary hover:text-primary hover:bg-primary/5 border border-transparent'}`}>All</button>
+                            <button onClick={() => setStatusFilter('active')} className={`whitespace-nowrap px-4 py-2 rounded-full text-xs font-semibold transition-all duration-150 active:scale-[0.95] ${statusFilter === 'active' ? 'bg-primary/10 text-primary border border-primary/20' : 'text-text-secondary hover:text-primary hover:bg-primary/5 border border-transparent'}`}>Active</button>
+                            <button onClick={() => setStatusFilter('stopped')} className={`whitespace-nowrap px-4 py-2 rounded-full text-xs font-semibold transition-all duration-150 active:scale-[0.95] ${statusFilter === 'stopped' ? 'bg-primary/10 text-primary border border-primary/20' : 'text-text-secondary hover:text-primary hover:bg-primary/5 border border-transparent'}`}>Stopped</button>
+                            <button onClick={() => setStatusFilter('closed')} className={`whitespace-nowrap px-4 py-2 rounded-full text-xs font-semibold transition-all duration-150 active:scale-[0.95] ${statusFilter === 'closed' ? 'bg-primary/10 text-primary border border-primary/20' : 'text-text-secondary hover:text-primary hover:bg-primary/5 border border-transparent'}`}>Fully Claimed</button>
                         </div>
                         <Button
                             size="sm"
                             variant="primary"
-                            className="rounded-full px-5"
+                            className="rounded-full px-5 w-full md:w-auto justify-center"
                             onClick={handleCreateDaget}
                             loading={checking}
                         >
@@ -173,11 +173,25 @@ export default function DagetsListPage() {
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-3 mb-1.5">
                                                     <h4 className="font-semibold text-text-primary group-hover:text-primary transition-colors">{d.name}</h4>
+                                                    <span className={`md:hidden inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${statusClass(d.status)}`}>
+                                                        {d.status === 'active' && (
+                                                            <span className="relative flex h-1.5 w-1.5">
+                                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                                                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500"></span>
+                                                            </span>
+                                                        )}
+                                                        {getStatusLabel(d.status)}
+                                                    </span>
                                                 </div>
-                                                <p className="text-xs text-text-muted">Created {new Date(d.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                                                <div className="flex items-center gap-3 text-xs text-text-muted">
+                                                    <span>{new Date(d.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                                                    <span className="w-1 h-1 rounded-full bg-text-muted/40 md:hidden"></span>
+                                                    <span className="md:hidden font-mono">{d.claimed_count}/{d.total_winners} claimed</span>
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-6 flex-shrink-0">
-                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${statusClass(d.status)}`}>
+
+                                            <div className="flex items-center justify-between md:justify-end gap-4 md:gap-6 flex-shrink-0 mt-2 md:mt-0 border-t border-border-dark/40 pt-3 md:border-0 md:pt-0">
+                                                <span className={`hidden md:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${statusClass(d.status)}`}>
                                                     {d.status === 'active' && (
                                                         <span className="relative flex h-2 w-2">
                                                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -197,34 +211,36 @@ export default function DagetsListPage() {
                                                     </div>
                                                 </div>
 
-                                                <div className="flex items-center gap-2 bg-primary/10 px-3 py-1.5 rounded-full">
-                                                    <span className="text-xs font-bold text-primary font-mono">{d.token_symbol}</span>
-                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="flex items-center gap-2 bg-primary/10 px-3 py-1.5 rounded-full">
+                                                        <span className="text-xs font-bold text-primary font-mono">{d.token_symbol}</span>
+                                                    </div>
 
-                                                <div className="flex items-center gap-2">
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            copyDagetLink(d.claim_slug, d.daget_id);
-                                                        }}
-                                                        className="w-8 h-8 rounded-full bg-background-dark/50 hover:bg-primary/20 hover:text-primary flex items-center justify-center transition-all"
-                                                        title={copiedId === d.daget_id ? "Copied!" : "Copy Link"}
-                                                    >
-                                                        <span className="material-icons text-[16px]">
-                                                            {copiedId === d.daget_id ? 'check' : 'link'}
-                                                        </span>
-                                                    </button>
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            router.push(`/dagets/${d.daget_id}/edit`);
-                                                        }}
-                                                        className="w-8 h-8 rounded-full bg-background-dark/50 hover:bg-primary/20 hover:text-primary flex items-center justify-center transition-all"
-                                                        title="Edit Daget"
-                                                    >
-                                                        <span className="material-icons text-[16px]">edit</span>
-                                                    </button>
-                                                    <span className="material-icons text-text-muted group-hover:text-primary transition-colors text-[20px]">chevron_right</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                copyDagetLink(d.claim_slug, d.daget_id);
+                                                            }}
+                                                            className="w-8 h-8 rounded-full bg-background-dark/50 hover:bg-primary/20 hover:text-primary flex items-center justify-center transition-all"
+                                                            title={copiedId === d.daget_id ? "Copied!" : "Copy Link"}
+                                                        >
+                                                            <span className="material-icons text-[16px]">
+                                                                {copiedId === d.daget_id ? 'check' : 'link'}
+                                                            </span>
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                router.push(`/dagets/${d.daget_id}/edit`);
+                                                            }}
+                                                            className="w-8 h-8 rounded-full bg-background-dark/50 hover:bg-primary/20 hover:text-primary flex items-center justify-center transition-all"
+                                                            title="Edit Daget"
+                                                        >
+                                                            <span className="material-icons text-[16px]">edit</span>
+                                                        </button>
+                                                        <span className="material-icons text-text-muted group-hover:text-primary transition-colors text-[20px] hidden md:block">chevron_right</span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </GlassCard>

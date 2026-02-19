@@ -427,24 +427,26 @@ export default function DashboardPage() {
     return (
         <>
             {wallet && (
-                <div className="px-8 py-3 border-b border-border-dark/30 bg-card-dark/60 backdrop-blur-md flex-shrink-0">
-                    <div className="max-w-7xl mx-auto glass-card rounded-xl px-5 py-3 flex flex-wrap items-center gap-x-6 gap-y-3">
-                        <div className="flex items-center gap-2 min-w-0">
-                            <div className="w-7 h-7 bg-primary/15 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <span className="material-icons text-primary text-[16px]">account_balance_wallet</span>
+                <div className="px-4 md:px-8 py-3 border-b border-border-dark/30 bg-card-dark/60 backdrop-blur-md flex-shrink-0">
+                    <div className="max-w-7xl mx-auto glass-card rounded-xl px-4 py-3 md:px-5 flex flex-col md:flex-row items-stretch md:items-center gap-4 md:gap-6">
+                        <div className="flex items-center justify-between md:justify-start gap-2 min-w-0">
+                            <div className="flex items-center gap-2 min-w-0">
+                                <div className="w-7 h-7 bg-primary/15 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <span className="material-icons text-primary text-[16px]">account_balance_wallet</span>
+                                </div>
+                                <span className="text-sm font-mono font-medium text-text-primary truncate">
+                                    {truncateAddress(wallet.wallet_public_key, 6, 6)}
+                                </span>
+                                <button
+                                    className="p-1 hover:bg-primary/15 rounded-md transition-all text-text-muted hover:text-primary"
+                                    title={copyFeedback ? 'Copied!' : 'Copy'}
+                                    onClick={handleCopyAddress}
+                                >
+                                    <span className="material-icons text-[14px]">{copyFeedback ? 'check' : 'content_copy'}</span>
+                                </button>
                             </div>
-                            <span className="text-sm font-mono font-medium text-text-primary truncate">
-                                {truncateAddress(wallet.wallet_public_key, 6, 6)}
-                            </span>
                             <button
-                                className="p-1 hover:bg-primary/15 rounded-md transition-all text-text-muted hover:text-primary"
-                                title={copyFeedback ? 'Copied!' : 'Copy'}
-                                onClick={handleCopyAddress}
-                            >
-                                <span className="material-icons text-[14px]">{copyFeedback ? 'check' : 'content_copy'}</span>
-                            </button>
-                            <button
-                                className="px-3 py-1.5 rounded-lg text-[11px] font-semibold text-green-400/70 hover:text-green-400 hover:bg-green-500/10 border border-green-400/20 hover:border-green-400/40 transition-all flex items-center gap-1.5 active:scale-[0.97]"
+                                className="md:hidden px-3 py-1.5 rounded-lg text-[11px] font-semibold text-green-400/70 hover:text-green-400 hover:bg-green-500/10 border border-green-400/20 hover:border-green-400/40 transition-all flex items-center gap-1.5 active:scale-[0.97]"
                                 title="Refresh balances"
                                 onClick={handleRefresh}
                                 disabled={refreshing}
@@ -453,14 +455,16 @@ export default function DashboardPage() {
                                 Refresh
                             </button>
                         </div>
+
                         <div className="hidden md:block w-px h-6 bg-border-dark/60"></div>
-                        <div className="flex items-center gap-5 flex-1">
+
+                        <div className="flex items-center justify-between md:justify-start gap-5 flex-1 overflow-x-auto pb-1 md:pb-0">
                             <div className="flex items-center gap-2">
                                 <img alt="SOL" className="w-5 h-5" src="https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png" />
                                 <span className="text-sm font-mono font-bold text-text-primary">{solBalance.toFixed(4)}</span>
                                 <span className="text-[10px] text-text-muted font-semibold">SOL</span>
                                 {tokenPrices.solana?.usd && (
-                                    <span className="text-[10px] text-green-500 font-medium">
+                                    <span className="hidden lg:inline text-[10px] text-green-500 font-medium">
                                         ≈ ${(solBalance * tokenPrices.solana.usd).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </span>
                                 )}
@@ -476,46 +480,63 @@ export default function DashboardPage() {
                                 <span className="text-[10px] text-text-muted font-semibold">USDT</span>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2 ml-auto">
+
+                        <div className="flex items-center justify-between md:justify-end gap-2 md:ml-auto border-t border-border-dark/40 pt-3 md:border-0 md:pt-0">
                             <button
-                                className="px-3 py-1.5 rounded-lg text-[11px] font-semibold text-orange-400/70 hover:text-orange-400 hover:bg-orange-500/10 border border-orange-400/20 hover:border-orange-400/40 transition-all flex items-center gap-1.5 active:scale-[0.97]"
-                                title="Export private key"
-                                onClick={() => setShowSecurityModal(true)}
+                                className="hidden md:flex px-3 py-1.5 rounded-lg text-[11px] font-semibold text-green-400/70 hover:text-green-400 hover:bg-green-500/10 border border-green-400/20 hover:border-green-400/40 transition-all items-center gap-1.5 active:scale-[0.97]"
+                                title="Refresh balances"
+                                onClick={handleRefresh}
+                                disabled={refreshing}
                             >
-                                <span className="material-icons text-[14px]">key</span>
-                                Export Key
+                                <span className={`material-icons text-[14px] ${refreshing ? 'animate-spin' : ''}`}>refresh</span>
+                                Refresh
                             </button>
-                            <button
-                                onClick={() => setShowRotateModal(true)}
-                                className="px-3 py-1.5 rounded-lg text-[11px] font-semibold text-yellow-400/70 hover:text-yellow-400 hover:bg-yellow-500/10 border border-yellow-400/20 hover:border-yellow-400/40 transition-all flex items-center gap-1.5 active:scale-[0.97]"
-                                title="Change wallet"
-                            >
-                                <span className="material-icons text-[14px]">swap_horiz</span>
-                                Change Wallet
-                            </button>
+                            <div className="flex items-center gap-2 w-full md:w-auto">
+                                <button
+                                    className="flex-1 md:flex-none justify-center px-3 py-1.5 rounded-lg text-[11px] font-semibold text-orange-400/70 hover:text-orange-400 hover:bg-orange-500/10 border border-orange-400/20 hover:border-orange-400/40 transition-all flex items-center gap-1.5 active:scale-[0.97]"
+                                    title="Export private key"
+                                    onClick={() => setShowSecurityModal(true)}
+                                >
+                                    <span className="material-icons text-[14px]">key</span>
+                                    <span className="md:hidden lg:inline">Export Key</span>
+                                </button>
+                                <button
+                                    onClick={() => setShowRotateModal(true)}
+                                    className="flex-1 md:flex-none justify-center px-3 py-1.5 rounded-lg text-[11px] font-semibold text-yellow-400/70 hover:text-yellow-400 hover:bg-yellow-500/10 border border-yellow-400/20 hover:border-yellow-400/40 transition-all flex items-center gap-1.5 active:scale-[0.97]"
+                                    title="Change wallet"
+                                >
+                                    <span className="material-icons text-[14px]">swap_horiz</span>
+                                    <span className="md:hidden lg:inline">Change Wallet</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             )}
 
-            <div className={`flex-1 overflow-y-auto p-8 custom-scrollbar`}>
-                <div className="max-w-7xl mx-auto space-y-8">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className={`flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar`}>
+                <div className="max-w-7xl mx-auto space-y-6 md:space-y-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
                         {/* Left Column: Recipient Address + Active Daget */}
-                        <div className="lg:col-span-2 space-y-8">
+                        <div className="lg:col-span-2 space-y-6 md:space-y-8">
                             {/* Recipient Address Section */}
                             <section>
-                                <div className="glass-card rounded-xl p-6 border border-border-dark/60">
-                                    <div className="flex items-start gap-4">
-                                        <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <div className="glass-card rounded-xl p-4 md:p-6 border border-border-dark/60">
+                                    <div className="flex flex-col md:flex-row items-start gap-4">
+                                        <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0 hidden md:flex">
                                             <span className="material-icons text-primary text-xl">account_balance_wallet</span>
                                         </div>
-                                        <div className="flex-1 min-w-0">
-                                            <h3 className="text-lg font-bold mb-1 text-text-primary">Claim Recipient Address</h3>
-                                            <p className="text-sm text-text-secondary mb-4">
+                                        <div className="flex-1 min-w-0 w-full">
+                                            <div className="flex items-center gap-3 mb-2 md:mb-1">
+                                                <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0 md:hidden">
+                                                    <span className="material-icons text-primary text-sm">account_balance_wallet</span>
+                                                </div>
+                                                <h3 className="text-lg font-bold text-text-primary">Claim Recipient Address</h3>
+                                            </div>
+                                            <p className="text-sm text-text-secondary mb-4 hidden md:block">
                                                 Set your default Solana wallet address for receiving claims from Dagets
                                             </p>
-                                            <div className="flex gap-3">
+                                            <div className="flex flex-col md:flex-row gap-3">
                                                 <input
                                                     type="text"
                                                     value={recipientAddressInput}
@@ -523,13 +544,13 @@ export default function DashboardPage() {
                                                         setRecipientAddressInput(e.target.value);
                                                         if (recipientError) setRecipientError('');
                                                     }}
-                                                    placeholder="Enter your Solana wallet address (e.g., 7xR...9jkP)"
-                                                    className={`flex-1 px-4 py-2.5 bg-background-dark border ${recipientError ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/20' : 'border-border-dark/60 focus:border-primary/40 focus:ring-primary/20'} rounded-xl text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 transition-all font-mono`}
+                                                    placeholder="Enter your Solana wallet address"
+                                                    className={`flex-1 px-4 py-2.5 bg-background-dark border ${recipientError ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/20' : 'border-border-dark/60 focus:border-primary/40 focus:ring-primary/20'} rounded-xl text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 transition-all font-mono w-full`}
                                                 />
                                                 <button
                                                     onClick={handleSaveRecipientAddress}
                                                     disabled={savingAddress || recipientAddressInput === recipientAddress}
-                                                    className="px-6 py-2.5 bg-primary hover:bg-primary/85 text-white rounded-xl text-sm font-semibold transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg shadow-primary/20"
+                                                    className="w-full md:w-auto px-6 py-2.5 bg-primary hover:bg-primary/85 text-white rounded-xl text-sm font-semibold transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
                                                 >
                                                     {savingAddress ? (
                                                         <>
@@ -568,7 +589,7 @@ export default function DashboardPage() {
 
                             {!wallet && (
                                 <section>
-                                    <div className="glass-card rounded-xl p-8 text-center border border-border-dark/60">
+                                    <div className="glass-card rounded-xl p-6 md:p-8 text-center border border-border-dark/60">
                                         <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                                             <span className="material-icons text-3xl text-primary">account_balance_wallet</span>
                                         </div>
@@ -591,7 +612,7 @@ export default function DashboardPage() {
                             {/* Active Daget Card */}
                             <div>
                                 {!activeDaget && !loading ? (
-                                    <div className="bg-card-dark rounded-xl border border-border-dark/40 p-12 text-center">
+                                    <div className="bg-card-dark rounded-xl border border-border-dark/40 p-8 md:p-12 text-center">
                                         <span className="material-icons text-5xl text-primary/30 mb-4 block">redeem</span>
                                         <h3 className="text-lg font-bold mb-2 text-text-primary">No Active Daget</h3>
                                         <p className="text-sm text-text-secondary mb-6">
@@ -625,8 +646,8 @@ export default function DashboardPage() {
                                         </div>
 
                                         {/* Stats */}
-                                        <div className="p-6">
-                                            <div className="flex flex-col md:flex-row gap-8 items-center">
+                                        <div className="p-4 md:p-6">
+                                            <div className="flex flex-col md:flex-row gap-6 md:gap-8 items-center">
                                                 {/* Progress ring */}
                                                 <div className="relative w-28 h-28 flex-shrink-0">
                                                     <svg className="w-full h-full transform -rotate-90">
@@ -639,23 +660,23 @@ export default function DashboardPage() {
                                                     </div>
                                                 </div>
 
-                                                <div className="flex-1 space-y-4">
+                                                <div className="flex-1 space-y-4 w-full">
                                                     <div className="grid grid-cols-2 gap-3">
-                                                        <div className="bg-background-dark/50 p-4 rounded-lg">
-                                                            <p className="text-[11px] text-text-muted mb-1 font-semibold uppercase tracking-wider">Total Budget</p>
-                                                            <p className="font-bold text-text-primary font-mono">{totalBudgetDisplay} {activeDaget.token_symbol}</p>
+                                                        <div className="bg-background-dark/50 p-3 md:p-4 rounded-lg">
+                                                            <p className="text-[10px] md:text-[11px] text-text-muted mb-1 font-semibold uppercase tracking-wider">Total Budget</p>
+                                                            <p className="font-bold text-text-primary font-mono text-sm md:text-base">{totalBudgetDisplay} {activeDaget.token_symbol}</p>
                                                         </div>
-                                                        <div className="bg-background-dark/50 p-4 rounded-lg">
-                                                            <p className="text-[11px] text-text-muted mb-1 font-semibold uppercase tracking-wider">Distributed</p>
-                                                            <p className="font-bold text-text-primary font-mono">{distributedDisplay} {activeDaget.token_symbol}</p>
+                                                        <div className="bg-background-dark/50 p-3 md:p-4 rounded-lg">
+                                                            <p className="text-[10px] md:text-[11px] text-text-muted mb-1 font-semibold uppercase tracking-wider">Distributed</p>
+                                                            <p className="font-bold text-text-primary font-mono text-sm md:text-base">{distributedDisplay} {activeDaget.token_symbol}</p>
                                                         </div>
-                                                        <div className="bg-background-dark/50 p-4 rounded-lg">
-                                                            <p className="text-[11px] text-text-muted mb-1 font-semibold uppercase tracking-wider">Participants</p>
-                                                            <p className="font-bold text-text-primary">{claimedCount} / {totalWinners}</p>
+                                                        <div className="bg-background-dark/50 p-3 md:p-4 rounded-lg">
+                                                            <p className="text-[10px] md:text-[11px] text-text-muted mb-1 font-semibold uppercase tracking-wider">Participants</p>
+                                                            <p className="font-bold text-text-primary text-sm md:text-base">{claimedCount} / {totalWinners}</p>
                                                         </div>
-                                                        <div className="bg-background-dark/50 p-4 rounded-lg">
-                                                            <p className="text-[11px] text-text-muted mb-1 font-semibold uppercase tracking-wider">Type</p>
-                                                            <p className="font-bold text-text-primary">{activeDaget.daget_type === 'random' ? 'Random' : 'Fixed'}</p>
+                                                        <div className="bg-background-dark/50 p-3 md:p-4 rounded-lg">
+                                                            <p className="text-[10px] md:text-[11px] text-text-muted mb-1 font-semibold uppercase tracking-wider">Type</p>
+                                                            <p className="font-bold text-text-primary text-sm md:text-base">{activeDaget.daget_type === 'random' ? 'Random' : 'Fixed'}</p>
                                                         </div>
                                                     </div>
                                                     <div className="flex gap-3">
@@ -699,8 +720,8 @@ export default function DashboardPage() {
 
                         {/* Right Column: Live Activity Feed */}
                         <div className="lg:col-span-1">
-                            <div className="bg-card-dark rounded-xl border border-border-dark/40 flex flex-col h-full min-h-[480px]">
-                                <div className="p-5 border-b border-border-dark/40 flex justify-between items-center">
+                            <div className="bg-card-dark rounded-xl border border-border-dark/40 flex flex-col h-full min-h-[400px] md:min-h-[480px]">
+                                <div className="p-4 md:p-5 border-b border-border-dark/40 flex justify-between items-center">
                                     <h4 className="font-bold text-text-primary text-sm">Live Activity</h4>
                                     {activeDaget && (
                                         <div className="flex gap-1.5 items-center">

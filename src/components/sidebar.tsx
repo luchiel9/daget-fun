@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import React from 'react';
+import React, { useState } from 'react';
 
 import { TopNavbar } from './top-navbar';
 
@@ -14,6 +14,9 @@ const navItems = [
 ];
 
 const UserContext = React.createContext<{
+    user: any;
+    isMobileMenuOpen: boolean;
+    toggleMobileMenu: () => void;
     discordUsername?: string | null;
     discordAvatarUrl?: string | null;
     walletPublicKey?: string | null;
@@ -28,7 +31,8 @@ export const useUser = () => {
     return context;
 };
 
-export function Sidebar({ user }: { user: any }) {
+export function Sidebar() {
+    const { user, isMobileMenuOpen, toggleMobileMenu } = useUser();
     const pathname = usePathname();
     const [unreadCount, setUnreadCount] = React.useState(0);
 
@@ -57,44 +61,77 @@ export function Sidebar({ user }: { user: any }) {
     }, []);
 
     return (
-        <aside className="w-64 flex-shrink-0 hidden md:flex flex-col border-r border-border-dark/60 bg-card-dark">
-            <Link href="/" className="p-6 flex items-center gap-3 hover:opacity-80 transition-opacity">
-                <img src="/icon.png" alt="Daget.fun" className="w-8 h-8 rounded-lg" />
-                <h1 className="text-xl font-bold tracking-tight text-text-primary">Daget.fun</h1>
-            </Link>
-            <nav className="flex-1 px-4 space-y-1 mt-4">
-                {navItems.map((item) => {
-                    const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-                    return (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            className={`nav-icon-hover flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${isActive ? 'nav-active bg-primary/10 text-primary font-medium' : 'text-text-secondary hover:text-primary hover:bg-primary/5'}`}
-                        >
-                            <div className="relative flex items-center justify-center">
-                                <span className="material-icons text-[20px]">{item.icon}</span>
-                                {item.label === 'Notifications' && unreadCount > 0 && (
-                                    <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-[10px] font-bold text-white flex items-center justify-center border border-card-dark">
-                                        {unreadCount > 99 ? '99+' : unreadCount}
-                                    </span>
-                                )}
-                            </div>
-                            {item.label}
-                        </Link>
-                    );
-                })}
-            </nav>
-        </aside>
+        <>
+            {/* Mobile Overlay */}
+            {isMobileMenuOpen && (
+                <div
+                    className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden"
+                    onClick={toggleMobileMenu}
+                />
+            )}
+
+            {/* Sidebar */}
+            <aside className={`
+                fixed md:static inset-y-0 left-0 z-50
+                w-64 flex-col border-r border-border-dark/60 bg-card-dark
+                transform transition-transform duration-200 ease-in-out
+                ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+                md:translate-x-0 md:flex
+            `}>
+                <Link href="/" className="p-6 flex items-center gap-3 hover:opacity-80 transition-opacity">
+                    <img src="/icon.png" alt="Daget.fun" className="w-8 h-8 rounded-lg" />
+                    <h1 className="text-xl font-bold tracking-tight text-text-primary">Daget.fun</h1>
+                </Link>
+                <nav className="flex-1 px-4 space-y-1 mt-4">
+                    {navItems.map((item) => {
+                        const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+                        return (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                onClick={() => isMobileMenuOpen && toggleMobileMenu()}
+                                className={`nav-icon-hover flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${isActive ? 'nav-active bg-primary/10 text-primary font-medium' : 'text-text-secondary hover:text-primary hover:bg-primary/5'}`}
+                            >
+                                <div className="relative flex items-center justify-center">
+                                    <span className="material-icons text-[20px]">{item.icon}</span>
+                                    {item.label === 'Notifications' && unreadCount > 0 && (
+                                        <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-[10px] font-bold text-white flex items-center justify-center border border-card-dark">
+                                            {unreadCount > 99 ? '99+' : unreadCount}
+                                        </span>
+                                    )}
+                                </div>
+                                {item.label}
+                            </Link>
+                        );
+                    })}
+                </nav>
+            </aside>
+        </>
     );
 }
 
 export function AppShell({ children, user }: { children: React.ReactNode; user: any }) {
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+    const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
+
+    const userContextValue = {
+        user,
+        isMobileMenuOpen,
+        toggleMobileMenu,
+        // Helper accessors for backward compatibility if needed, though clean up is better
+        discordUsername: user?.discordUsername,
+        discordAvatarUrl: user?.discordAvatarUrl,
+        walletPublicKey: user?.walletPublicKey,
+        hasWallet: !!user?.walletPublicKey,
+    };
+
     return (
-        <UserContext.Provider value={user}>
+        <UserContext.Provider value={userContextValue}>
             <div className="flex h-screen overflow-hidden bg-background-dark text-text-primary font-display transition-colors duration-300">
-                <Sidebar user={user} />
-                <main className="flex-1 flex flex-col overflow-hidden">
-                    <TopNavbar user={user} />
+                <Sidebar />
+                <main className="flex-1 flex flex-col overflow-hidden w-full relative">
+                    <TopNavbar />
                     {children}
                 </main>
             </div>
