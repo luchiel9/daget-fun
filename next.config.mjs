@@ -6,6 +6,8 @@ const nextConfig = {
     '@solana/spl-token',
     'libsodium-wrappers',
     'bs58',
+    'drizzle-orm',
+    'postgres',
   ],
   images: {
     remotePatterns: [
