@@ -479,8 +479,8 @@ export default function DashboardPage() {
 
             <div id="dashboard-content-area" className={`flex-1 overflow-y-auto ${wallet ? '' : 'p-4 md:p-8'} custom-scrollbar`}>
                 {wallet && (
-                    <div id="tour-wallet-bar" className="md:sticky md:top-0 md:z-30 px-4 md:px-8 py-3 border-b border-border-dark/30 bg-card-dark/95 flex-shrink-0 mb-6">
-                        <div className="max-w-7xl mx-auto glass-card rounded-xl px-4 py-3 md:px-5 flex flex-col md:flex-row items-stretch md:items-center gap-4 md:gap-6">
+                    <div className="md:sticky md:top-0 md:z-30 px-4 md:px-8 py-3 border-b border-border-dark/30 bg-card-dark/95 flex-shrink-0 mb-6">
+                        <div id="tour-wallet-bar" className="max-w-7xl mx-auto glass-card rounded-xl px-4 py-3 md:px-5 flex flex-col md:flex-row items-stretch md:items-center gap-4 md:gap-6">
                             <div className="flex items-center justify-between md:justify-start gap-2 min-w-0">
                                 <div className="flex items-center gap-2 min-w-0">
                                     <div className="w-7 h-7 bg-primary/15 rounded-lg flex items-center justify-center flex-shrink-0">
