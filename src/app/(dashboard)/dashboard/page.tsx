@@ -250,7 +250,7 @@ export default function DashboardPage() {
                         ...(activeDaget
                             ? [{ element: '#tour-active-daget-card', popover: { title: '3. Manage Your Daget', description: 'Here is your active Daget. You can monitor its progress, manage settings, or share the claim link.' } }]
                             : wallet
-                                ? [{ element: '#tour-create-daget-btn', popover: { title: '3. Create Your Daget', description: 'Once your wallet is funded, you can launch a Daget here. Simply set the amount, winners, and eligible Discord roles.' } }]
+                                ? [{ element: '#tour-create-daget-info', popover: { title: '3. Create Your Daget', description: 'Once your wallet is funded, you can launch a Daget here. Simply set the amount, winners, and eligible Discord roles.' } }]
                                 : [{ element: '#tour-create-daget-info', popover: { title: '3. Create Your Daget', description: 'Once you refer to the step above and generate a wallet, this section will unlock allowing you to create your first giveaway.' } }]
                         ),
 
