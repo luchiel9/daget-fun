@@ -89,7 +89,7 @@ export default function LandingPage() {
                                 SECURE, TRANSPARENT, AND AUTOMATED. REWARD YOUR DISCORD MEMBERS WITH SOLANA TOKENS BASED ON THEIR SERVER ROLES.
                             </p>
 
-                            <div className="flex flex-row items-center justify-between w-full gap-4 text-[9px] md:text-[10px] font-mono text-[#5C6E85] uppercase tracking-widest">
+                            <div className="flex flex-row flex-wrap items-center justify-center lg:justify-start gap-3 md:gap-4 mt-6 text-[9px] md:text-[10px] font-mono text-[#5C6E85] uppercase tracking-widest">
                                 <span>Free to use</span>
                                 <span className="opacity-50">·</span>
                                 <span>Only pay Solana gas fees</span>
@@ -101,29 +101,29 @@ export default function LandingPage() {
                             <div className="flex flex-col items-center lg:items-start justify-center mt-12 mb-4 w-full">
                                 <div className="flex flex-col w-max lg:self-start">
                                     {hasSession ? (
-                                        <Link href="/dashboard" className="block relative group py-2 pr-0 pl-0 mb-4 w-full">
+                                        <Link href="/dashboard" className="inline-block relative group py-2 pr-4 pl-0 mb-4">
                                             {/* L-shaped border: Bottom and Right only */}
-                                            <div className="absolute bottom-0 left-0 w-full h-[2px] bg-primary group-hover:shadow-[0_0_10px_rgba(110,155,138,0.5)] transition-all duration-300 origin-left"></div>
-                                            <div className="absolute bottom-0 right-0 w-[2px] h-[70%] bg-primary group-hover:shadow-[0_0_10px_rgba(110,155,138,0.5)] transition-all duration-300 origin-bottom"></div>
+                                            <div className="absolute bottom-0 right-0 w-full h-[2px] bg-primary group-hover:shadow-[0_0_10px_rgba(110,155,138,0.5)] transition-all duration-300 origin-left"></div>
+                                            <div className="absolute bottom-0 right-0 w-[2px] h-full bg-primary group-hover:shadow-[0_0_10px_rgba(110,155,138,0.5)] transition-all duration-300 origin-bottom"></div>
 
                                             <div className="relative flex items-center gap-4">
-                                                <span className="w-3.5 h-3.5 bg-primary/70 group-hover:bg-primary shadow-[0_0_8px_rgba(110,155,138,0.5)] transition-all duration-300"></span>
-                                                <span className="font-arcade text-xl md:text-2xl text-primary group-hover:text-primary-light tracking-widest uppercase mb-1 drop-shadow-md transition-colors">OPEN DASHBOARD</span>
+                                                <span className="w-3 h-3 bg-primary/80 group-hover:bg-primary shadow-[0_0_8px_rgba(110,155,138,0.5)] transition-all duration-300"></span>
+                                                <span className="font-arcade text-xl text-primary group-hover:text-primary-light tracking-widest uppercase mb-1 whitespace-nowrap">OPEN DASHBOARD</span>
                                             </div>
                                         </Link>
                                     ) : (
-                                        <button onClick={handleLogin} className="block relative group py-2 pr-0 pl-0 mb-4 w-full text-left">
+                                        <button onClick={handleLogin} className="inline-block relative group py-2 pr-4 pl-0 mb-4 text-left">
                                             {/* L-shaped border: Bottom and Right only */}
-                                            <div className="absolute bottom-0 left-0 w-full h-[2px] bg-[#5865F2] group-hover:shadow-[0_0_10px_rgba(110,155,138,0.5)] transition-all duration-300 origin-left"></div>
-                                            <div className="absolute bottom-0 right-0 w-[2px] h-[70%] bg-[#5865F2] group-hover:shadow-[0_0_10px_rgba(110,155,138,0.5)] transition-all duration-300 origin-bottom"></div>
+                                            <div className="absolute bottom-0 right-0 w-full h-[2px] bg-[#5865F2] group-hover:shadow-[0_0_10px_rgba(110,155,138,0.5)] transition-all duration-300 origin-left"></div>
+                                            <div className="absolute bottom-0 right-0 w-[2px] h-full bg-[#5865F2] group-hover:shadow-[0_0_10px_rgba(110,155,138,0.5)] transition-all duration-300 origin-bottom"></div>
 
                                             <div className="relative flex items-center gap-4">
-                                                <div className="w-6 h-6 flex items-center justify-center opacity-70 group-hover:opacity-100 transition-opacity">
+                                                <div className="w-5 h-5 flex items-center justify-center opacity-70 group-hover:opacity-100 transition-opacity">
                                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 127.14 96.36" className="w-full h-full fill-[#5865F2] group-hover:fill-[#6f7bf7] transition-colors">
                                                         <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.31,60,73.31,53s5-12.74,11.43-12.74S96.16,46,96.06,53,91,65.69,84.69,65.69Z" />
                                                     </svg>
                                                 </div>
-                                                <span className="font-arcade text-xl md:text-2xl text-[#5865F2] group-hover:text-[#6f7bf7] tracking-widest uppercase mb-1 drop-shadow-md transition-colors">LOGIN WITH DISCORD</span>
+                                                <span className="font-arcade text-xl text-[#5865F2] group-hover:text-[#6f7bf7] tracking-widest uppercase mb-1 drop-shadow-md transition-colors whitespace-nowrap">LOGIN WITH DISCORD</span>
                                             </div>
                                         </button>
                                     )}
