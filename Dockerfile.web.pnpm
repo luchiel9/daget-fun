@@ -1,14 +1,12 @@
 # Stage 1: Build
 FROM node:22-alpine AS builder
-RUN corepack enable && corepack prepare pnpm@10.29.3 --activate
+RUN corepack enable && corepack prepare pnpm@10.30.1 --activate
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 COPY . .
 
 # Declare ARGs with defaults (Fallbacks for when build args are missing)
-ARG NEXT_PUBLIC_SUPABASE_URL=https://zvnloxldgcmbyebcqvtl.supabase.co
-ARG NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable__vlITysp0iIi7Y5lAl2KgA_j1qSiotS
 ARG NEXT_PUBLIC_DISCORD_CLIENT_ID=1472593476159013075
 ARG NEXT_PUBLIC_APP_URL=https://daget.luchiel.dev
 ARG NEXT_PUBLIC_SITE_URL=https://daget.luchiel.dev
@@ -23,8 +21,9 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/drizzle ./drizzle
+COPY --from=builder /app/scripts/migrate.cjs ./scripts/migrate.cjs
 ENV PORT=3000
 ENV AUTO_MIGRATE_ON_STARTUP=true
-# Database migrations are automatically run on container startup via src/instrumentation.ts
 
-CMD ["node", "server.js"]
+# Run DB migrations before starting the server (instrumentation.ts is not reliable in standalone)
+CMD ["sh", "-c", "node scripts/migrate.cjs && exec node server.js"]
