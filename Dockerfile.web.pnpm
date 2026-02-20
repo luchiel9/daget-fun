@@ -22,6 +22,11 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/drizzle ./drizzle
 COPY --from=builder /app/scripts/migrate.cjs ./scripts/migrate.cjs
+
+# Standalone node_modules may omit drizzle-orm/postgres-js/migrator (traced deps). Install full packages so migrate.cjs can require them.
+COPY --from=builder /app/package.json ./package.json
+RUN npm install "drizzle-orm@^0.38.0" "postgres@^3.4.0" --omit=dev --no-package-lock
+
 ENV PORT=3000
 ENV AUTO_MIGRATE_ON_STARTUP=true
 
