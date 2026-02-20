@@ -13,7 +13,12 @@ ARG NEXT_PUBLIC_SITE_URL=https://daget.luchiel.dev
 
 RUN --mount=type=cache,target=/app/.next/cache pnpm run build
 
-# Stage 2: Production
+# Stage 2: Migrate deps (install in clean dir to avoid npm vs pnpm node_modules conflict)
+FROM node:22-alpine AS migrate-deps
+WORKDIR /deps
+RUN npm init -y && npm install drizzle-orm@0.38.4 postgres@3.4.8 --omit=dev --no-package-lock
+
+# Stage 3: Production
 FROM node:22-alpine
 WORKDIR /app
 
@@ -23,9 +28,9 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/drizzle ./drizzle
 COPY --from=builder /app/scripts/migrate.cjs ./scripts/migrate.cjs
 
-# Standalone node_modules may omit drizzle-orm/postgres-js/migrator (traced deps). Install full packages so migrate.cjs can require them.
-COPY --from=builder /app/package.json ./package.json
-RUN npm install "drizzle-orm@^0.38.0" "postgres@^3.4.0" --omit=dev --no-package-lock
+# Standalone node_modules may omit drizzle-orm/postgres-js/migrator. Merge in full packages from clean npm install.
+COPY --from=migrate-deps /deps/node_modules/drizzle-orm ./node_modules/drizzle-orm
+COPY --from=migrate-deps /deps/node_modules/postgres ./node_modules/postgres
 
 ENV PORT=3000
 ENV AUTO_MIGRATE_ON_STARTUP=true
