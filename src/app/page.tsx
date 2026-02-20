@@ -75,19 +75,11 @@ export default function LandingPage() {
                             <h2 className="font-arcade text-2xl sm:text-3xl md:text-[2.75rem] lg:text-[3.25rem] leading-[1.1] md:leading-[1] text-transparent relative mb-6">
                                 {/* Base text */}
                                 <span className="absolute inset-0 bg-clip-text text-transparent bg-gradient-to-br from-white via-primary-light to-primary opacity-50 blur-[2px]">
-                                    Role-gated<br />
-                                    onchain<br />
-                                    giveaways<br />
-                                    for your<br />
-                                    community.
+                                    Role-gated<br />onchain<br />giveaways<br />for your<br />community.
                                 </span>
                                 {/* Top text */}
                                 <span className="relative bg-clip-text text-transparent bg-gradient-to-br from-white via-white to-primary-light drop-shadow-[0_0_15px_rgba(110,155,138,0.5)]">
-                                    Role-gated<br />
-                                    onchain<br />
-                                    giveaways<br />
-                                    for your<br />
-                                    community.
+                                    Role-gated<br />onchain<br />giveaways<br />for your<br />community.
                                 </span>
                             </h2>
 
@@ -138,8 +130,8 @@ export default function LandingPage() {
                         </div>
 
                         {/* Right Column: Floating Visual */}
-                        <div className="hidden lg:flex justify-center relative perspective-1000">
-                            <div className="relative animate-float w-full max-w-md" style={{ transformStyle: 'preserve-3d', transform: 'rotateY(-15deg) rotateX(5deg)' }}>
+                        <div className="hidden lg:flex justify-end relative perspective-1000 w-full ml-auto">
+                            <div className="relative animate-float w-full max-w-md mr-4 lg:mr-0" style={{ transformStyle: 'preserve-3d', transform: 'rotateY(-15deg) rotateX(5deg)' }}>
                                 {/* Decorative elements behind ticket */}
                                 <div className="absolute -inset-4 bg-primary/20 blur-2xl rounded-full"></div>
                                 <div className="absolute -top-10 -right-10 w-32 h-32 bg-neon-magenta/20 blur-xl rounded-full mix-blend-screen"></div>

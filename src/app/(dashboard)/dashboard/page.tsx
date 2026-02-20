@@ -82,6 +82,7 @@ export default function DashboardPage() {
         discordUsername,
         discordAvatarUrl,
         walletPublicKey,
+        finishedGuide,
     } = useUser();
     const router = useRouter();
     const [showSecurityModal, setShowSecurityModal] = useState(false);
@@ -224,10 +225,12 @@ export default function DashboardPage() {
 
     /* ── Tour Logic ── */
     useEffect(() => {
+        if (loading) return; // Wait until page is fully loaded
+
         // Delay slightly to ensure DOM is ready
         const timer = setTimeout(() => {
-            const hasSeenTour = localStorage.getItem('daget_tour_seen');
-            if (!hasSeenTour) {
+            const sessionDismissed = sessionStorage.getItem('daget_tour_dismissed');
+            if (!finishedGuide && !sessionDismissed) {
                 const driverObj = driver({
                     showProgress: true,
                     popoverClass: 'daget-theme',
@@ -257,7 +260,20 @@ export default function DashboardPage() {
                         { element: '#tour-live-activity', popover: { title: '4. Live Activity', description: 'Watch claims happen in real-time here. You will see who claimed and the transaction status live.' } }
                     ],
                     onDestroyStarted: () => {
-                        localStorage.setItem('daget_tour_seen', 'true');
+                        if (!driverObj.hasNextStep() || driverObj.isLastStep()) {
+                            // User finished the guide
+                            fetch('/api/me', {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ finished_guide: true })
+                            }).catch(() => { });
+                        }
+
+                        // Prevent it from showing again in the same session even if finishedGuide state hasn't refreshed
+                        sessionStorage.setItem('daget_tour_dismissed', 'true');
+
+                        // Clean up old local storage flag just in case
+                        localStorage.removeItem('daget_tour_seen');
                         driverObj.destroy();
                     }
                 });
@@ -267,7 +283,7 @@ export default function DashboardPage() {
         }, 1500); // 1.5s delay to allow initial load
 
         return () => clearTimeout(timer);
-    }, [wallet, activeDaget]);
+    }, [wallet, activeDaget, loading, finishedGuide]);
 
     /* ── Recipient Address Functions ── */
     const fetchRecipientAddress = async () => {
