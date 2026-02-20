@@ -78,7 +78,7 @@ function solscanTxUrl(sig: string): string {
 
 export default function DashboardPage() {
     const {
-        hasWallet: initialHasWallet,
+        hasWallet,
         discordUsername,
         discordAvatarUrl,
         walletPublicKey,
@@ -92,8 +92,8 @@ export default function DashboardPage() {
     const [copyFeedback, setCopyFeedback] = useState(false);
     const [shareCopyFeedback, setShareCopyFeedback] = useState(false);
 
-    // Track if we should fetch wallet data (starts with server state, updates on generation)
-    const [walletActive, setWalletActive] = useState(initialHasWallet);
+    // Track if we should fetch wallet data (context hasWallet + local state when user creates wallet on this page)
+    const [walletActive, setWalletActive] = useState(false);
 
     const [wallet, setWallet] = useState<WalletData | null>(null);
     const [activeDaget, setActiveDaget] = useState<DagetItem | null>(null);
@@ -113,7 +113,7 @@ export default function DashboardPage() {
     /* ── Data Fetching ── */
     const fetchDashboardData = useCallback(async (forceWalletCheck = false) => {
         try {
-            const shouldFetchWallet = walletActive || forceWalletCheck;
+            const shouldFetchWallet = hasWallet || walletActive || forceWalletCheck;
 
             // Fetch token prices in background
             fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana,usd-coin,tether&vs_currencies=usd')
@@ -176,7 +176,12 @@ export default function DashboardPage() {
         } finally {
             setLoading(false);
         }
-    }, [walletActive]);
+    }, [hasWallet, walletActive]);
+
+    // Refetch server layout when landing on dashboard (fixes wallet bar when using back button or client nav)
+    useEffect(() => {
+        router.refresh();
+    }, [router]);
 
     useEffect(() => {
         fetchDashboardData();
