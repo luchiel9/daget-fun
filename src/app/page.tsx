@@ -57,7 +57,7 @@ export default function LandingPage() {
 
                 <div className="relative max-w-7xl mx-auto px-4">
                     <div className="text-center w-full mb-12">
-                        <h1 className="inline-block px-6 py-2 arcade-border-magenta bg-background-dark text-neon-magenta font-arcade text-3xl md:text-5xl lg:text-6xl animate-pulse mt-12 lg:mt-0">
+                        <h1 className="inline-block px-6 py-2 arcade-border-magenta bg-background-dark text-neon-magenta font-arcade text-2xl sm:text-3xl md:text-5xl lg:text-6xl animate-pulse mt-12 lg:mt-0">
                             DAGET.FUN
                         </h1>
                     </div>
@@ -66,7 +66,7 @@ export default function LandingPage() {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center pb-24">
                         {/* Left Column: Text & CTA */}
                         <div className="text-center lg:text-left flex flex-col justify-center max-w-2xl mx-auto lg:mx-0 z-10 w-full mb-12 lg:mb-0">
-                            <h2 className="font-arcade text-4xl md:text-[2.75rem] lg:text-[3.25rem] leading-[1.1] md:leading-[1] text-transparent relative mb-6">
+                            <h2 className="font-arcade text-2xl sm:text-3xl md:text-[2.75rem] lg:text-[3.25rem] leading-[1.1] md:leading-[1] text-transparent relative mb-6">
                                 {/* Base text */}
                                 <span className="absolute inset-0 bg-clip-text text-transparent bg-gradient-to-br from-white via-primary-light to-primary opacity-50 blur-[2px]">
                                     Role-gated<br />
@@ -107,8 +107,8 @@ export default function LandingPage() {
                                             <div className="absolute bottom-0 right-0 w-[2px] h-full bg-primary group-hover:shadow-[0_0_10px_rgba(110,155,138,0.5)] transition-all duration-300 origin-bottom"></div>
 
                                             <div className="relative flex items-center gap-4">
-                                                <span className="w-3 h-3 bg-primary/80 group-hover:bg-primary shadow-[0_0_8px_rgba(110,155,138,0.5)] transition-all duration-300"></span>
-                                                <span className="font-arcade text-xl text-primary group-hover:text-primary-light tracking-widest uppercase mb-1 whitespace-nowrap">OPEN DASHBOARD</span>
+                                                <span className="w-2 h-2 md:w-3 md:h-3 flex-shrink-0 bg-primary/80 group-hover:bg-primary shadow-[0_0_8px_rgba(110,155,138,0.5)] transition-all duration-300"></span>
+                                                <span className="font-arcade text-xs sm:text-sm md:text-xl text-primary group-hover:text-primary-light tracking-widest uppercase mb-1 whitespace-nowrap">OPEN DASHBOARD</span>
                                             </div>
                                         </Link>
                                     ) : (
@@ -118,12 +118,12 @@ export default function LandingPage() {
                                             <div className="absolute bottom-0 right-0 w-[2px] h-full bg-[#5865F2] group-hover:shadow-[0_0_10px_rgba(110,155,138,0.5)] transition-all duration-300 origin-bottom"></div>
 
                                             <div className="relative flex items-center gap-4">
-                                                <div className="w-5 h-5 flex items-center justify-center opacity-70 group-hover:opacity-100 transition-opacity">
+                                                <div className="w-4 h-4 md:w-5 md:h-5 flex-shrink-0 flex items-center justify-center opacity-70 group-hover:opacity-100 transition-opacity">
                                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 127.14 96.36" className="w-full h-full fill-[#5865F2] group-hover:fill-[#6f7bf7] transition-colors">
                                                         <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.31,60,73.31,53s5-12.74,11.43-12.74S96.16,46,96.06,53,91,65.69,84.69,65.69Z" />
                                                     </svg>
                                                 </div>
-                                                <span className="font-arcade text-xl text-[#5865F2] group-hover:text-[#6f7bf7] tracking-widest uppercase mb-1 drop-shadow-md transition-colors whitespace-nowrap">LOGIN WITH DISCORD</span>
+                                                <span className="font-arcade text-xs sm:text-sm md:text-xl text-[#5865F2] group-hover:text-[#6f7bf7] tracking-widest uppercase mb-1 drop-shadow-md transition-colors whitespace-nowrap">LOGIN WITH DISCORD</span>
                                             </div>
                                         </button>
                                     )}
@@ -220,7 +220,7 @@ export default function LandingPage() {
             <section className="py-24 border-y border-border-dark/40 bg-surface">
                 <div className="max-w-7xl mx-auto px-4">
                     <div className="text-center mb-20">
-                        <h2 className="font-arcade text-2xl text-white mb-4">BUILT FOR TRANSPARENCY</h2>
+                        <h2 className="font-arcade text-lg sm:text-xl md:text-2xl text-white mb-4">BUILT FOR TRANSPARENCY</h2>
                         <div className="h-1 w-32 bg-primary mx-auto"></div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
@@ -338,7 +338,7 @@ export default function LandingPage() {
                 <div className="max-w-7xl mx-auto px-4">
                     <div className="text-center mb-6">
                         <span className="font-arcade text-[10px] text-neon-magenta bg-neon-magenta/10 px-4 py-2 arcade-border-magenta inline-block mb-6">TUTORIAL_MODE</span>
-                        <h2 className="font-arcade text-2xl text-white mb-4">HOW IT WORKS</h2>
+                        <h2 className="font-arcade text-lg sm:text-xl md:text-2xl text-white mb-4">HOW IT WORKS</h2>
                         <p className="font-mono text-sm text-text-muted uppercase tracking-tighter max-w-xl mx-auto">
                             Four steps. That&apos;s it. No smart contract deploys, no complicated setup, no connect wallet.
                         </p>
@@ -357,9 +357,11 @@ export default function LandingPage() {
                             {/* Step 1 */}
                             <FadeIn delay={0} direction="up">
                                 <div className="relative flex flex-col md:flex-row items-center justify-between group">
-                                    <div className="md:w-[45%] mb-8 md:mb-0 text-left md:text-right flex flex-col items-start md:items-end w-full pl-12 md:pl-0">
-                                        <div className="font-arcade text-3xl text-text-muted/30 absolute left-4 md:static md:mb-2 group-hover:text-primary/50 transition-colors">01</div>
-                                        <h3 className="font-arcade text-base md:text-lg text-white mb-3 group-hover:text-primary transition-colors">SIGN IN WITH DISCORD</h3>
+                                    <div className="md:w-[45%] mb-8 md:mb-0 text-left md:text-right flex flex-col items-start md:items-end w-full px-4 md:px-0">
+                                        <div className="flex flex-row md:flex-col items-center md:items-end gap-3 md:gap-0 mb-3 md:mb-0 w-full">
+                                            <div className="font-arcade text-3xl sm:text-4xl text-text-muted/30 md:mb-2 group-hover:text-primary/50 transition-colors leading-none">01</div>
+                                            <h3 className="font-arcade text-base md:text-lg text-white group-hover:text-primary transition-colors leading-none mt-1 md:mt-0">SIGN IN WITH DISCORD</h3>
+                                        </div>
                                         <p className="font-mono text-xs md:text-sm leading-relaxed text-text-secondary uppercase tracking-tighter max-w-sm">
                                             That&apos;s your login. No extra accounts, no wallet extensions, no connect wallet pop-ups. If you have Discord, you&apos;re already in.
                                         </p>
@@ -393,9 +395,11 @@ export default function LandingPage() {
                             {/* Step 2 */}
                             <FadeIn delay={0.1} direction="up">
                                 <div className="relative flex flex-col md:flex-row-reverse items-center justify-between group">
-                                    <div className="md:w-[45%] mb-8 md:mb-0 text-left flex flex-col items-start w-full pl-12 md:pl-0">
-                                        <div className="font-arcade text-3xl text-text-muted/30 absolute left-4 md:static md:mb-2 group-hover:text-neon-magenta/50 transition-colors">02</div>
-                                        <h3 className="font-arcade text-base md:text-lg text-white mb-3 group-hover:text-neon-magenta transition-colors">CREATE A DAGET</h3>
+                                    <div className="md:w-[45%] mb-8 md:mb-0 text-left flex flex-col items-start w-full px-4 md:px-0">
+                                        <div className="flex flex-row md:flex-col items-center md:items-start gap-3 md:gap-0 mb-3 md:mb-0 w-full">
+                                            <div className="font-arcade text-3xl sm:text-4xl text-text-muted/30 md:mb-2 group-hover:text-neon-magenta/50 transition-colors leading-none">02</div>
+                                            <h3 className="font-arcade text-base md:text-lg text-white group-hover:text-neon-magenta transition-colors leading-none mt-1 md:mt-0">CREATE A DAGET</h3>
+                                        </div>
                                         <p className="font-mono text-xs md:text-sm leading-relaxed text-text-secondary uppercase tracking-tighter max-w-sm">
                                             Set the token (USDC or USDT), total pool, number of winners, and which Discord roles can claim. Add a custom message too.
                                         </p>
@@ -432,9 +436,11 @@ export default function LandingPage() {
                             {/* Step 3 */}
                             <FadeIn delay={0.2} direction="up">
                                 <div className="relative flex flex-col md:flex-row items-center justify-between group">
-                                    <div className="md:w-[45%] mb-8 md:mb-0 text-left md:text-right flex flex-col items-start md:items-end w-full pl-12 md:pl-0">
-                                        <div className="font-arcade text-3xl text-text-muted/30 absolute left-4 md:static md:mb-2 group-hover:text-primary/50 transition-colors">03</div>
-                                        <h3 className="font-arcade text-base md:text-lg text-white mb-3 group-hover:text-primary transition-colors">SHARE THE LINK</h3>
+                                    <div className="md:w-[45%] mb-8 md:mb-0 text-left md:text-right flex flex-col items-start md:items-end w-full px-4 md:px-0">
+                                        <div className="flex flex-row md:flex-col items-center md:items-end gap-3 md:gap-0 mb-3 md:mb-0 w-full">
+                                            <div className="font-arcade text-3xl sm:text-4xl text-text-muted/30 md:mb-2 group-hover:text-primary/50 transition-colors leading-none">03</div>
+                                            <h3 className="font-arcade text-base md:text-lg text-white group-hover:text-primary transition-colors leading-none mt-1 md:mt-0">SHARE THE LINK</h3>
+                                        </div>
                                         <p className="font-mono text-xs md:text-sm leading-relaxed text-text-secondary uppercase tracking-tighter max-w-sm">
                                             Each Daget gets a unique claim URL. Drop it in your Discord, tweet it, put it in your bio — wherever your community hangs out.
                                         </p>
@@ -478,9 +484,11 @@ export default function LandingPage() {
                             {/* Step 4 */}
                             <FadeIn delay={0.3} direction="up">
                                 <div className="relative flex flex-col md:flex-row-reverse items-center justify-between group">
-                                    <div className="md:w-[45%] mb-8 md:mb-0 text-left flex flex-col items-start w-full pl-12 md:pl-0">
-                                        <div className="font-arcade text-3xl text-text-muted/30 absolute left-4 md:static md:mb-2 group-hover:text-neon-magenta/50 transition-colors">04</div>
-                                        <h3 className="font-arcade text-base md:text-lg text-white mb-3 group-hover:text-neon-magenta transition-colors">TOKENS FLY OUT</h3>
+                                    <div className="md:w-[45%] mb-8 md:mb-0 text-left flex flex-col items-start w-full px-4 md:px-0">
+                                        <div className="flex flex-row md:flex-col items-center md:items-start gap-3 md:gap-0 mb-3 md:mb-0 w-full">
+                                            <div className="font-arcade text-3xl sm:text-4xl text-text-muted/30 md:mb-2 group-hover:text-neon-magenta/50 transition-colors leading-none">04</div>
+                                            <h3 className="font-arcade text-base md:text-lg text-white group-hover:text-neon-magenta transition-colors leading-none mt-1 md:mt-0">TOKENS FLY OUT</h3>
+                                        </div>
                                         <p className="font-mono text-xs md:text-sm leading-relaxed text-text-secondary uppercase tracking-tighter max-w-sm">
                                             Eligible members claim → we verify their role → tokens land in their Solana wallet. Confirmed onchain. Done.
                                         </p>
@@ -523,7 +531,7 @@ export default function LandingPage() {
                 <div className="max-w-7xl mx-auto px-4">
                     <div className="text-center mb-6">
                         <span className="font-arcade text-[10px] text-primary bg-primary/10 px-4 py-2 arcade-border-cyan inline-block mb-6">USE_CASES</span>
-                        <h2 className="font-arcade text-2xl text-white mb-4">WHAT CAN YOU DO WITH DAGETS?</h2>
+                        <h2 className="font-arcade text-lg sm:text-xl md:text-2xl text-white mb-4">WHAT CAN YOU DO WITH DAGETS?</h2>
                         <p className="font-mono text-sm text-text-muted uppercase tracking-tighter max-w-xl mx-auto">
                             If you have a Discord community and want to distribute tokens, you&apos;re in the right place.
                         </p>
@@ -599,27 +607,27 @@ export default function LandingPage() {
                 <div className="max-w-7xl mx-auto px-4">
                     <div className="text-center mb-6">
                         <span className="font-arcade text-[10px] text-primary bg-primary/10 px-4 py-2 arcade-border-cyan inline-block mb-6">VERSUS_MODE</span>
-                        <h2 className="font-arcade text-2xl text-white mb-4">WHY NOT JUST USE A BOT?</h2>
+                        <h2 className="font-arcade text-lg sm:text-xl md:text-2xl text-white mb-4">WHY NOT JUST USE A BOT?</h2>
                         <p className="font-mono text-sm text-text-muted uppercase tracking-tighter max-w-2xl mx-auto">
                             Good question. Here&apos;s the honest comparison.
                         </p>
                     </div>
 
-                    <div className="mt-16 max-w-5xl mx-auto relative">
-                        {/* VS Badge in the center */}
-                        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 w-16 h-16 bg-background-dark border-4 border-white/10 rounded-full flex items-center justify-center rotate-12 shadow-[0_0_30px_rgba(0,0,0,0.8)]">
+                    <div className="mt-16 max-w-5xl mx-auto relative flex flex-col md:block">
+                        {/* VS Badge for Desktop ONLY */}
+                        <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 w-16 h-16 bg-background-dark border-4 border-white/10 rounded-full items-center justify-center rotate-12 shadow-[0_0_30px_rgba(0,0,0,0.8)]">
                             <span className="font-arcade text-2xl text-white italic">VS</span>
                         </div>
 
-                        <div className="flex flex-col md:flex-row overflow-hidden rounded-xl border border-border-dark/60 shadow-2xl">
+                        <div className="flex flex-col md:flex-row overflow-hidden rounded-xl border border-border-dark/60 shadow-2xl relative">
                             {/* Player 1: The Old Way */}
                             <div className="flex-1 bg-card-dark relative p-8 md:p-12 md:pr-16 group">
                                 <div className="absolute inset-0 bg-red-900/5 group-hover:bg-red-900/10 transition-colors"></div>
                                 {/* Slanted overlay for desktop */}
                                 <div className="hidden md:block absolute top-0 bottom-0 right-[-20px] w-10 bg-card-dark transform skew-x-12 z-10 border-r-2 border-red-500/30"></div>
 
-                                <div className="relative z-10">
-                                    <div className="flex items-end gap-3 mb-8 border-b border-red-500/20 pb-4">
+                                <div className="relative z-10 text-center md:text-left">
+                                    <div className="flex flex-col md:flex-row items-center md:items-end gap-3 md:gap-3 mb-8 border-b border-red-500/20 pb-4 justify-center md:justify-start">
                                         <h3 className="font-arcade text-3xl text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]">P1</h3>
                                         <span className="font-mono text-sm text-red-400 mb-1 uppercase tracking-widest">THE OLD WAY</span>
                                     </div>
@@ -648,14 +656,21 @@ export default function LandingPage() {
                                 </div>
                             </div>
 
+                            {/* VS Badge for Mobile ONLY */}
+                            <div className="md:hidden flex justify-center -my-8 z-20 relative">
+                                <div className="w-16 h-16 bg-background-dark border-4 border-white/10 rounded-full flex items-center justify-center rotate-12 shadow-[0_0_30px_rgba(0,0,0,0.8)]">
+                                    <span className="font-arcade text-2xl text-white italic">VS</span>
+                                </div>
+                            </div>
+
                             {/* Player 2: The Daget Way */}
                             <div className="flex-1 bg-[#1A2624] relative p-8 md:p-12 md:pl-16 group">
                                 <div className="absolute inset-0 bg-[url('/images/noise.png')] opacity-10 mix-blend-overlay"></div>
                                 {/* Glow originating from the split */}
-                                <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-primary/20 to-transparent"></div>
+                                <div className="absolute inset-x-0 top-0 h-32 md:inset-x-auto md:inset-y-0 md:left-0 md:w-32 md:h-auto bg-gradient-to-b md:bg-gradient-to-r from-primary/20 to-transparent"></div>
 
-                                <div className="relative z-10">
-                                    <div className="flex items-end gap-3 mb-8 border-b border-primary/30 pb-4 justify-end flex-row-reverse md:flex-row md:justify-start">
+                                <div className="relative z-10 text-center md:text-left">
+                                    <div className="flex flex-col md:flex-row items-center md:items-end gap-3 md:gap-3 mb-8 border-b border-primary/30 pb-4 justify-center md:justify-start pt-10 md:pt-0">
                                         <h3 className="font-arcade text-3xl text-primary drop-shadow-[0_0_8px_rgba(110,155,138,0.8)]">P2</h3>
                                         <span className="font-mono text-sm text-primary-light mb-1 uppercase tracking-widest">THE DAGET WAY</span>
                                     </div>
@@ -693,7 +708,7 @@ export default function LandingPage() {
                     <div className="text-center mb-16 relative">
                         {/* Background glow for the header */}
                         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-20 bg-primary/20 blur-3xl rounded-full"></div>
-                        <h2 className="font-arcade text-3xl md:text-4xl text-white relative z-10 inline-block drop-shadow-[0_0_15px_rgba(110,155,138,0.5)]">
+                        <h2 className="font-arcade text-xl sm:text-2xl md:text-4xl text-white relative z-10 inline-block drop-shadow-[0_0_15px_rgba(110,155,138,0.5)]">
                             <span className="text-primary mr-4">[</span>
                             FREQUENTLY ASKED
                             <span className="text-primary ml-4">]</span>
@@ -772,7 +787,7 @@ export default function LandingPage() {
                     <div className="inline-block px-4 py-1 mb-8 arcade-border-magenta bg-background-dark">
                         <span className="font-arcade text-[10px] text-neon-magenta">READY_PLAYER_ONE</span>
                     </div>
-                    <h2 className="font-arcade text-2xl md:text-4xl text-white mb-6">
+                    <h2 className="font-arcade text-lg sm:text-2xl md:text-4xl text-white mb-6">
                         STOP USING GOOGLE FORMS<br />
                         <span className="text-primary">FOR GIVEAWAYS.</span>
                     </h2>
@@ -796,14 +811,20 @@ export default function LandingPage() {
                     ) : (
                         <button
                             onClick={handleLogin}
-                            className="inline-flex items-center justify-center gap-4 bg-[#5865F2] hover:brightness-110 text-white px-12 py-5 arcade-border font-arcade text-xs transition-transform active:scale-95"
+                            className="inline-block relative group py-2 pr-4 pl-0 mt-8 mb-4 text-left"
                         >
-                            <img
-                                alt="Discord"
-                                className="w-6 h-6"
-                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCl7InillKVvqmL7_KGDx0E2FtuvX6OjrAMNOLCZ57S2mLfPOo_NF4hCJpFDbVmp6qsJ23VW-1w4zDKsMzPQdeYpU1XvGwXAV0mj7yMWaWL_6GxXQv8MuLx2FCyFlWwcHcLPMF6qlQToqV4vKN0NMjeqbP5O-Qce-4KrQQ9HecuSqFz1XSEFhkoPvwzYz7XvfjJ1ZxVdGTHrucIrDpA8HMtgQtfGdjqnSxn71SzTzLaNPKsBVIfMBRYTVoVKL0wwFyrQPEKcwslZON6"
-                            />
-                            GET STARTED NOW
+                            {/* L-shaped border: Bottom and Right only */}
+                            <div className="absolute bottom-0 right-0 w-full h-[2px] bg-[#5865F2] group-hover:shadow-[0_0_10px_rgba(110,155,138,0.5)] transition-all duration-300 origin-left"></div>
+                            <div className="absolute bottom-0 right-0 w-[2px] h-full bg-[#5865F2] group-hover:shadow-[0_0_10px_rgba(110,155,138,0.5)] transition-all duration-300 origin-bottom"></div>
+
+                            <div className="relative flex items-center gap-4">
+                                <div className="w-4 h-4 md:w-5 md:h-5 flex-shrink-0 flex items-center justify-center opacity-70 group-hover:opacity-100 transition-opacity">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 127.14 96.36" className="w-full h-full fill-[#5865F2] group-hover:fill-[#6f7bf7] transition-colors">
+                                        <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.31,60,73.31,53s5-12.74,11.43-12.74S96.16,46,96.06,53,91,65.69,84.69,65.69Z" />
+                                    </svg>
+                                </div>
+                                <span className="font-arcade text-xs sm:text-sm md:text-xl text-[#5865F2] group-hover:text-[#6f7bf7] tracking-widest uppercase mb-1 drop-shadow-md transition-colors whitespace-nowrap">LOGIN WITH DISCORD</span>
+                            </div>
                         </button>
                     )}
                     <p className="font-mono text-xs mt-6 uppercase tracking-tighter">

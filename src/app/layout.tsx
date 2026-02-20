@@ -1,6 +1,27 @@
 import type { Metadata } from 'next';
 import * as Sentry from '@sentry/nextjs';
+import { Inter, Space_Mono, Press_Start_2P } from 'next/font/google';
 import './globals.css';
+
+const inter = Inter({
+    subsets: ['latin'],
+    variable: '--font-inter',
+    display: 'swap',
+});
+
+const spaceMono = Space_Mono({
+    weight: ['400', '700'],
+    subsets: ['latin'],
+    variable: '--font-space-mono',
+    display: 'swap',
+});
+
+const pressStart2P = Press_Start_2P({
+    weight: '400',
+    subsets: ['latin'],
+    variable: '--font-press-start-2p',
+    display: 'swap',
+});
 
 export async function generateMetadata(): Promise<Metadata> {
     return {
@@ -16,13 +37,9 @@ export default function RootLayout({
     children: React.ReactNode;
 }) {
     return (
-        <html lang="en" className="dark">
+        <html lang="en" className={`dark ${inter.variable} ${spaceMono.variable} ${pressStart2P.variable}`}>
             <head>
-                <link rel="preconnect" href="https://fonts.googleapis.com" />
-                <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
                 <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
-                <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
                 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet" />
             </head>
             <body className="min-h-screen bg-background-dark text-text-primary antialiased">

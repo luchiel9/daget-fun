@@ -29,9 +29,9 @@ const config: Config = {
                 'neon-magenta': '#d16ba5',
             },
             fontFamily: {
-                display: ['Inter', 'sans-serif'],
-                mono: ["'Space Mono'", 'monospace'],
-                arcade: ["'Press Start 2P'", 'cursive'],
+                display: ['var(--font-inter)', 'sans-serif'],
+                mono: ['var(--font-space-mono)', 'monospace'],
+                arcade: ['var(--font-press-start-2p)', 'cursive'],
             },
             borderRadius: {
                 DEFAULT: '0.5rem',
