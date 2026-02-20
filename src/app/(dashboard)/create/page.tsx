@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { nanoid } from 'nanoid';
 import DagetForm, { FormValues } from '@/components/dagets/DagetForm';
@@ -7,6 +8,11 @@ import WalletBar from '@/components/WalletBar';
 
 export default function CreateDagetPage() {
     const router = useRouter();
+    const [refreshCount, setRefreshCount] = useState(0);
+
+    const handleRefresh = () => {
+        setRefreshCount(prev => prev + 1);
+    };
 
     const handleSubmit = async (values: FormValues) => {
         const roleIds = values.required_role_ids.split(',').map((s) => s.trim()).filter(Boolean);
@@ -50,12 +56,13 @@ export default function CreateDagetPage() {
 
     return (
         <div className="flex-1 flex flex-col overflow-hidden">
-            <WalletBar />
-
-            <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+                <WalletBar onRefresh={handleRefresh} />
+                <div className="p-4 md:p-8">
                 <div className="max-w-7xl mx-auto">
                     <DagetForm
                         mode="create"
+                        refreshTrigger={refreshCount}
                         onSubmit={async (values) => {
                             const body: any = {
                                 name: values.name,
@@ -100,6 +107,7 @@ export default function CreateDagetPage() {
                             router.push(`/dagets/${data.daget_id}`);
                         }}
                     />
+                </div>
                 </div>
             </div>
         </div>

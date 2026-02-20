@@ -18,6 +18,7 @@ export async function GET() {
             discord_username: user.discordUsername,
             discord_avatar_url: user.discordAvatarUrl,
             receiving_address: user.receivingAddress,
+            finished_guide: user.finishedGuide,
         });
     } catch (error: unknown) {
         if (error instanceof Error && error.message === 'AUTH_REQUIRED') {
@@ -36,7 +37,7 @@ export async function PATCH(request: Request) {
         const user = await requireAuth();
         const body = await request.json();
 
-        const { receiving_address } = body;
+        const { receiving_address, finished_guide } = body;
 
         // Validate Solana address — same rules as the claims schema (base58, 32-44 chars).
         if (receiving_address !== undefined && receiving_address !== null) {
@@ -50,18 +51,20 @@ export async function PATCH(request: Request) {
             }
         }
 
+        const updates: Partial<typeof users.$inferInsert> = { updatedAt: new Date() };
+        if (receiving_address !== undefined) updates.receivingAddress = receiving_address;
+        if (finished_guide !== undefined) updates.finishedGuide = finished_guide;
+
         // Update user
         await db
             .update(users)
-            .set({
-                receivingAddress: receiving_address,
-                updatedAt: new Date(),
-            })
+            .set(updates)
             .where(eq(users.id, user.id));
 
         return NextResponse.json({
             success: true,
             receiving_address,
+            finished_guide: updates.finishedGuide,
         });
     } catch (error: unknown) {
         if (error instanceof Error && error.message === 'AUTH_REQUIRED') {

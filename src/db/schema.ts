@@ -25,6 +25,7 @@ export const users = pgTable('users', {
     discordUsername: text('discord_username'),
     discordAvatarUrl: text('discord_avatar_url'),
     receivingAddress: text('receiving_address'),
+    finishedGuide: boolean('finished_guide').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     lastLoginAt: timestamp('last_login_at', { withTimezone: true }),

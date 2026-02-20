@@ -9,6 +9,9 @@ const config: Config = {
     ],
     theme: {
         extend: {
+            screens: {
+                wallet: '1250px', // wallet bar: minimized below, full bar at 1250+
+            },
             colors: {
                 primary: '#6E9B8A',
                 'background-light': '#f5f6f8',
@@ -29,9 +32,9 @@ const config: Config = {
                 'neon-magenta': '#d16ba5',
             },
             fontFamily: {
-                display: ['Inter', 'sans-serif'],
-                mono: ["'Space Mono'", 'monospace'],
-                arcade: ["'Press Start 2P'", 'cursive'],
+                display: ['var(--font-inter)', 'sans-serif'],
+                mono: ['var(--font-space-mono)', 'monospace'],
+                arcade: ['var(--font-press-start-2p)', 'cursive'],
             },
             borderRadius: {
                 DEFAULT: '0.5rem',

@@ -387,37 +387,32 @@ export default function ClaimPageClient() {
     return (
         <div className="min-h-screen bg-background-dark text-text-primary claim-bg-glow">
             {/* Header */}
-            <header className="h-14 flex items-center justify-between px-6 max-w-[625px] mx-auto">
-                <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                    <img src="/images/dagetfun_logo.png" alt="Daget.fun" className="w-6 h-6 rounded-md" />
-                    <span className="text-sm font-bold text-text-primary">Daget.fun</span>
+            <header className="h-14 flex items-center justify-between px-4 max-w-[1250px] mx-auto w-full">
+                <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                    <img src="/images/dagetfun_logo.png" alt="Daget.fun" className="w-8 h-8 rounded-lg" />
+                    <div className="inline-block px-3 py-1 bg-transparent arcade-border-magenta leading-none">
+                        <span className="font-arcade text-sm text-neon-magenta animate-pulse tracking-widest leading-none">DAGET.FUN</span>
+                    </div>
                 </Link>
-                {daget?.author_discord_id && currentDiscordId === daget.author_discord_id && (
-                    <a
-                        href={`/dashboard/edit/${daget.id}`}
-                        className="text-xs font-semibold text-text-secondary hover:text-white transition-colors flex items-center gap-1 bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg"
-                    >
-                        <span className="material-icons text-[14px]">edit</span>
-                        Edit
-                    </a>
-                )}
             </header>
 
-            <div className="flex items-start justify-center px-4 pb-12">
-                <div className="w-full max-w-[560px]">
+            <div className="flex items-start justify-center px-4 pb-12 mt-2 md:mt-4">
+                <div className="w-full max-w-[1250px] flex flex-col items-center mx-auto">
 
                     {/* ═══════════ CLAIM FORM STATE ═══════════ */}
                     {viewState === 'claim' && (
-                        <div className="bg-surface border border-border-dark/80 rounded-2xl shadow-2xl overflow-hidden">
-                            {/* Hero with Title and Creator */}
-                            <div className="relative overflow-hidden h-40 md:h-56">
+                        <div className="w-full bg-surface border border-border-dark/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col md:grid md:grid-cols-[60%_40%] md:grid-rows-[auto_1fr] relative">
+                            {/* Hero Background Glow (Spans whole card) */}
+                            <div className="absolute inset-x-0 top-0 h-48 md:h-64 overflow-hidden pointer-events-none opacity-60 z-0">
                                 <div className="absolute inset-0 animated-hero-bg"></div>
                                 <div className="absolute inset-0 dot-pattern"></div>
-                                <div className="hero-overlay absolute inset-0"></div>
+                                <div className="hero-overlay absolute inset-0 bg-gradient-to-b from-transparent via-surface/80 to-surface"></div>
+                            </div>
 
-                                {/* Title and Creator Info - Positioned at Bottom */}
-                                <div className="absolute bottom-0 left-0 right-0 z-10 px-6 pb-6 space-y-3">
-                                    <h2 className="text-2xl font-bold tracking-tight text-text-primary">{daget.name}</h2>
+                            {/* Row 1 left: Title and Creator Info */}
+                            <div className="relative z-10 border-b md:border-b-0 border-border-dark/50 p-6 md:p-8 md:pr-4">
+                                <div className="relative z-10 space-y-3 mb-6">
+                                    <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-text-primary">{daget.name}</h2>
                                     {/* Creator Info */}
                                     <div className="flex items-center gap-2">
                                         <span className="text-xs text-text-muted">by</span>
@@ -443,12 +438,13 @@ export default function ClaimPageClient() {
                                 </div>
                             </div>
 
-                            {/* Content */}
-                            <div className="p-6 pt-5 space-y-5">
+                            {/* Row 1 right: spacer so row 2 aligns with rich-text */}
+                            <div className="hidden md:block p-6 md:p-8 md:pl-4" aria-hidden />
 
-                                {/* Message */}
-                                {daget.message_html && (
-                                    <div className="bg-background-dark/30 rounded-lg p-4">
+                            {/* Row 2 left: Message (rich-text) */}
+                            <div className="relative z-10 flex flex-col border-b md:border-b-0 border-border-dark/50 p-6 md:pt-4 md:pb-8 md:pr-4 md:min-h-0">
+                                <div className="relative z-10 flex-grow min-h-0">
+                                    {daget.message_html ? (
                                         <div
                                             className="text-sm text-text-secondary leading-relaxed rich-text-content"
                                             dangerouslySetInnerHTML={{
@@ -459,21 +455,25 @@ export default function ClaimPageClient() {
                                                 } as any)
                                             }}
                                         />
-                                    </div>
-                                )}
+                                    ) : null}
+                                </div>
+                            </div>
+
+                            {/* Row 2 right: Actions and Requirements (aligned with rich-text) */}
+                            <div className="w-full p-6 md:p-8 md:pt-4 md:pl-4 space-y-7 bg-transparent flex flex-col justify-start relative z-10">
 
                                 {/* Info Pills */}
                                 <div className="flex flex-wrap gap-2">
-                                    <span className="flex items-center gap-1.5 bg-blue-400/10 text-blue-400 px-3 py-1.5 rounded-full text-xs font-semibold">
-                                        <span className="material-icons text-sm">paid</span>
+                                    <span className="flex items-center gap-1.5 bg-blue-400/10 text-blue-400 px-2.5 py-1 rounded-full text-[10px] font-semibold tracking-wide">
+                                        <span className="material-icons text-[12px]">paid</span>
                                         Token: {daget.token_symbol}
                                     </span>
-                                    <span className="flex items-center gap-1.5 bg-primary/10 text-primary px-3 py-1.5 rounded-full text-xs font-semibold">
-                                        <span className="material-icons text-sm">track_changes</span>
+                                    <span className="flex items-center gap-1.5 bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-semibold tracking-wide">
+                                        <span className="material-icons text-[12px]">track_changes</span>
                                         Spots: {spotsLeft} left
                                     </span>
-                                    <span className="flex items-center gap-1.5 bg-emerald-400/10 text-emerald-400 px-3 py-1.5 rounded-full text-xs font-semibold">
-                                        <span className="material-icons text-sm">category</span>
+                                    <span className="flex items-center gap-1.5 bg-emerald-400/10 text-emerald-400 px-2.5 py-1 rounded-full text-[10px] font-semibold tracking-wide">
+                                        <span className="material-icons text-[12px]">category</span>
                                         Mode: {daget.daget_type === 'fixed' ? 'Fixed' : 'Random'}
                                     </span>
                                 </div>
@@ -771,21 +771,13 @@ export default function ClaimPageClient() {
                                         This Daget is {daget.status}. No new claims can be made.
                                     </div>
                                 )}
-
-
-
-                                {/* Footer */}
-                                <div className="flex items-center justify-center gap-1.5 pt-1">
-                                    <span className="material-icons text-primary text-[14px]">bolt</span>
-                                    <span className="text-[10px] text-text-muted font-semibold">Powered by Solana</span>
-                                </div>
                             </div>
                         </div>
                     )}
 
                     {/* ═══════════ PROCESSING STATE ═══════════ */}
                     {viewState === 'processing' && (
-                        <div className="bg-surface border border-border-dark/80 rounded-2xl shadow-2xl overflow-hidden">
+                        <div className="w-full max-w-[560px] mx-auto bg-surface border border-border-dark/80 rounded-2xl shadow-2xl overflow-hidden">
                             <div className="p-8 space-y-6">
                                 <h3 className="text-xl font-bold text-text-primary text-center">Processing Your Claim</h3>
                                 <p className="text-sm text-text-secondary text-center">Sit tight — we&apos;re sending your tokens</p>
@@ -895,7 +887,7 @@ export default function ClaimPageClient() {
 
                     {/* ═══════════ SUCCESS STATE ═══════════ */}
                     {viewState === 'success' && claimStatus && (
-                        <div className="bg-surface border border-green-500/20 rounded-2xl shadow-2xl overflow-hidden scale-up-gentle">
+                        <div className="w-full max-w-[560px] mx-auto bg-surface border border-green-500/20 rounded-2xl shadow-2xl overflow-hidden scale-up-gentle">
                             <div className="p-8 space-y-5 text-center relative">
                                 {/* Confetti dots */}
                                 <div className="confetti-dot c1"></div>
@@ -947,14 +939,15 @@ export default function ClaimPageClient() {
                                         </a>
                                     </div>
                                 )}
-
-                                <div className="flex items-center justify-center gap-1.5 pt-4 fade-in-up delay-500 opacity-50">
-                                    <span className="material-icons text-primary text-[14px]">bolt</span>
-                                    <span className="text-[10px] text-text-muted font-semibold">Powered by Solana</span>
-                                </div>
                             </div>
                         </div>
                     )}
+
+                    {/* Unified Footer */}
+                    <div className="mt-8 flex items-center justify-center gap-1.5 opacity-70">
+                        <span className="material-icons text-primary text-[14px]">bolt</span>
+                        <span className="text-[11px] text-text-muted font-semibold tracking-wide">Powered by Solana</span>
+                    </div>
 
                 </div>
             </div>

@@ -21,6 +21,7 @@ const UserContext = React.createContext<{
     discordAvatarUrl?: string | null;
     walletPublicKey?: string | null;
     hasWallet?: boolean;
+    finishedGuide?: boolean;
 } | null>(null);
 
 export const useUser = () => {
@@ -78,9 +79,11 @@ export function Sidebar() {
                 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
                 md:translate-x-0 md:flex
             `}>
-                <Link href="/" className="p-6 flex items-center gap-3 hover:opacity-80 transition-opacity">
+                <Link href="/" className="p-6 pb-2 flex items-center justify-center gap-3 hover:opacity-80 transition-opacity">
                     <img src="/images/dagetfun_logo.png" alt="Daget.fun" className="w-8 h-8 rounded-lg" />
-                    <h1 className="text-xl font-bold tracking-tight text-text-primary">Daget.fun</h1>
+                    <div className="inline-block px-3 py-1 bg-transparent arcade-border-magenta leading-none">
+                        <h1 className="font-arcade text-sm text-neon-magenta animate-pulse tracking-widest leading-none">DAGET.FUN</h1>
+                    </div>
                 </Link>
                 <nav className="flex-1 px-4 space-y-1 mt-4">
                     {navItems.map((item) => {
@@ -124,6 +127,7 @@ export function AppShell({ children, user }: { children: React.ReactNode; user: 
         discordAvatarUrl: user?.discordAvatarUrl,
         walletPublicKey: user?.walletPublicKey,
         hasWallet: !!user?.walletPublicKey,
+        finishedGuide: user?.finishedGuide,
     };
 
     return (

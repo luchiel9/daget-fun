@@ -57,9 +57,10 @@ interface DagetFormProps {
     onSubmit: (values: FormValues) => Promise<void>;
     isLoading?: boolean;
     error?: string | null;
+    refreshTrigger?: number;
 }
 
-export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubmit, isLoading = false, error: propError }: DagetFormProps) {
+export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubmit, isLoading = false, error: propError, refreshTrigger = 0 }: DagetFormProps) {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     // Combine loading states
@@ -159,19 +160,22 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
 
         fetchBalances();
         fetchSolPrice();
-        handleSyncServers();
+        // We only want to run handleSyncServers once on mount, so we'll conditionally run it
+        if (refreshTrigger === 0) {
+            handleSyncServers();
 
-        const handleMessage = (event: MessageEvent) => {
-            if (event.origin !== window.location.origin) return;
-            if (event.data?.type === 'DISCORD_LOGIN_SUCCESS') {
-                handleSyncServers();
-                setDiscordAuthError(false);
-            }
-        };
+            const handleMessage = (event: MessageEvent) => {
+                if (event.origin !== window.location.origin) return;
+                if (event.data?.type === 'DISCORD_LOGIN_SUCCESS') {
+                    handleSyncServers();
+                    setDiscordAuthError(false);
+                }
+            };
 
-        window.addEventListener('message', handleMessage);
-        return () => window.removeEventListener('message', handleMessage);
-    }, []);
+            window.addEventListener('message', handleMessage);
+            return () => window.removeEventListener('message', handleMessage);
+        }
+    }, [refreshTrigger]);
 
     // Validation functions
     const validateTokenSymbol = (value: string) => {
