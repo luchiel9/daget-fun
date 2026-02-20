@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import * as Sentry from '@sentry/nextjs';
+
 import { Inter, Space_Mono, Press_Start_2P } from 'next/font/google';
 import './globals.css';
 

@@ -49,17 +49,23 @@ export default function LandingPage() {
                         speed={0.1}
                         particleColors={['#4FD1ED', '#D16BA5', '#6E9B8A']}
                         alphaParticles={true}
-                        particleBaseSize={120}
-                        sizeRandomness={1}
+                        particleBaseSize={130}
+                        sizeRandomness={0.1}
                         cameraDistance={20}
                     />
                 </div>
 
                 <div className="relative max-w-7xl mx-auto px-4">
-                    <div className="text-center w-full mb-12">
-                        <h1 className="inline-block px-6 py-2 arcade-border-magenta bg-background-dark text-neon-magenta font-arcade text-2xl sm:text-3xl md:text-5xl lg:text-6xl animate-pulse mt-12 lg:mt-0">
+                    <div className="text-center w-full mb-12 flex flex-col items-center">
+                        <h1 className="inline-block px-6 py-2 arcade-border-magenta bg-background-dark text-neon-magenta font-arcade text-2xl sm:text-3xl md:text-5xl lg:text-6xl animate-pulse mt-12 lg:mt-0 relative z-10">
                             DAGET.FUN
                         </h1>
+                        {/* Pronunciation Guide */}
+                        <div className="mt-3 flex items-center justify-center gap-2 opacity-80 hover:opacity-100 transition-opacity">
+                            <span className="font-mono text-[10px] tracking-[0.2em] text-text-muted uppercase">
+                                read:[ <span className="text-neon-magenta font-semibold italic">/da - get/</span> ]
+                            </span>
+                        </div>
                     </div>
 
                     {/* Middle Row: Text and Visual */}
@@ -537,9 +543,9 @@ export default function LandingPage() {
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-16 max-w-6xl mx-auto">
-                        {/* Large Featured Card (Spans 2 columns on desktop) */}
-                        <FadeIn delay={0} direction="up" className="lg:col-span-2 h-full">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-16 max-w-6xl mx-auto">
+                        {/* Large Featured Card (Spans 7/12 columns on desktop) */}
+                        <FadeIn delay={0} direction="up" className="lg:col-span-7 h-full">
                             <SpotlightCard className="bg-card-dark p-8 md:p-12 border border-border-dark/40 border-l-2 border-l-neon-magenta group hover:border-neon-magenta/30 transition-all h-full flex flex-col justify-center" spotlightColor="rgba(209, 107, 165, 0.15)">
                                 <div className="flex flex-col md:flex-row gap-8 items-start md:items-center h-full">
                                     <div className="flex-1">
@@ -555,19 +561,19 @@ export default function LandingPage() {
                                             Stop weeding through thousands of bot wallets and let the Discord roles do the heavy lifting for you automatically.
                                         </p>
                                     </div>
-                                    <div className="hidden md:flex w-48 h-48 preserve-3d group-hover:rotate-y-12 transition-transform duration-700 items-center justify-center relative">
+                                    <div className="hidden md:flex w-40 h-40 preserve-3d group-hover:rotate-y-12 transition-transform duration-700 items-center justify-center relative flex-shrink-0">
                                         <div className="absolute inset-0 bg-neon-magenta/5 blur-2xl rounded-full"></div>
-                                        <div className="w-32 h-32 border-2 border-neon-magenta/20 rounded-full flex items-center justify-center relative spin-slow">
-                                            <div className="w-24 h-24 border-2 border-neon-magenta/40 rounded-full rotate-45 border-dashed"></div>
+                                        <div className="w-28 h-28 border-2 border-neon-magenta/20 rounded-full flex items-center justify-center relative spin-slow">
+                                            <div className="w-20 h-20 border-2 border-neon-magenta/40 rounded-full rotate-45 border-dashed"></div>
                                         </div>
-                                        <span className="material-symbols-outlined text-neon-magenta text-6xl absolute z-10 animate-pulse">workspace_premium</span>
+                                        <span className="material-symbols-outlined text-neon-magenta text-5xl absolute z-10 animate-pulse">workspace_premium</span>
                                     </div>
                                 </div>
                             </SpotlightCard>
                         </FadeIn>
 
-                        {/* Stacked Smaller Cards Column */}
-                        <div className="flex flex-col gap-6 h-full">
+                        {/* Stacked Smaller Cards Column (Spans 5/12 columns on desktop) */}
+                        <div className="flex flex-col gap-6 h-full lg:col-span-5">
                             <FadeIn delay={0.15} direction="up" className="h-full flex-1">
                                 <SpotlightCard className="bg-card-dark p-6 md:p-8 border border-border-dark/40 border-l-2 border-l-primary group hover:border-primary/30 transition-colors h-full flex flex-col" spotlightColor="rgba(110, 155, 138, 0.15)">
                                     <div className="flex items-center justify-between mb-4">
@@ -577,7 +583,7 @@ export default function LandingPage() {
                                         <span className="font-arcade text-[8px] text-text-muted">SCENARIO_02</span>
                                     </div>
                                     <h3 className="font-arcade text-sm text-white mb-3 mt-auto">MARKETING CAMPAIGNS</h3>
-                                    <p className="font-mono text-[10px] md:text-xs leading-relaxed text-text-secondary uppercase tracking-tighter">
+                                    <p className="font-mono text-[10px] md:text-sm leading-relaxed text-text-secondary uppercase tracking-tighter">
                                         Running a collab? Create a Daget, gate it by partner server roles, and let their members claim. Cross-community love.
                                     </p>
                                 </SpotlightCard>
@@ -592,7 +598,7 @@ export default function LandingPage() {
                                         <span className="font-arcade text-[8px] text-text-muted">SCENARIO_03</span>
                                     </div>
                                     <h3 className="font-arcade text-sm text-white mb-3 mt-auto">RANDOM DROPS</h3>
-                                    <p className="font-mono text-[10px] md:text-xs leading-relaxed text-text-secondary uppercase tracking-tighter">
+                                    <p className="font-mono text-[10px] md:text-sm leading-relaxed text-text-secondary uppercase tracking-tighter">
                                         Use random mode to spice things up. Each claimer gets a different amount within your set range. Same pool, different luck.
                                     </p>
                                 </SpotlightCard>
@@ -620,59 +626,18 @@ export default function LandingPage() {
                         </div>
 
                         <div className="flex flex-col md:flex-row overflow-hidden rounded-xl border border-border-dark/60 shadow-2xl relative">
-                            {/* Player 1: The Old Way */}
-                            <div className="flex-1 bg-card-dark relative p-8 md:p-12 md:pr-16 group">
-                                <div className="absolute inset-0 bg-red-900/5 group-hover:bg-red-900/10 transition-colors"></div>
+                            {/* Player 1: The Daget Way */}
+                            <div className="flex-1 bg-[#1A2624] relative p-8 md:p-12 md:pr-16 group">
+                                <div className="absolute inset-0 bg-primary/5 group-hover:bg-primary/10 transition-colors"></div>
                                 {/* Slanted overlay for desktop */}
-                                <div className="hidden md:block absolute top-0 bottom-0 right-[-20px] w-10 bg-card-dark transform skew-x-12 z-10 border-r-2 border-red-500/30"></div>
+                                <div className="hidden md:block absolute top-0 bottom-0 right-[-20px] w-10 bg-card-dark transform skew-x-12 z-10 border-r-2 border-primary/30"></div>
 
                                 <div className="relative z-10 text-center md:text-left">
-                                    <div className="flex flex-col md:flex-row items-center md:items-end gap-3 md:gap-3 mb-8 border-b border-red-500/20 pb-4 justify-center md:justify-start">
-                                        <h3 className="font-arcade text-3xl text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]">P1</h3>
-                                        <span className="font-mono text-sm text-red-400 mb-1 uppercase tracking-widest">THE OLD WAY</span>
-                                    </div>
-                                    <ul className="space-y-5">
-                                        <li className="flex items-start gap-4 opacity-70 group-hover:opacity-100 transition-opacity">
-                                            <span className="material-symbols-outlined text-red-500 mt-0.5">close</span>
-                                            <span className="font-mono text-xs text-text-secondary uppercase tracking-tighter">Manual wallet collection via Google Forms</span>
-                                        </li>
-                                        <li className="flex items-start gap-4 opacity-70 group-hover:opacity-100 transition-opacity">
-                                            <span className="material-symbols-outlined text-red-500 mt-0.5">close</span>
-                                            <span className="font-mono text-xs text-text-secondary uppercase tracking-tighter">Copy-paste addresses into CSV, pray nothing is wrong</span>
-                                        </li>
-                                        <li className="flex items-start gap-4 opacity-70 group-hover:opacity-100 transition-opacity">
-                                            <span className="material-symbols-outlined text-red-500 mt-0.5">close</span>
-                                            <span className="font-mono text-xs text-text-secondary uppercase tracking-tighter">Send tokens one by one or use sketchy multisend tools</span>
-                                        </li>
-                                        <li className="flex items-start gap-4 opacity-70 group-hover:opacity-100 transition-opacity">
-                                            <span className="material-symbols-outlined text-red-500 mt-0.5">close</span>
-                                            <span className="font-mono text-xs text-text-secondary uppercase tracking-tighter">No way to verify roles — anyone can submit</span>
-                                        </li>
-                                        <li className="flex items-start gap-4 opacity-70 group-hover:opacity-100 transition-opacity">
-                                            <span className="material-symbols-outlined text-red-500 mt-0.5">close</span>
-                                            <span className="font-mono text-xs text-text-secondary uppercase tracking-tighter">&quot;Did I already send to this address?&quot; — you every time</span>
-                                        </li>
-                                    </ul>
-                                </div>
-                            </div>
-
-                            {/* VS Badge for Mobile ONLY */}
-                            <div className="md:hidden flex justify-center -my-8 z-20 relative">
-                                <div className="w-16 h-16 bg-background-dark border-4 border-white/10 rounded-full flex items-center justify-center rotate-12 shadow-[0_0_30px_rgba(0,0,0,0.8)]">
-                                    <span className="font-arcade text-2xl text-white italic">VS</span>
-                                </div>
-                            </div>
-
-                            {/* Player 2: The Daget Way */}
-                            <div className="flex-1 bg-[#1A2624] relative p-8 md:p-12 md:pl-16 group">
-                                <div className="absolute inset-0 bg-[url('/images/noise.png')] opacity-10 mix-blend-overlay"></div>
-                                {/* Glow originating from the split */}
-                                <div className="absolute inset-x-0 top-0 h-32 md:inset-x-auto md:inset-y-0 md:left-0 md:w-32 md:h-auto bg-gradient-to-b md:bg-gradient-to-r from-primary/20 to-transparent"></div>
-
-                                <div className="relative z-10 text-center md:text-left">
-                                    <div className="flex flex-col md:flex-row items-center md:items-end gap-3 md:gap-3 mb-8 border-b border-primary/30 pb-4 justify-center md:justify-start pt-10 md:pt-0">
-                                        <h3 className="font-arcade text-3xl text-primary drop-shadow-[0_0_8px_rgba(110,155,138,0.8)]">P2</h3>
-                                        <span className="font-mono text-sm text-primary-light mb-1 uppercase tracking-widest">THE DAGET WAY</span>
+                                    <div className="flex flex-col md:flex-row items-center md:items-end gap-3 md:gap-3 mb-8 border-b border-primary/20 pb-4 justify-center md:justify-start">
+                                        <h3 className="font-arcade text-3xl sm:text-4xl text-primary drop-shadow-[0_0_8px_rgba(110,155,138,0.5)]">P1</h3>
+                                        <span className="font-mono text-sm text-primary mb-1 uppercase tracking-widest">
+                                            THE <span style={{ color: 'rgb(209, 107, 165)' }}>DAGET.FUN</span> WAY
+                                        </span>
                                     </div>
                                     <ul className="space-y-5">
                                         <li className="flex items-start gap-4 border border-primary/0 group-hover:border-primary/20 p-2 -ml-2 rounded-sm transition-all duration-300 group-hover:bg-primary/5">
@@ -693,6 +658,49 @@ export default function LandingPage() {
                                         </li>
                                         <li className="flex items-start gap-4 border border-primary/0 group-hover:border-primary/20 p-2 -ml-2 rounded-sm transition-all duration-300 group-hover:bg-primary/5 relative overflow-hidden">
                                             <div className="absolute inset-0 bg-primary/10 w-0 group-hover:w-full transition-all duration-700 ease-out"></div>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            {/* VS Badge for Mobile ONLY */}
+                            <div className="md:hidden flex justify-center -my-8 z-20 relative">
+                                <div className="w-16 h-16 bg-background-dark border-4 border-white/10 rounded-full flex items-center justify-center rotate-12 shadow-[0_0_30px_rgba(0,0,0,0.8)]">
+                                    <span className="font-arcade text-2xl text-white italic">VS</span>
+                                </div>
+                            </div>
+
+                            {/* Player 2: Standard Bots */}
+                            <div className="flex-1 bg-card-dark relative p-8 md:p-12 md:pl-16 group">
+
+                                {/* Glow originating from the split */}
+                                <div className="absolute inset-x-0 top-0 h-32 md:inset-x-auto md:inset-y-0 md:left-0 md:w-32 md:h-auto bg-gradient-to-b md:bg-gradient-to-r from-red-500/10 to-transparent"></div>
+
+                                <div className="relative z-10 text-center md:text-left">
+                                    <div className="flex flex-col md:flex-row items-center md:items-end gap-3 md:gap-3 mb-8 border-b border-red-500/30 pb-4 justify-center md:justify-start pt-10 md:pt-0">
+                                        <h3 className="font-arcade text-3xl sm:text-4xl text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]">P2</h3>
+                                        <span className="font-mono text-sm text-red-400 mb-1 uppercase tracking-widest">STANDARD BOTS</span>
+                                    </div>
+                                    <ul className="space-y-5">
+                                        <li className="flex items-start gap-4 opacity-70 group-hover:opacity-100 transition-opacity">
+                                            <span className="material-symbols-outlined text-red-500 mt-0.5">close</span>
+                                            <span className="font-mono text-xs text-text-secondary uppercase tracking-tighter">Only picks a username — doesn&apos;t actually handle the tokens</span>
+                                        </li>
+                                        <li className="flex items-start gap-4 opacity-70 group-hover:opacity-100 transition-opacity">
+                                            <span className="material-symbols-outlined text-red-500 mt-0.5">close</span>
+                                            <span className="font-mono text-xs text-text-secondary uppercase tracking-tighter">You still have to DM the winner and collect their wallet address</span>
+                                        </li>
+                                        <li className="flex items-start gap-4 opacity-70 group-hover:opacity-100 transition-opacity">
+                                            <span className="material-symbols-outlined text-red-500 mt-0.5">close</span>
+                                            <span className="font-mono text-xs text-text-secondary uppercase tracking-tighter">Copy-paste addresses into CSV, pray nothing is wrong</span>
+                                        </li>
+                                        <li className="flex items-start gap-4 opacity-70 group-hover:opacity-100 transition-opacity">
+                                            <span className="material-symbols-outlined text-red-500 mt-0.5">close</span>
+                                            <span className="font-mono text-xs text-text-secondary uppercase tracking-tighter">Send tokens one by one or use sketchy multisend tools</span>
+                                        </li>
+                                        <li className="flex items-start gap-4 opacity-70 group-hover:opacity-100 transition-opacity">
+                                            <span className="material-symbols-outlined text-red-500 mt-0.5">close</span>
+                                            <span className="font-mono text-xs text-text-secondary uppercase tracking-tighter">&quot;Did I already send to this address?&quot; — you every time</span>
                                         </li>
                                     </ul>
                                 </div>
@@ -787,12 +795,15 @@ export default function LandingPage() {
                     <div className="inline-block px-4 py-1 mb-8 arcade-border-magenta bg-background-dark">
                         <span className="font-arcade text-[10px] text-neon-magenta">READY_PLAYER_ONE</span>
                     </div>
-                    <h2 className="font-arcade text-lg sm:text-2xl md:text-4xl text-white mb-6">
-                        STOP USING GOOGLE FORMS<br />
-                        <span className="text-primary">FOR GIVEAWAYS.</span>
+                    <h2 className="font-arcade text-lg sm:text-2xl md:text-3xl text-white mb-6 leading-tight">
+                        STOP MAKING GIVEAWAYS<br />
+                        <span className="text-primary">SO COMPLICATED.</span>
                     </h2>
-                    <p className="font-mono text-sm text-text-secondary uppercase tracking-tighter max-w-lg mx-auto mb-12">
-                        Your community deserves better. Set up your first Daget in under 2 minutes. Seriously, we timed it.
+                    <p className="font-mono text-sm md:text-base text-text-secondary uppercase tracking-tighter max-w-2xl mx-auto mb-2 leading-relaxed">
+                        REWARD YOUR COMMUNITY, INSTANTLY. VERIFY DISCORD ROLES AND AIRDROP ONCHAIN IN ONE CLICK. NO BOTS. NO SPREADSHEETS. NO HASSLE.
+                    </p>
+                    <p className="font-mono text-sm text-primary uppercase tracking-widest max-w-2xl mx-auto mb-12 font-bold">
+                        SET UP YOUR FIRST DAGET IN UNDER 3 MINUTES.
                     </p>
                     {hasSession ? (
                         <Link
