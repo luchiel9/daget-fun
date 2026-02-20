@@ -179,8 +179,8 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
 
     // Validation functions
     const validateTokenSymbol = (value: string) => {
-        if (!value || (value !== 'USDC' && value !== 'USDT')) {
-            return 'Please select a token (USDC or USDT)';
+        if (!value || (value !== 'USDC' && value !== 'USDT' && value !== 'SOL')) {
+            return 'Please select a token (USDC, USDT, or SOL)';
         }
         return null;
     };
@@ -276,9 +276,14 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
             maxAmount = parseFloat(balances.usdc) || 0;
         } else if (form.token_symbol === 'USDT') {
             maxAmount = parseFloat(balances.usdt) || 0;
+        } else if (form.token_symbol === 'SOL') {
+            const solBal = parseFloat(balances.sol) || 0;
+            const gasReserve = parseFloat(estimatedGas) || 0;
+            maxAmount = Math.max(0, solBal - gasReserve);
         }
 
-        const displayAmount = Math.max(0, maxAmount).toFixed(2); // Prevent -0.00
+        const decimals = form.token_symbol === 'SOL' ? 6 : 2;
+        const displayAmount = Math.max(0, maxAmount).toFixed(decimals);
         updateForm('amount_display', displayAmount);
     };
 
@@ -636,6 +641,7 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
         const amount = parseFloat(form.amount_display) || 0;
         let balance = 0;
         let tokenName = '';
+        let required = amount;
 
         if (form.token_symbol === 'USDC') {
             balance = parseFloat(balances.usdc);
@@ -643,16 +649,24 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
         } else if (form.token_symbol === 'USDT') {
             balance = parseFloat(balances.usdt);
             tokenName = 'USDT';
+        } else if (form.token_symbol === 'SOL') {
+            balance = parseFloat(balances.sol);
+            tokenName = 'SOL';
+            const gasNeeded = parseFloat(estimatedGas) || 0;
+            required = amount + gasNeeded; // SOL needed for both reward and gas
         }
 
-        const hasEnough = balance >= amount;
+        const hasEnough = balance >= required;
+        const decimals = form.token_symbol === 'SOL' ? 6 : 2;
         const message = hasEnough
-            ? `You have enough balance (${balance.toFixed(2)} ${tokenName})`
-            : `Not enough balance. You have ${balance.toFixed(2)} ${tokenName}, need ${amount.toFixed(2)} ${tokenName}`;
+            ? `You have enough balance (${balance.toFixed(decimals)} ${tokenName})`
+            : form.token_symbol === 'SOL'
+                ? `Not enough SOL. You have ${balance.toFixed(6)} SOL, need ${required.toFixed(6)} SOL (amount + gas)`
+                : `Not enough balance. You have ${balance.toFixed(2)} ${tokenName}, need ${amount.toFixed(2)} ${tokenName}`;
         const color = hasEnough ? 'text-green-500' : 'text-red-500';
 
         return { hasEnough, message, color };
-    }, [balances, form.amount_display, form.token_symbol]);
+    }, [balances, form.amount_display, form.token_symbol, estimatedGas]);
 
     const gasBalanceCheck = useMemo(() => {
         if (!balances) return { hasEnough: false, message: '', color: '' };
@@ -670,7 +684,10 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
         return { hasEnough, message, color };
     }, [balances, estimatedGas, solPrice]);
 
-    const canSubmit = tokenBalanceCheck.hasEnough && gasBalanceCheck.hasEnough;
+    // For SOL, token balance check already includes gas; for USDC/USDT we need both token and gas
+    const canSubmit = form.token_symbol === 'SOL'
+        ? tokenBalanceCheck.hasEnough
+        : tokenBalanceCheck.hasEnough && gasBalanceCheck.hasEnough;
 
     const hasRoles = form.required_role_ids.trim().length > 0;
     const hasGuild = form.discord_guild_id.trim().length > 0;
@@ -679,6 +696,7 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
         if (!balances || !form.token_symbol) return '-';
         if (form.token_symbol === 'USDC') return `${balances.usdc} USDC`;
         if (form.token_symbol === 'USDT') return `${balances.usdt} USDT`;
+        if (form.token_symbol === 'SOL') return `${balances.sol} SOL`;
         return '-';
     }, [balances, form.token_symbol]);
 
@@ -1047,6 +1065,16 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
                                                         }`}
                                                 >
                                                     USDT
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => updateForm('token_symbol', 'SOL')}
+                                                    className={`flex-1 py-2.5 px-3 text-sm font-semibold rounded-lg transition-all ${form.token_symbol === 'SOL'
+                                                        ? 'bg-primary text-white shadow-lg'
+                                                        : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+                                                        }`}
+                                                >
+                                                    SOL
                                                 </button>
                                             </div>
                                             {!form.token_symbol && (

@@ -97,7 +97,7 @@ export const dagets = pgTable('dagets', {
 }, (table) => [
     index('dagets_creator_user_id_idx').on(table.creatorUserId),
     uniqueIndex('dagets_one_active_per_creator').on(table.creatorUserId).where(sql`status = 'active'`),
-    check('token_symbol_check', sql`token_symbol IN ('USDC', 'USDT')`),
+    check('token_symbol_check', sql`token_symbol IN ('USDC', 'USDT', 'SOL')`),
     check('total_amount_positive', sql`total_amount_base_units > 0`),
     check('total_amount_safe_int', sql`total_amount_base_units <= 9007199254740991`),
     check('total_winners_positive', sql`total_winners > 0`),

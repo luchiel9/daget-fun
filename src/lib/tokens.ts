@@ -8,9 +8,13 @@ type TokenInfo = {
     decimals: number;
 };
 
+/** Sentinel mint for native SOL (no SPL token). */
+export const NATIVE_SOL_MINT = 'native';
+
 type ClusterTokens = {
     USDC: TokenInfo;
     USDT: TokenInfo;
+    SOL: TokenInfo;
 };
 
 export const TOKEN_CONFIG: Record<string, ClusterTokens> = {
@@ -23,10 +27,14 @@ export const TOKEN_CONFIG: Record<string, ClusterTokens> = {
             mint: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
             decimals: 6,
         },
+        SOL: {
+            mint: NATIVE_SOL_MINT,
+            decimals: 9,
+        },
     },
 };
 
-export function getTokenConfig(symbol: 'USDC' | 'USDT'): TokenInfo {
+export function getTokenConfig(symbol: 'USDC' | 'USDT' | 'SOL'): TokenInfo {
     let cluster = process.env.NEXT_PUBLIC_SOLANA_CLUSTER || process.env.SOLANA_CLUSTER || 'mainnet-beta';
 
     // Normalize cluster string

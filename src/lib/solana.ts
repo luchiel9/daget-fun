@@ -37,8 +37,8 @@ export async function deriveATA(
 
 /**
  * Build a claim transaction:
- * 1. Create ATA for claimant if needed (rent paid by creator wallet)
- * 2. transferChecked from creator ATA → claimant ATA
+ * - Native SOL: SystemProgram.transfer from creator to claimant.
+ * - SPL (USDC/USDT): Create ATA for claimant if needed, then transferChecked from creator ATA → claimant ATA.
  */
 export async function buildClaimTransaction(params: {
     creatorKeypair: Keypair;
@@ -47,40 +47,49 @@ export async function buildClaimTransaction(params: {
     tokenDecimals: number;
     amountBaseUnits: number;
     connection: Connection;
+    isNativeSol?: boolean;
 }): Promise<Transaction> {
-    const { creatorKeypair, claimantAddress, mintAddress, tokenDecimals, amountBaseUnits, connection } = params;
-
-    const creatorATA = await deriveATA(creatorKeypair.publicKey, mintAddress);
-    const claimantATA = await deriveATA(claimantAddress, mintAddress);
+    const { creatorKeypair, claimantAddress, mintAddress, tokenDecimals, amountBaseUnits, connection, isNativeSol } = params;
 
     const instructions: TransactionInstruction[] = [];
 
-    // Create claimant ATA if it doesn't exist (idempotent — won't fail if already exists)
-    // ATA rent is paid by creator wallet per blueprint §4.4 step 6
-    instructions.push(
-        createAssociatedTokenAccountIdempotentInstruction(
-            creatorKeypair.publicKey, // payer
-            claimantATA,              // ata
-            claimantAddress,          // owner
-            mintAddress,              // mint
-        )
-    );
+    if (isNativeSol) {
+        // Native SOL: simple transfer (lamports)
+        instructions.push(
+            SystemProgram.transfer({
+                fromPubkey: creatorKeypair.publicKey,
+                toPubkey: claimantAddress,
+                lamports: amountBaseUnits,
+            })
+        );
+    } else {
+        const creatorATA = await deriveATA(creatorKeypair.publicKey, mintAddress);
+        const claimantATA = await deriveATA(claimantAddress, mintAddress);
 
-    // Transfer tokens
-    instructions.push(
-        createTransferCheckedInstruction(
-            creatorATA,                        // source
-            mintAddress,                       // mint
-            claimantATA,                       // destination
-            creatorKeypair.publicKey,          // owner/signer
-            BigInt(amountBaseUnits),           // amount
-            tokenDecimals,                     // decimals
-        )
-    );
+        // Create claimant ATA if it doesn't exist (idempotent — won't fail if already exists)
+        instructions.push(
+            createAssociatedTokenAccountIdempotentInstruction(
+                creatorKeypair.publicKey,
+                claimantATA,
+                claimantAddress,
+                mintAddress,
+            )
+        );
+
+        instructions.push(
+            createTransferCheckedInstruction(
+                creatorATA,
+                mintAddress,
+                claimantATA,
+                creatorKeypair.publicKey,
+                BigInt(amountBaseUnits),
+                tokenDecimals,
+            )
+        );
+    }
 
     const tx = new Transaction().add(...instructions);
 
-    // Get recent blockhash
     const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
     tx.recentBlockhash = blockhash;
     tx.lastValidBlockHeight = lastValidBlockHeight;
@@ -92,24 +101,36 @@ export async function buildClaimTransaction(params: {
 /**
  * Estimate per-claim fee in lamports.
  * base_fee + priority_fee, with 30% safety margin.
+ * For native SOL claims the tx is a single transfer (smaller); for SPL we use ATA + transferChecked.
  */
 export async function estimateClaimFee(
     connection: Connection,
     creatorPublicKey: PublicKey,
     mintAddress: PublicKey,
+    isNativeSol?: boolean,
 ): Promise<number> {
-    // Build a sample transferChecked message for fee estimation
-    const sampleATA = await deriveATA(creatorPublicKey, mintAddress);
+    let sampleIxs: TransactionInstruction[];
 
-    const sampleIxs = [
-        createAssociatedTokenAccountIdempotentInstruction(
-            creatorPublicKey, sampleATA, creatorPublicKey, mintAddress,
-        ),
-        createTransferCheckedInstruction(
-            sampleATA, mintAddress, sampleATA, creatorPublicKey,
-            BigInt(1), 6,
-        ),
-    ];
+    if (isNativeSol) {
+        sampleIxs = [
+            SystemProgram.transfer({
+                fromPubkey: creatorPublicKey,
+                toPubkey: creatorPublicKey, // dummy destination for size estimate
+                lamports: 1,
+            }),
+        ];
+    } else {
+        const sampleATA = await deriveATA(creatorPublicKey, mintAddress);
+        sampleIxs = [
+            createAssociatedTokenAccountIdempotentInstruction(
+                creatorPublicKey, sampleATA, creatorPublicKey, mintAddress,
+            ),
+            createTransferCheckedInstruction(
+                sampleATA, mintAddress, sampleATA, creatorPublicKey,
+                BigInt(1), 6,
+            ),
+        ];
+    }
 
     const tx = new Transaction().add(...sampleIxs);
     const { blockhash } = await connection.getLatestBlockhash('finalized');
@@ -119,12 +140,10 @@ export async function estimateClaimFee(
     const message = tx.compileMessage();
     const baseFee = await connection.getFeeForMessage(message, 'finalized');
 
-    // Get priority fee estimate
     let priorityFee = 0;
     try {
         const fees = await connection.getRecentPrioritizationFees();
         if (fees.length > 0) {
-            // Use median priority fee, capped at 50000 lamports
             const sorted = fees.map(f => f.prioritizationFee).sort((a, b) => a - b);
             priorityFee = Math.min(sorted[Math.floor(sorted.length / 2)], 50000);
         }
@@ -133,7 +152,6 @@ export async function estimateClaimFee(
     }
 
     const totalFee = (baseFee.value || 5000) + priorityFee;
-    // 30% safety margin per blueprint
     return Math.ceil(totalFee * 1.30);
 }
 

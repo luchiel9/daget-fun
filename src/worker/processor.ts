@@ -3,6 +3,7 @@ import { claims, dagets, wallets, notifications, users } from '@/db/schema';
 import { eq, and, sql, lte, or, isNull } from 'drizzle-orm';
 import { Keypair, PublicKey, Connection } from '@solana/web3.js';
 import { getSolanaConnection, buildClaimTransaction } from '@/lib/solana';
+import { NATIVE_SOL_MINT } from '@/lib/tokens';
 import { decryptPrivateKey, zeroize } from '@/lib/crypto';
 import bs58 from 'bs58';
 
@@ -92,7 +93,11 @@ async function buildAndSendClaim(claim: any, connection: Connection) {
 
         const creatorKeypair = Keypair.fromSecretKey(secretKey);
         const claimantAddress = new PublicKey(claim.receiving_address);
-        const mintAddress = new PublicKey(daget.tokenMint);
+        const isNativeSol = daget.tokenMint === NATIVE_SOL_MINT;
+        // For native SOL we don't use mint; pass a dummy PublicKey for the SPL path (unused when isNativeSol)
+        const mintAddress = isNativeSol
+            ? new PublicKey('11111111111111111111111111111111')
+            : new PublicKey(daget.tokenMint);
 
         // Build transaction
         const tx = await buildClaimTransaction({
@@ -102,6 +107,7 @@ async function buildAndSendClaim(claim: any, connection: Connection) {
             tokenDecimals: daget.tokenDecimals,
             amountBaseUnits: claim.amount_base_units,
             connection,
+            isNativeSol,
         });
 
         // Sign (signature is now deterministic)

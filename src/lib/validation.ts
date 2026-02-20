@@ -23,10 +23,10 @@ export const createDagetSchema = z.object({
         color: z.number().optional().nullable(),
     })).max(20).optional(),
     required_role_ids: z.array(z.string()).optional(), // Keep for backward compatibility or alternative input
-    token_symbol: z.enum(['USDC', 'USDT']),
+    token_symbol: z.enum(['USDC', 'USDT', 'SOL']),
     amount_display: z.string().regex(
-        /^\d+(\.\d{1,6})?$/,
-        'Must be a positive decimal with max 6 fractional digits'
+        /^\d+(\.\d{1,9})?$/,
+        'Must be a positive decimal with max 9 fractional digits'
     ).refine((val) => parseFloat(val) > 0, 'Amount must be greater than 0'),
     total_winners: z.number().int().min(1).max(100000),
     daget_type: z.enum(['fixed', 'random']),
@@ -55,10 +55,10 @@ export const updateDagetSchema = z.object({
     })).max(20).optional(),
     required_role_ids: z.array(z.string()).optional(),
     // Conditional fields (only allowed if no claims)
-    token_symbol: z.enum(['USDC', 'USDT']).optional(),
+    token_symbol: z.enum(['USDC', 'USDT', 'SOL']).optional(),
     amount_display: z.string().regex(
-        /^\d+(\.\d{1,6})?$/,
-        'Must be a positive decimal with max 6 fractional digits'
+        /^\d+(\.\d{1,9})?$/,
+        'Must be a positive decimal with max 9 fractional digits'
     ).refine((val) => parseFloat(val) > 0, 'Amount must be greater than 0').optional(),
     total_winners: z.number().int().min(1).max(100000).optional(),
     daget_type: z.enum(['fixed', 'random']).optional(),
