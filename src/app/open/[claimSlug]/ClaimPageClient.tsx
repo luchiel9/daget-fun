@@ -439,7 +439,7 @@ export default function ClaimPageClient() {
                             </div>
 
                             {/* Row 1 right: spacer so row 2 aligns with rich-text */}
-                            <div className="hidden md:block border-b border-border-dark/50 p-6 md:p-8 md:pl-4" aria-hidden />
+                            <div className="hidden md:block p-6 md:p-8 md:pl-4" aria-hidden />
 
                             {/* Row 2 left: Message (rich-text) */}
                             <div className="relative z-10 flex flex-col border-b md:border-b-0 border-border-dark/50 p-6 md:pt-4 md:pb-8 md:pr-4 md:min-h-0">
