@@ -25,7 +25,7 @@ const pressStart2P = Press_Start_2P({
 
 export async function generateMetadata(): Promise<Metadata> {
     return {
-        metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://daget.luchiel.dev'),
+        metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://daget.fun'),
         title: 'Daget.fun | Role-gated Onchain Giveaways',
         description: 'Role-gated onchain giveaways for your community. No connect wallet needed.',
     };
