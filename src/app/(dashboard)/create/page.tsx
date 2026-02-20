@@ -56,9 +56,9 @@ export default function CreateDagetPage() {
 
     return (
         <div className="flex-1 flex flex-col overflow-hidden">
-            <WalletBar onRefresh={handleRefresh} />
-
-            <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+                <WalletBar onRefresh={handleRefresh} />
+                <div className="p-4 md:p-8">
                 <div className="max-w-7xl mx-auto">
                     <DagetForm
                         mode="create"
@@ -107,6 +107,7 @@ export default function CreateDagetPage() {
                             router.push(`/dagets/${data.daget_id}`);
                         }}
                     />
+                </div>
                 </div>
             </div>
         </div>

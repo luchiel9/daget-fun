@@ -9,6 +9,9 @@ const config: Config = {
     ],
     theme: {
         extend: {
+            screens: {
+                wallet: '1250px', // wallet bar: minimized below, full bar at 1250+
+            },
             colors: {
                 primary: '#6E9B8A',
                 'background-light': '#f5f6f8',
