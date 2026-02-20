@@ -54,14 +54,15 @@ export default function DagetDetailPage() {
     const claimUrl = `${window.location.origin}/open/${daget.claim_slug || ''}`;
     const progress = daget.total_winners > 0 ? (daget.claimed_count / daget.total_winners) * 100 : 0;
     const decimals = daget.token_symbol === 'SOL' ? 9 : 6;
+    const displayDecimals = daget.token_symbol === 'SOL' ? 5 : 2;
     const totalAmount = daget.total_amount_base_units != null
-        ? (daget.total_amount_base_units / 10 ** decimals).toFixed(2)
+        ? (daget.total_amount_base_units / 10 ** decimals).toFixed(displayDecimals)
         : '—';
     const distributedAmount = (daget.total_amount_base_units != null && daget.total_winners > 0)
-        ? ((daget.total_amount_base_units / daget.total_winners) * daget.claimed_count / 10 ** decimals).toFixed(2)
+        ? ((daget.total_amount_base_units / daget.total_winners) * daget.claimed_count / 10 ** decimals).toFixed(displayDecimals)
         : '—';
     const remainingAmount = (daget.total_amount_base_units != null && daget.total_winners > 0)
-        ? ((daget.total_amount_base_units / 10 ** decimals) - ((daget.total_amount_base_units / daget.total_winners) * daget.claimed_count / 10 ** decimals)).toFixed(2)
+        ? ((daget.total_amount_base_units / 10 ** decimals) - ((daget.total_amount_base_units / daget.total_winners) * daget.claimed_count / 10 ** decimals)).toFixed(displayDecimals)
         : '—';
     const failedCount = daget.failed_count ?? (daget.claims?.filter((c: any) => c.status === 'failed_permanent').length || 0);
 
@@ -289,7 +290,7 @@ export default function DagetDetailPage() {
                                                 </div>
                                             </td>
                                             <td className="py-4 px-6 text-sm font-mono font-bold text-text-primary">
-                                                {c.amount_base_units != null ? `${(c.amount_base_units / 1e6).toFixed(2)} ${daget.token_symbol}` : '—'}
+                                                {c.amount_base_units != null ? `${(c.amount_base_units / 10 ** decimals).toFixed(displayDecimals)} ${daget.token_symbol}` : '—'}
                                             </td>
                                             <td className="py-4 px-6">
                                                 <StatusChip status={c.status} />

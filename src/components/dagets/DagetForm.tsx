@@ -57,9 +57,10 @@ interface DagetFormProps {
     onSubmit: (values: FormValues) => Promise<void>;
     isLoading?: boolean;
     error?: string | null;
+    refreshTrigger?: number;
 }
 
-export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubmit, isLoading = false, error: propError }: DagetFormProps) {
+export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubmit, isLoading = false, error: propError, refreshTrigger = 0 }: DagetFormProps) {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     // Combine loading states
@@ -159,24 +160,27 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
 
         fetchBalances();
         fetchSolPrice();
-        handleSyncServers();
+        // We only want to run handleSyncServers once on mount, so we'll conditionally run it
+        if (refreshTrigger === 0) {
+            handleSyncServers();
 
-        const handleMessage = (event: MessageEvent) => {
-            if (event.origin !== window.location.origin) return;
-            if (event.data?.type === 'DISCORD_LOGIN_SUCCESS') {
-                handleSyncServers();
-                setDiscordAuthError(false);
-            }
-        };
+            const handleMessage = (event: MessageEvent) => {
+                if (event.origin !== window.location.origin) return;
+                if (event.data?.type === 'DISCORD_LOGIN_SUCCESS') {
+                    handleSyncServers();
+                    setDiscordAuthError(false);
+                }
+            };
 
-        window.addEventListener('message', handleMessage);
-        return () => window.removeEventListener('message', handleMessage);
-    }, []);
+            window.addEventListener('message', handleMessage);
+            return () => window.removeEventListener('message', handleMessage);
+        }
+    }, [refreshTrigger]);
 
     // Validation functions
     const validateTokenSymbol = (value: string) => {
-        if (!value || (value !== 'USDC' && value !== 'USDT')) {
-            return 'Please select a token (USDC or USDT)';
+        if (!value || (value !== 'USDC' && value !== 'USDT' && value !== 'SOL')) {
+            return 'Please select a token (USDC, USDT, or SOL)';
         }
         return null;
     };
@@ -272,9 +276,14 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
             maxAmount = parseFloat(balances.usdc) || 0;
         } else if (form.token_symbol === 'USDT') {
             maxAmount = parseFloat(balances.usdt) || 0;
+        } else if (form.token_symbol === 'SOL') {
+            const solBal = parseFloat(balances.sol) || 0;
+            const gasReserve = parseFloat(estimatedGas) || 0;
+            maxAmount = Math.max(0, solBal - gasReserve);
         }
 
-        const displayAmount = Math.max(0, maxAmount).toFixed(2); // Prevent -0.00
+        const decimals = form.token_symbol === 'SOL' ? 6 : 2;
+        const displayAmount = Math.max(0, maxAmount).toFixed(decimals);
         updateForm('amount_display', displayAmount);
     };
 
@@ -589,27 +598,27 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
     const estimatedClaim = useMemo(() => {
         const amount = parseFloat(form.amount_display) || 0;
         const winners = parseInt(form.total_winners) || 1;
+        const dec = form.token_symbol === 'SOL' ? 5 : 2;
 
         if (form.daget_type === 'fixed') {
-            if (winners <= 0) return '0.00';
-            return (amount / winners).toFixed(2);
+            if (winners <= 0) return (0).toFixed(dec);
+            return (amount / winners).toFixed(dec);
         } else {
-            // Random Mode Simulation
             const minPercent = parseFloat(form.random_min_percent) || 10;
             const maxPercent = parseFloat(form.random_max_percent) || 75;
 
-            // If we don't have valid inputs yet
-            if (amount <= 0 || winners <= 0) return '0.00 - 0.00';
+            if (amount <= 0 || winners <= 0) return `${(0).toFixed(dec)} - ${(0).toFixed(dec)}`;
 
             const result = simulateRandomClaims(amount, winners, minPercent, maxPercent);
-            return `${result.min} - ${result.max}`;
+            return `${Number(result.min).toFixed(dec)} - ${Number(result.max).toFixed(dec)}`;
         }
-    }, [form.amount_display, form.total_winners, form.daget_type, form.random_min_percent, form.random_max_percent]);
+    }, [form.amount_display, form.total_winners, form.daget_type, form.token_symbol, form.random_min_percent, form.random_max_percent]);
 
     const totalToFund = useMemo(() => {
         const amount = parseFloat(form.amount_display) || 0;
-        return amount.toFixed(2);
-    }, [form.amount_display]);
+        const dec = form.token_symbol === 'SOL' ? 5 : 2;
+        return amount.toFixed(dec);
+    }, [form.amount_display, form.token_symbol]);
 
     // Gas estimation: base tx fee * total winners * 1.5 buffer
     const estimatedGas = useMemo(() => {
@@ -632,6 +641,7 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
         const amount = parseFloat(form.amount_display) || 0;
         let balance = 0;
         let tokenName = '';
+        let required = amount;
 
         if (form.token_symbol === 'USDC') {
             balance = parseFloat(balances.usdc);
@@ -639,16 +649,24 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
         } else if (form.token_symbol === 'USDT') {
             balance = parseFloat(balances.usdt);
             tokenName = 'USDT';
+        } else if (form.token_symbol === 'SOL') {
+            balance = parseFloat(balances.sol);
+            tokenName = 'SOL';
+            const gasNeeded = parseFloat(estimatedGas) || 0;
+            required = amount + gasNeeded; // SOL needed for both reward and gas
         }
 
-        const hasEnough = balance >= amount;
+        const hasEnough = balance >= required;
+        const decimals = form.token_symbol === 'SOL' ? 6 : 2;
         const message = hasEnough
-            ? `You have enough balance (${balance.toFixed(2)} ${tokenName})`
-            : `Not enough balance. You have ${balance.toFixed(2)} ${tokenName}, need ${amount.toFixed(2)} ${tokenName}`;
+            ? `You have enough balance (${balance.toFixed(decimals)} ${tokenName})`
+            : form.token_symbol === 'SOL'
+                ? `Not enough SOL. You have ${balance.toFixed(6)} SOL, need ${required.toFixed(6)} SOL (amount + gas)`
+                : `Not enough balance. You have ${balance.toFixed(2)} ${tokenName}, need ${amount.toFixed(2)} ${tokenName}`;
         const color = hasEnough ? 'text-green-500' : 'text-red-500';
 
         return { hasEnough, message, color };
-    }, [balances, form.amount_display, form.token_symbol]);
+    }, [balances, form.amount_display, form.token_symbol, estimatedGas]);
 
     const gasBalanceCheck = useMemo(() => {
         if (!balances) return { hasEnough: false, message: '', color: '' };
@@ -666,7 +684,10 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
         return { hasEnough, message, color };
     }, [balances, estimatedGas, solPrice]);
 
-    const canSubmit = tokenBalanceCheck.hasEnough && gasBalanceCheck.hasEnough;
+    // For SOL, token balance check already includes gas; for USDC/USDT we need both token and gas
+    const canSubmit = form.token_symbol === 'SOL'
+        ? tokenBalanceCheck.hasEnough
+        : tokenBalanceCheck.hasEnough && gasBalanceCheck.hasEnough;
 
     const hasRoles = form.required_role_ids.trim().length > 0;
     const hasGuild = form.discord_guild_id.trim().length > 0;
@@ -675,6 +696,7 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
         if (!balances || !form.token_symbol) return '-';
         if (form.token_symbol === 'USDC') return `${balances.usdc} USDC`;
         if (form.token_symbol === 'USDT') return `${balances.usdt} USDT`;
+        if (form.token_symbol === 'SOL') return `${balances.sol} SOL`;
         return '-';
     }, [balances, form.token_symbol]);
 
@@ -1024,6 +1046,16 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
                                         <div className="space-y-3">
                                             <div className={`flex gap-2 p-1 bg-background-dark/50 border rounded-xl transition-colors ${!form.token_symbol ? 'border-amber-500/40' : 'border-border-dark/60'
                                                 }`}>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => updateForm('token_symbol', 'SOL')}
+                                                    className={`flex-1 py-2.5 px-3 text-sm font-semibold rounded-lg transition-all ${form.token_symbol === 'SOL'
+                                                        ? 'bg-primary text-white shadow-lg'
+                                                        : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+                                                        }`}
+                                                >
+                                                    SOL
+                                                </button>
                                                 <button
                                                     type="button"
                                                     onClick={() => updateForm('token_symbol', 'USDC')}

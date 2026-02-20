@@ -1,4 +1,4 @@
-import { withSentryConfig } from '@sentry/nextjs';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   serverExternalPackages: [
@@ -24,9 +24,4 @@ const nextConfig = {
   },
 };
 
-export default withSentryConfig(nextConfig, {
-  site: process.env.NEXT_PUBLIC_SITE_URL,
-  silent: !process.env.CI,
-  widenClientFileUpload: true,
-  telemetry: false,
-});
+export default nextConfig;

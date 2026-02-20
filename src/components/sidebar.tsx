@@ -21,6 +21,7 @@ const UserContext = React.createContext<{
     discordAvatarUrl?: string | null;
     walletPublicKey?: string | null;
     hasWallet?: boolean;
+    finishedGuide?: boolean;
 } | null>(null);
 
 export const useUser = () => {
@@ -78,18 +79,29 @@ export function Sidebar() {
                 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
                 md:translate-x-0 md:flex
             `}>
-                <Link href="/" className="p-6 flex items-center gap-3 hover:opacity-80 transition-opacity">
+                <Link href="/" className="p-6 pb-2 flex items-center justify-center gap-3 hover:opacity-80 transition-opacity">
                     <img src="/images/dagetfun_logo.png" alt="Daget.fun" className="w-8 h-8 rounded-lg" />
-                    <h1 className="text-xl font-bold tracking-tight text-text-primary">Daget.fun</h1>
+                    <div className="inline-block px-3 py-1 bg-transparent arcade-border-magenta leading-none">
+                        <h1 className="font-arcade text-sm text-neon-magenta animate-pulse tracking-widest leading-none">DAGET.FUN</h1>
+                    </div>
                 </Link>
                 <nav className="flex-1 px-4 space-y-1 mt-4">
                     {navItems.map((item) => {
                         const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+                        const isDashboard = item.href === '/dashboard';
+                        const handleNavClick = (e: React.MouseEvent) => {
+                            if (isMobileMenuOpen) toggleMobileMenu();
+                            // Force full reload when navigating to dashboard so layout refetches user (wallet bar appears after creating wallet)
+                            if (isDashboard && !isActive) {
+                                e.preventDefault();
+                                window.location.href = '/dashboard';
+                            }
+                        };
                         return (
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                onClick={() => isMobileMenuOpen && toggleMobileMenu()}
+                                onClick={handleNavClick}
                                 className={`nav-icon-hover flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${isActive ? 'nav-active bg-primary/10 text-primary font-medium' : 'text-text-secondary hover:text-primary hover:bg-primary/5'}`}
                             >
                                 <div className="relative flex items-center justify-center">
@@ -124,6 +136,7 @@ export function AppShell({ children, user }: { children: React.ReactNode; user: 
         discordAvatarUrl: user?.discordAvatarUrl,
         walletPublicKey: user?.walletPublicKey,
         hasWallet: !!user?.walletPublicKey,
+        finishedGuide: user?.finishedGuide,
     };
 
     return (

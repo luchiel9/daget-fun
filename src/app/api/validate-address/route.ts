@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PublicKey } from '@solana/web3.js';
 import { getSolanaConnection, checkAtaExists } from '@/lib/solana';
 import { checkRateLimit, rateLimiters } from '@/lib/rate-limit';
+import { NATIVE_SOL_MINT } from '@/lib/tokens';
 
 export async function POST(req: NextRequest) {
     try {
@@ -45,13 +46,19 @@ export async function POST(req: NextRequest) {
         }
 
         // Check if wallet has an ATA for the specified token
+        // Native SOL doesn't require an ATA - always return true for SOL
         let hasAta = false;
         if (tokenMint && typeof tokenMint === 'string') {
-            try {
-                const mintPubkey = new PublicKey(tokenMint);
-                hasAta = await checkAtaExists(connection, pubkey, mintPubkey);
-            } catch {
-                // If mint is invalid, skip ATA check
+            if (tokenMint === NATIVE_SOL_MINT) {
+                // Native SOL - no ATA needed, always valid
+                hasAta = true;
+            } else {
+                try {
+                    const mintPubkey = new PublicKey(tokenMint);
+                    hasAta = await checkAtaExists(connection, pubkey, mintPubkey);
+                } catch {
+                    // If mint is invalid, skip ATA check
+                }
             }
         }
 
