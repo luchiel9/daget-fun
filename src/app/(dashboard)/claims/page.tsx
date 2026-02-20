@@ -36,8 +36,9 @@ function timeAgo(dateStr: string): string {
     return `${days} day${days === 1 ? '' : 's'} ago`;
 }
 
-function formatAmount(baseUnits: number, decimals: number): string {
-    return (baseUnits / Math.pow(10, decimals)).toFixed(2);
+function formatAmount(baseUnits: number, decimals: number, tokenSymbol?: string): string {
+    const displayDecimals = tokenSymbol === 'SOL' ? 5 : 2;
+    return (baseUnits / Math.pow(10, decimals)).toFixed(displayDecimals);
 }
 
 function statusBucket(status: string): FilterKey {
@@ -224,7 +225,7 @@ export default function ClaimsHistoryPage() {
                                                     <div className="flex items-center gap-2 bg-background-dark/30 px-3 py-1.5 rounded-lg border border-border-dark/30">
                                                         <span className="text-md font-bold font-mono text-text-primary">
                                                             {c.status === 'confirmed' ? '' : ''}
-                                                            {formatAmount(c.amount_base_units, c.token_decimals)}
+                                                            {formatAmount(c.amount_base_units, c.token_decimals, c.token_symbol)}
                                                         </span>
                                                         <span className={`text-xs font-semibold ${tokenColor(c.token_symbol)}`}>
                                                             {c.token_symbol}

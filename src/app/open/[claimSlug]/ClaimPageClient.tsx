@@ -38,9 +38,10 @@ function shortenTx(sig: string | null) {
     return `${sig.slice(0, 6)}...${sig.slice(-6)}`;
 }
 
-function formatAmount(baseUnits: number | null, decimals: number) {
-    if (baseUnits == null) return '0.00';
-    return (baseUnits / Math.pow(10, decimals)).toFixed(2);
+function formatAmount(baseUnits: number | null, decimals: number, tokenSymbol?: string) {
+    if (baseUnits == null) return tokenSymbol === 'SOL' ? '0.00000' : '0.00';
+    const displayDecimals = tokenSymbol === 'SOL' ? 5 : 2;
+    return (baseUnits / Math.pow(10, decimals)).toFixed(displayDecimals);
 }
 
 function solscanUrl(sig: string) {
@@ -93,6 +94,9 @@ export default function ClaimPageClient() {
     const [winnersList, setWinnersList] = useState<ActivityClaim[]>([]);
     const [loadingWinners, setLoadingWinners] = useState(false);
 
+    // SOL price for success view (show USD value when token is SOL)
+    const [solPrice, setSolPrice] = useState<number>(0);
+
     const fetchWinners = async () => {
         setLoadingWinners(true);
         try {
@@ -119,6 +123,20 @@ export default function ClaimPageClient() {
             if (activityPollRef.current) clearInterval(activityPollRef.current);
         };
     }, [claimSlug]);
+
+    // Fetch SOL price when showing success and token is SOL (for USD value)
+    useEffect(() => {
+        if (viewState !== 'success' || !daget || daget.token_symbol !== 'SOL') return;
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
+                const data = await res.json();
+                if (!cancelled && data.solana?.usd) setSolPrice(data.solana.usd);
+            } catch { /* ignore */ }
+        })();
+        return () => { cancelled = true; };
+    }, [viewState, daget?.token_symbol]);
 
     // Confetti effect on success
     useEffect(() => {
@@ -295,8 +313,8 @@ export default function ClaimPageClient() {
                 return;
             }
 
-            // Check if wallet has the required token account
-            if (!validationData.hasAta) {
+            // Check if wallet has the required token account (skip for native SOL - no ATA needed)
+            if (daget?.token_symbol !== 'SOL' && !validationData.hasAta) {
                 setShowAtaModal(true);
                 setClaiming(false);
                 return;
@@ -908,7 +926,7 @@ export default function ClaimPageClient() {
                                     <div className="fade-in-up delay-200">
                                         <div className="flex items-center justify-center gap-3">
                                             <p className="text-4xl font-bold font-mono text-text-primary tracking-tighter shadow-green-glow inline-block">
-                                                {formatAmount(claimStatus.amount_base_units, daget.token_decimals ?? 6)}
+                                                {formatAmount(claimStatus.amount_base_units, daget.token_decimals ?? 6, daget.token_symbol)}
                                             </p>
                                             {getTokenIcon(daget.token_symbol) ? (
                                                 <img
@@ -920,6 +938,11 @@ export default function ClaimPageClient() {
                                                 <span className="text-blue-400 text-2xl font-bold">{daget.token_symbol}</span>
                                             )}
                                         </div>
+                                        {daget.token_symbol === 'SOL' && solPrice > 0 && claimStatus.amount_base_units != null && (
+                                            <p className="text-sm text-green-400 mt-1.5 fade-in-up delay-200">
+                                                ≈ ${((claimStatus.amount_base_units / Math.pow(10, daget.token_decimals ?? 9)) * solPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </p>
+                                        )}
                                     </div>
                                     <p className="text-sm text-text-secondary fade-in-up delay-300">Tokens are on their way to your wallet</p>
                                 </div>
@@ -1102,7 +1125,7 @@ export default function ClaimPageClient() {
                                                     </td>
                                                     <td className="px-5 py-3">
                                                         <span className="font-mono text-sm font-bold text-text-primary">
-                                                            {formatAmount(w.amount_base_units, daget?.token_decimals || 6)}
+                                                            {formatAmount(w.amount_base_units, daget?.token_decimals || 6, daget?.token_symbol)}
                                                         </span>
                                                         <span className="text-xs text-text-muted ml-1">{daget?.token_symbol}</span>
                                                     </td>

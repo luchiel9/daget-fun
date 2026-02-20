@@ -598,27 +598,27 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
     const estimatedClaim = useMemo(() => {
         const amount = parseFloat(form.amount_display) || 0;
         const winners = parseInt(form.total_winners) || 1;
+        const dec = form.token_symbol === 'SOL' ? 5 : 2;
 
         if (form.daget_type === 'fixed') {
-            if (winners <= 0) return '0.00';
-            return (amount / winners).toFixed(2);
+            if (winners <= 0) return (0).toFixed(dec);
+            return (amount / winners).toFixed(dec);
         } else {
-            // Random Mode Simulation
             const minPercent = parseFloat(form.random_min_percent) || 10;
             const maxPercent = parseFloat(form.random_max_percent) || 75;
 
-            // If we don't have valid inputs yet
-            if (amount <= 0 || winners <= 0) return '0.00 - 0.00';
+            if (amount <= 0 || winners <= 0) return `${(0).toFixed(dec)} - ${(0).toFixed(dec)}`;
 
             const result = simulateRandomClaims(amount, winners, minPercent, maxPercent);
-            return `${result.min} - ${result.max}`;
+            return `${Number(result.min).toFixed(dec)} - ${Number(result.max).toFixed(dec)}`;
         }
-    }, [form.amount_display, form.total_winners, form.daget_type, form.random_min_percent, form.random_max_percent]);
+    }, [form.amount_display, form.total_winners, form.daget_type, form.token_symbol, form.random_min_percent, form.random_max_percent]);
 
     const totalToFund = useMemo(() => {
         const amount = parseFloat(form.amount_display) || 0;
-        return amount.toFixed(2);
-    }, [form.amount_display]);
+        const dec = form.token_symbol === 'SOL' ? 5 : 2;
+        return amount.toFixed(dec);
+    }, [form.amount_display, form.token_symbol]);
 
     // Gas estimation: base tx fee * total winners * 1.5 buffer
     const estimatedGas = useMemo(() => {
@@ -1048,6 +1048,16 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
                                                 }`}>
                                                 <button
                                                     type="button"
+                                                    onClick={() => updateForm('token_symbol', 'SOL')}
+                                                    className={`flex-1 py-2.5 px-3 text-sm font-semibold rounded-lg transition-all ${form.token_symbol === 'SOL'
+                                                        ? 'bg-primary text-white shadow-lg'
+                                                        : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+                                                        }`}
+                                                >
+                                                    SOL
+                                                </button>
+                                                <button
+                                                    type="button"
                                                     onClick={() => updateForm('token_symbol', 'USDC')}
                                                     className={`flex-1 py-2.5 px-3 text-sm font-semibold rounded-lg transition-all ${form.token_symbol === 'USDC'
                                                         ? 'bg-primary text-white shadow-lg'
@@ -1065,16 +1075,6 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
                                                         }`}
                                                 >
                                                     USDT
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => updateForm('token_symbol', 'SOL')}
-                                                    className={`flex-1 py-2.5 px-3 text-sm font-semibold rounded-lg transition-all ${form.token_symbol === 'SOL'
-                                                        ? 'bg-primary text-white shadow-lg'
-                                                        : 'text-text-muted hover:text-text-primary hover:bg-white/5'
-                                                        }`}
-                                                >
-                                                    SOL
                                                 </button>
                                             </div>
                                             {!form.token_symbol && (

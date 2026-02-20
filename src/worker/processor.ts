@@ -92,7 +92,17 @@ async function buildAndSendClaim(claim: any, connection: Connection) {
         );
 
         const creatorKeypair = Keypair.fromSecretKey(secretKey);
-        const claimantAddress = new PublicKey(claim.receiving_address);
+        // Normalize address: raw SQL returns snake_case; trim whitespace that can cause "Invalid public key input"
+        // Handle both snake_case (from raw SQL) and camelCase (if ORM mapped)
+        const addressValue = claim.receiving_address ?? claim.receivingAddress;
+        if (!addressValue || typeof addressValue !== 'string') {
+            throw new Error(`Missing receiving address in claim ${claim.id}`);
+        }
+        const rawAddress = addressValue.trim();
+        if (!rawAddress) {
+            throw new Error(`Empty receiving address after trim in claim ${claim.id}`);
+        }
+        const claimantAddress = new PublicKey(rawAddress);
         const isNativeSol = daget.tokenMint === NATIVE_SOL_MINT;
         // For native SOL we don't use mint; pass a dummy PublicKey for the SPL path (unused when isNativeSol)
         const mintAddress = isNativeSol

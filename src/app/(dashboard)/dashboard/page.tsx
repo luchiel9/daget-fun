@@ -28,6 +28,7 @@ interface DagetItem {
     claimed_count: number;
     created_at: string;
     total_amount_base_units?: number;
+    token_decimals?: number;
     daget_type?: string;
     message_html?: string;
     claim_slug: string;
@@ -63,9 +64,10 @@ function timeAgo(dateStr: string): string {
     return `${days}d ago`;
 }
 
-function formatAmount(baseUnits: number | null, decimals = 6): string {
+function formatAmount(baseUnits: number | null, decimals = 6, tokenSymbol?: string): string {
     if (baseUnits == null) return '—';
-    return (baseUnits / 10 ** decimals).toFixed(2);
+    const displayDecimals = tokenSymbol === 'SOL' ? 5 : 2;
+    return (baseUnits / 10 ** decimals).toFixed(displayDecimals);
 }
 
 function solscanTxUrl(sig: string): string {
@@ -369,11 +371,12 @@ export default function DashboardPage() {
     const totalWinners = activeDaget?.total_winners ?? 0;
     const claimedCount = activeDaget?.claimed_count ?? 0;
     const progressPercent = totalWinners > 0 ? Math.min(100, Math.round((claimedCount / totalWinners) * 100)) : 0;
+    const tokenDecimals = activeDaget?.token_decimals ?? (activeDaget?.token_symbol === 'SOL' ? 9 : 6);
     const totalBudgetDisplay = activeDaget?.total_amount_base_units
-        ? formatAmount(activeDaget.total_amount_base_units)
+        ? formatAmount(activeDaget.total_amount_base_units, tokenDecimals, activeDaget?.token_symbol)
         : '—';
     const distributedDisplay = activeDaget?.total_amount_base_units && totalWinners > 0
-        ? formatAmount(Math.round((activeDaget.total_amount_base_units / totalWinners) * claimedCount))
+        ? formatAmount(Math.round((activeDaget.total_amount_base_units / totalWinners) * claimedCount), tokenDecimals, activeDaget?.token_symbol)
         : '—';
 
     /* ── Actions ── */
@@ -891,7 +894,7 @@ export default function DashboardPage() {
                                                 <div className="flex items-center justify-between mb-1.5">
                                                     <span className={`text-xs font-bold ${claim.status === 'confirmed' ? 'text-primary' : claim.status === 'failed_permanent' ? 'text-red-500' : 'text-text-muted'}`}>
                                                         {claim.status === 'confirmed'
-                                                            ? `Claimed ${formatAmount(claim.amount_base_units)} ${activeDaget?.token_symbol || ''}`
+                                                            ? `Claimed ${formatAmount(claim.amount_base_units, activeDaget?.token_decimals ?? (activeDaget?.token_symbol === 'SOL' ? 9 : 6), activeDaget?.token_symbol)} ${activeDaget?.token_symbol || ''}`
                                                             : claim.status === 'failed_permanent'
                                                                 ? 'Failed'
                                                                 : 'Processing...'}
