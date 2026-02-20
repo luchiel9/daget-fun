@@ -43,7 +43,8 @@ const BlurText = ({
     easing = t => t,
     onAnimationComplete,
     stepDuration = 0.35,
-}: BlurTextProps) => {
+    align = 'left',
+}: BlurTextProps & { align?: 'left' | 'center' | 'right' }) => {
     const elements = animateBy === 'words' ? text.split(' ') : text.split('');
     const [inView, setInView] = useState(false);
     const ref = useRef<HTMLParagraphElement>(null);
@@ -89,7 +90,7 @@ const BlurText = ({
     );
 
     return (
-        <p ref={ref} className={className} style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', columnGap: animateBy === 'words' ? '0.3em' : '0' }}>
+        <p ref={ref} className={className} style={{ display: 'flex', flexWrap: 'wrap', justifyContent: align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start', columnGap: animateBy === 'words' ? '0.3em' : '0' }}>
             {elements.map((segment, index) => {
                 const animateKeyframes = buildKeyframes(fromSnapshot, toSnapshots);
                 const spanTransition = {
