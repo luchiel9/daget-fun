@@ -138,6 +138,20 @@ export default function ClaimPageClient() {
         return () => { cancelled = true; };
     }, [viewState, daget?.token_symbol]);
 
+    // Fetch SOL price when showing winners modal and token is SOL (for USD value)
+    useEffect(() => {
+        if (!showWinnersModal || !daget || daget.token_symbol !== 'SOL') return;
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
+                const data = await res.json();
+                if (!cancelled && data.solana?.usd) setSolPrice(data.solana.usd);
+            } catch { /* ignore */ }
+        })();
+        return () => { cancelled = true; };
+    }, [showWinnersModal, daget?.token_symbol]);
+
     // Confetti effect on success
     useEffect(() => {
         if (viewState === 'success') {
@@ -1124,10 +1138,19 @@ export default function ClaimPageClient() {
                                                         </div>
                                                     </td>
                                                     <td className="px-5 py-3">
-                                                        <span className="font-mono text-sm font-bold text-text-primary">
-                                                            {formatAmount(w.amount_base_units, daget?.token_decimals || 6, daget?.token_symbol)}
-                                                        </span>
-                                                        <span className="text-xs text-text-muted ml-1">{daget?.token_symbol}</span>
+                                                        <div className="flex flex-col">
+                                                            <div>
+                                                                <span className="font-mono text-sm font-bold text-text-primary">
+                                                                    {formatAmount(w.amount_base_units, daget?.token_decimals || 6, daget?.token_symbol)}
+                                                                </span>
+                                                                <span className="text-xs text-text-muted ml-1">{daget?.token_symbol}</span>
+                                                            </div>
+                                                            {daget?.token_symbol === 'SOL' && solPrice > 0 && w.amount_base_units != null && (
+                                                                <span className="text-xs text-green-400 mt-0.5">
+                                                                    ≈ ${((w.amount_base_units / Math.pow(10, daget?.token_decimals || 9)) * solPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </td>
                                                     <td className="px-5 py-3">
                                                         <div className="flex items-center gap-1.5">
