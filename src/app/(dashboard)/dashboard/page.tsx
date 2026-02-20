@@ -550,14 +550,14 @@ export default function DashboardPage() {
                                     Refresh
                                 </button>
                                 <button
-                                    onClick={handleExportKey}
+                                    onClick={() => setShowSecurityModal(true)}
                                     className="flex-1 md:flex-none px-4 py-2 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 border border-yellow-500/20 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-2 active:scale-[0.97]"
                                 >
                                     <span className="material-icons text-[16px]">vpn_key</span>
                                     Export Key
                                 </button>
                                 <button
-                                    onClick={() => setWallet(null)}
+                                    onClick={() => setShowRotateModal(true)}
                                     className="flex-1 md:flex-none px-4 py-2 bg-card-dark hover:bg-white/5 text-text-secondary border border-border-dark rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-2 active:scale-[0.97]"
                                 >
                                     <span className="material-icons text-[16px]">logout</span>
