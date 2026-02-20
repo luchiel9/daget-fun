@@ -8,8 +8,8 @@ COPY . .
 
 # Declare ARGs with defaults (Fallbacks for when build args are missing)
 ARG NEXT_PUBLIC_DISCORD_CLIENT_ID=1472593476159013075
-ARG NEXT_PUBLIC_APP_URL=https://daget.luchiel.dev
-ARG NEXT_PUBLIC_SITE_URL=https://daget.luchiel.dev
+ARG NEXT_PUBLIC_APP_URL=https://daget.fun
+ARG NEXT_PUBLIC_SITE_URL=https://daget.fun
 
 RUN --mount=type=cache,target=/app/.next/cache pnpm run build
 
