@@ -368,7 +368,7 @@ export default function LandingPage() {
                                     <div className="absolute left-8 md:left-1/2 top-0 md:top-1/2 transform -translate-y-1/2 md:-translate-x-1/2 w-8 h-8 rounded-full bg-background-dark border-2 border-primary/50 flex items-center justify-center group-hover:border-primary group-hover:shadow-[0_0_15px_rgba(110,155,138,0.5)] transition-all z-10 hidden sm:flex">
                                         <div className="w-2 h-2 rounded-full bg-primary/50 group-hover:bg-primary transition-colors"></div>
                                     </div>
-                                    <div className="md:w-[45%] pl-12 md:pl-0 w-full">
+                                    <div className="w-full max-w-sm mx-auto pl-0 md:max-w-none md:mx-0 md:w-[45%]">
                                         <SpotlightCard className="bg-card-dark p-6 border border-border-dark/40 group-hover:border-primary/30 transition-colors" spotlightColor="rgba(110, 155, 138, 0.12)">
                                             <div className="flex flex-col items-center justify-center h-24 overflow-hidden group">
                                                 <div className="flex flex-col items-center justify-center gap-3 opacity-40 group-hover:opacity-100 transition-opacity duration-300">
@@ -406,7 +406,7 @@ export default function LandingPage() {
                                     <div className="absolute left-8 md:left-1/2 top-0 md:top-1/2 transform -translate-y-1/2 md:-translate-x-1/2 w-8 h-8 rounded-full bg-background-dark border-2 border-neon-magenta/50 flex items-center justify-center group-hover:border-neon-magenta group-hover:shadow-[0_0_15px_rgba(209,107,165,0.5)] transition-all z-10 hidden sm:flex">
                                         <div className="w-2 h-2 rounded-full bg-neon-magenta/50 group-hover:bg-neon-magenta transition-colors"></div>
                                     </div>
-                                    <div className="md:w-[45%] pl-12 md:pl-0 w-full">
+                                    <div className="w-full max-w-sm mx-auto pl-0 md:max-w-none md:mx-0 md:w-[45%]">
                                         <SpotlightCard className="bg-card-dark p-6 border border-border-dark/40 group-hover:border-neon-magenta/30 transition-colors" spotlightColor="rgba(209, 107, 165, 0.12)">
                                             <div className="flex flex-col items-center justify-center h-24 group">
                                                 <div className="w-24 h-16 bg-black/60 border border-neon-magenta/30 rounded-md p-2 flex flex-col justify-between opacity-40 group-hover:opacity-100 group-hover:border-neon-magenta/80 transition-all duration-500 shadow-inner overflow-hidden" style={{ animation: "formReset 4s infinite" }}>
@@ -447,7 +447,7 @@ export default function LandingPage() {
                                     <div className="absolute left-8 md:left-1/2 top-0 md:top-1/2 transform -translate-y-1/2 md:-translate-x-1/2 w-8 h-8 rounded-full bg-background-dark border-2 border-primary/50 flex items-center justify-center group-hover:border-primary group-hover:shadow-[0_0_15px_rgba(110,155,138,0.5)] transition-all z-10 hidden sm:flex">
                                         <div className="w-2 h-2 rounded-full bg-primary/50 group-hover:bg-primary transition-colors"></div>
                                     </div>
-                                    <div className="md:w-[45%] pl-12 md:pl-0 w-full">
+                                    <div className="w-full max-w-sm mx-auto pl-0 md:max-w-none md:mx-0 md:w-[45%]">
                                         <SpotlightCard className="bg-card-dark p-6 border border-border-dark/40 group-hover:border-primary/30 transition-colors" spotlightColor="rgba(110, 155, 138, 0.12)">
                                             <div className="flex flex-col items-center justify-center h-24 relative group">
                                                 <div className="opacity-40 group-hover:opacity-100 transition-opacity duration-300 w-full h-full relative flex items-center justify-center">
@@ -495,7 +495,7 @@ export default function LandingPage() {
                                     <div className="absolute left-8 md:left-1/2 top-0 md:top-1/2 transform -translate-y-1/2 md:-translate-x-1/2 w-8 h-8 rounded-full bg-background-dark border-2 border-neon-magenta/50 flex items-center justify-center group-hover:border-neon-magenta group-hover:shadow-[0_0_15px_rgba(209,107,165,0.5)] transition-all z-10 hidden sm:flex">
                                         <div className="w-2 h-2 rounded-full bg-neon-magenta/50 group-hover:bg-neon-magenta transition-colors"></div>
                                     </div>
-                                    <div className="md:w-[45%] pl-12 md:pl-0 w-full">
+                                    <div className="w-full max-w-sm mx-auto pl-0 md:max-w-none md:mx-0 md:w-[45%]">
                                         <SpotlightCard className="bg-card-dark p-6 border border-border-dark/40 group-hover:border-neon-magenta/30 transition-colors" spotlightColor="rgba(209, 107, 165, 0.12)">
                                             <div className="flex flex-col items-center justify-center h-24 relative cursor-pointer w-full group overflow-hidden">
                                                 <div className="opacity-40 group-hover:opacity-100 transition-opacity duration-300 w-full h-full relative">
