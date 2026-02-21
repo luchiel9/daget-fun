@@ -7,14 +7,27 @@ import Redis from 'ioredis';
 const isProduction = process.env.NODE_ENV === 'production';
 
 // Survive Next.js hot reloads in dev without leaking connections
-const globalForRedis = globalThis as unknown as { _redis: Redis | undefined };
+const globalForRedis = globalThis as unknown as {
+    _redis: Redis | undefined;
+    _redisReady: boolean;
+};
+
+function isRedisReady(): boolean {
+    return globalForRedis._redisReady === true;
+}
 
 function getRedis(): Redis {
     if (!globalForRedis._redis) {
+        globalForRedis._redisReady = false;
+
         globalForRedis._redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
             maxRetriesPerRequest: 3,
             enableReadyCheck: true,
             lazyConnect: true,
+            retryStrategy(times) {
+                // Exponential backoff: 200ms, 400ms, 800ms... max 10s
+                return Math.min(times * 200, 10_000);
+            },
         });
 
         // Register the Lua script once so ioredis uses EVALSHA on subsequent calls
@@ -34,8 +47,18 @@ function getRedis(): Redis {
             `,
         });
 
+        globalForRedis._redis.on('ready', () => {
+            globalForRedis._redisReady = true;
+            console.log('[Redis] Connected and ready');
+        });
+
         globalForRedis._redis.on('error', (err) => {
             console.error('[Redis] Connection error:', err.message);
+        });
+
+        globalForRedis._redis.on('close', () => {
+            globalForRedis._redisReady = false;
+            console.warn('[Redis] Connection closed');
         });
 
         globalForRedis._redis.connect().catch(() => {
@@ -77,35 +100,35 @@ function createLimiter(
 }
 
 export const rateLimiters = {
-    /** POST /api/claims: 3/min/user */
-    claimsPerUser: () => createLimiter(120, '1 m', 'claims:user'),
-    /** POST /api/claims: 10/min/ip */
-    claimsPerIp: () => createLimiter(120, '1 m', 'claims:ip'),
-    /** POST /api/dagets: 10/hour/user */
-    dagetsPerUser: () => createLimiter(120, '1 h', 'dagets:user'),
-    /** POST /api/wallet/generate: 3/day/user */
-    walletGenPerUser: () => createLimiter(120, '1 d', 'wallet-gen:user'),
-    /** POST /api/export-key/request: 3/day/user */
-    exportReqPerUser: () => createLimiter(120, '1 d', 'export-req:user'),
-    /** POST /api/export-key/download: 10/hour/user */
-    exportDlPerUser: () => createLimiter(120, '1 h', 'export-dl:user'),
+    /** POST /api/claims: 30/min/user */
+    claimsPerUser: () => createLimiter(30, '1 m', 'claims:user'),
+    /** POST /api/claims: 60/min/ip */
+    claimsPerIp: () => createLimiter(60, '1 m', 'claims:ip'),
+    /** POST /api/dagets: 20/hour/user */
+    dagetsPerUser: () => createLimiter(20, '1 h', 'dagets:user'),
+    /** POST /api/wallet/generate: 5/day/user */
+    walletGenPerUser: () => createLimiter(5, '1 d', 'wallet-gen:user'),
+    /** POST /api/export-key/request: 5/day/user */
+    exportReqPerUser: () => createLimiter(5, '1 d', 'export-req:user'),
+    /** POST /api/export-key/download: 20/hour/user */
+    exportDlPerUser: () => createLimiter(20, '1 h', 'export-dl:user'),
     /** POST /api/export-key/download: 30/day/user */
-    exportDlPerUserDaily: () => createLimiter(120, '1 d', 'export-dl-daily:user'),
+    exportDlPerUserDaily: () => createLimiter(30, '1 d', 'export-dl-daily:user'),
     /** POST /api/export-key/download: 60/day/ip */
-    exportDlPerIp: () => createLimiter(120, '1 d', 'export-dl:ip'),
-    /** POST /api/claims/:claimId/retry: 5/hour/user */
-    retryPerUser: () => createLimiter(120, '1 h', 'retry:user'),
-    /** POST /api/claims/:claimId/retry: 20/hour/ip */
-    retryPerIp: () => createLimiter(120, '1 h', 'retry:ip'),
+    exportDlPerIp: () => createLimiter(60, '1 d', 'export-dl:ip'),
+    /** POST /api/claims/:claimId/retry: 10/hour/user */
+    retryPerUser: () => createLimiter(10, '1 h', 'retry:user'),
+    /** POST /api/claims/:claimId/retry: 30/hour/ip */
+    retryPerIp: () => createLimiter(30, '1 h', 'retry:ip'),
     /** POST /api/validate-address: 60/min/ip — prevents RPC cost abuse */
-    validateAddressPerIp: () => createLimiter(120, '1 m', 'validate-address:ip'),
-    /** GET /api/discord/guilds + /roles: 30/min/user — prevents Discord API proxy abuse */
-    discordApiPerUser: () => createLimiter(120, '1 m', 'discord-api:user'),
-    /** GET /api/claim/:slug/verify: 20/min/user — Discord API call per request */
-    verifyPerUser: () => createLimiter(120, '1 m', 'verify:user'),
-    /** GET /api/wallet/balances: 30/min/user — Solana RPC call per request */
-    walletBalancesPerUser: () => createLimiter(120, '1 m', 'wallet-bal:user'),
-    /** GET /api/claim/:slug: 60/min/ip — public endpoint, no auth required */
+    validateAddressPerIp: () => createLimiter(60, '1 m', 'validate-address:ip'),
+    /** GET /api/discord/guilds + /roles: 60/min/user — prevents Discord API proxy abuse */
+    discordApiPerUser: () => createLimiter(60, '1 m', 'discord-api:user'),
+    /** GET /api/claim/:slug/verify: 30/min/user — Discord API call per request */
+    verifyPerUser: () => createLimiter(30, '1 m', 'verify:user'),
+    /** GET /api/wallet/balances: 60/min/user — Solana RPC call per request */
+    walletBalancesPerUser: () => createLimiter(60, '1 m', 'wallet-bal:user'),
+    /** GET /api/claim/:slug: 120/min/ip — public endpoint, no auth required */
     publicClaimPerIp: () => createLimiter(120, '1 m', 'public-claim:ip'),
 };
 
@@ -155,11 +178,23 @@ interface RateLimitRedis extends Redis {
 
 /**
  * Check rate limit (Fixed Window counting). Returns { success, remaining, reset }.
+ *
+ * Production: fail-closed — if Redis is down, requests are denied.
+ * Dev: fail-open — allows requests through for convenience.
  */
 export async function checkRateLimit(
     limiterFactory: () => RateLimiterConfig,
     identifier: string,
 ): Promise<{ success: boolean; remaining: number; reset: number }> {
+    // If Redis isn't even connected yet, short-circuit
+    if (!isRedisReady()) {
+        if (isProduction) {
+            console.error('[RateLimit] Redis not ready, denying request (fail-closed)');
+            return { success: false, remaining: 0, reset: Date.now() + 60_000 };
+        }
+        return { success: true, remaining: 999, reset: 0 };
+    }
+
     try {
         const config = limiterFactory();
         const client = getRedis() as RateLimitRedis;
@@ -180,11 +215,9 @@ export async function checkRateLimit(
         };
     } catch (error) {
         if (isProduction) {
-            // Fail-closed in production: deny the request so rate limits can't be bypassed
             console.error('[RateLimit] Redis unavailable, denying request:', error);
             return { success: false, remaining: 0, reset: Date.now() + 60_000 };
         }
-        // Fail-open in dev for convenience
         console.warn('[RateLimit] Redis unavailable, allowing request:', error);
         return { success: true, remaining: 999, reset: 0 };
     }
