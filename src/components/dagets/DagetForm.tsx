@@ -620,6 +620,28 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
         return amount.toFixed(dec);
     }, [form.amount_display, form.token_symbol]);
 
+    const estimatedClaimUsd = useMemo(() => {
+        if (form.token_symbol !== 'SOL' || solPrice === 0) return null;
+        if (form.daget_type === 'fixed') {
+            const amount = parseFloat(estimatedClaim) || 0;
+            return (amount * solPrice).toFixed(2);
+        } else {
+            const parts = String(estimatedClaim).split(' - ');
+            if (parts.length === 2) {
+                const min = parseFloat(parts[0]) || 0;
+                const max = parseFloat(parts[1]) || 0;
+                return `${(min * solPrice).toFixed(2)} - ${(max * solPrice).toFixed(2)}`;
+            }
+            return '0.00';
+        }
+    }, [form.token_symbol, estimatedClaim, solPrice, form.daget_type]);
+
+    const totalToFundUsd = useMemo(() => {
+        if (form.token_symbol !== 'SOL' || solPrice === 0) return null;
+        const total = parseFloat(totalToFund) || 0;
+        return (total * solPrice).toFixed(2);
+    }, [form.token_symbol, totalToFund, solPrice]);
+
     // Gas estimation: base tx fee * total winners * 1.5 buffer
     const estimatedGas = useMemo(() => {
         const winners = parseInt(form.total_winners) || 0;
@@ -1239,6 +1261,9 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
                                             <span className="text-xs text-text-muted w-[35%]">Estimated Claim per person</span>
                                             <div className="flex-1 text-right">
                                                 <span className="font-bold text-base block leading-tight">{estimatedClaim} {form.token_symbol || ''}</span>
+                                                {estimatedClaimUsd && (
+                                                    <span className="text-[10px] text-green-500 font-semibold mt-0.5 block">≈ ${estimatedClaimUsd}</span>
+                                                )}
                                             </div>
                                         </div>
                                         <div className="h-px bg-border-dark/60"></div>
@@ -1247,6 +1272,9 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
                                                 <span className="text-xs font-bold w-[35%]">Total to Fund</span>
                                                 <div className="flex-1 text-right">
                                                     <span className="text-xl font-black text-primary block leading-tight break-all">{totalToFund} {form.token_symbol || ''}</span>
+                                                    {totalToFundUsd && (
+                                                        <span className="text-xs text-green-500 font-semibold mt-0.5 block">≈ ${totalToFundUsd}</span>
+                                                    )}
                                                 </div>
                                             </div>
                                             {tokenBalanceCheck.message && (
@@ -1276,9 +1304,7 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
                                         <div>
                                             <p className="text-xs font-bold text-amber-500 uppercase">SOL GAS NOTICE</p>
                                             <p className="text-[11px] text-amber-500/80 leading-relaxed mt-1">
-                                                We recommend keeping at least 0.02 SOL in your wallet to cover rent, claim fees, and storage.
-                                                <br /><br />
-                                                <strong>Note:</strong> You may pay slightly more gas if the claimant address does not have an existing ATA for USDC/USDT.
+                                                We recommend keeping at least 0.01 SOL in your wallet to cover rent, claim gas fees, and storage.
                                             </p>
                                         </div>
                                     </div>

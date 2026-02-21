@@ -410,9 +410,14 @@ export default function ClaimPageClient() {
     const hasTxSignature = Boolean(claimStatus?.tx_signature);
     const processingStep = (() => {
         if (!claimStatus) return 0;
-        if (claimStatus.status === 'confirmed') return 3;
-        if (claimStatus.status === 'submitted' || claimStatus.status === 'failed_retryable' || hasTxSignature) return 2;
-        if (claimStatus.status === 'created') return 1;
+        if (claimStatus.status === 'confirmed') return 4;
+        if (hasTxSignature) return 3;
+        // status is 'created', 'submitted' or 'failed_retryable'
+        // If it was created, then picked up by the worker, it becomes submitted.
+        // During 'submitted' it usually means the worker is trying to send the TX.
+        // So step 2 is "Submitting to Solana".
+        if (claimStatus.status === 'submitted' || claimStatus.status === 'failed_retryable') return 2;
+        // Step 1: Claim Created / Data Stored
         return 1;
     })();
 
@@ -816,29 +821,29 @@ export default function ClaimPageClient() {
 
                                 {/* Timeline */}
                                 <div className="space-y-0">
-                                    {/* Step 1: Claim Created */}
+                                    {/* Step 1: Claim Created (Storing Data) */}
                                     <div className="flex gap-4">
                                         <div className="flex flex-col items-center">
                                             {processingStep >= 2 ? (
-                                                <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center check-bounce">
+                                                <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center check-bounce shrink-0">
                                                     <span className="material-icons text-green-400 text-[18px]">check</span>
                                                 </div>
                                             ) : (
-                                                <div className="relative">
+                                                <div className="relative shrink-0">
                                                     <div className="absolute inset-0 bg-primary/30 rounded-full pulse-ring"></div>
                                                     <div className="relative w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
                                                         <span className="material-icons text-primary text-[18px] animate-spin">sync</span>
                                                     </div>
                                                 </div>
                                             )}
-                                            <div className={`w-0.5 h-10 ${processingStep >= 2 ? 'bg-green-500/40' : 'bg-border-dark/40'}`}></div>
+                                            <div className={`w-0.5 h-full min-h-[40px] ${processingStep >= 2 ? 'bg-green-500/40' : 'bg-border-dark/40 border-l border-dashed border-border-dark'}`}></div>
                                         </div>
-                                        <div className="pb-6">
+                                        <div className="pb-6 pt-1 flex-1">
                                             <p className={`text-sm font-semibold transition-colors duration-300 ${processingStep >= 2 ? 'text-green-400' : 'text-primary'}`}>
-                                                {processingStep === 0 ? 'Creating Claim...' : 'Claim Created'}
+                                                {processingStep === 1 ? 'Storing Data...' : 'Claim Created'}
                                             </p>
                                             <p className="text-xs text-text-muted mt-0.5">
-                                                {processingStep >= 2 ? 'Your spot has been reserved!' : 'Locking your spot...'}
+                                                {processingStep >= 2 ? 'Your spot has been reserved!' : 'Saving claim securely...'}
                                             </p>
                                         </div>
                                     </div>
@@ -847,12 +852,12 @@ export default function ClaimPageClient() {
                                     <div className="flex gap-4">
                                         <div className="flex flex-col items-center">
                                             {processingStep >= 2 ? (
-                                                processingStep > 2 ? (
-                                                    <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center check-bounce">
+                                                processingStep >= 3 ? (
+                                                    <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center check-bounce shrink-0">
                                                         <span className="material-icons text-green-400 text-[18px]">check</span>
                                                     </div>
                                                 ) : (
-                                                    <div className="relative">
+                                                    <div className="relative shrink-0">
                                                         <div className="absolute inset-0 bg-primary/30 rounded-full pulse-ring"></div>
                                                         <div className="relative w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
                                                             <span className="material-icons text-primary text-[18px] animate-spin">sync</span>
@@ -860,21 +865,21 @@ export default function ClaimPageClient() {
                                                     </div>
                                                 )
                                             ) : (
-                                                <div className="w-8 h-8 rounded-full border-2 border-dashed border-border-dark/60 flex items-center justify-center">
+                                                <div className="w-8 h-8 rounded-full border-2 border-dashed border-border-dark/60 flex items-center justify-center shrink-0">
                                                     <span className="material-icons text-text-muted text-[18px]">send</span>
                                                 </div>
                                             )}
-                                            <div className={`w-0.5 h-10 ${processingStep > 2 ? 'bg-green-500/40' : 'bg-border-dark/40 border-l border-dashed border-border-dark'}`}></div>
+                                            <div className={`w-0.5 h-full min-h-[40px] flex-1 ${processingStep >= 3 ? 'bg-green-500/40' : processingStep === 2 ? 'bg-primary/40' : 'bg-border-dark/40 border-l border-dashed border-border-dark'}`}></div>
                                         </div>
-                                        <div className="pb-6">
-                                            <p className={`text-sm font-semibold ${processingStep >= 2 ? (processingStep > 2 ? 'text-green-400' : 'text-primary') : 'text-text-muted'}`}>
+                                        <div className="pb-6 pt-1 flex-1">
+                                            <p className={`text-sm font-semibold ${processingStep >= 2 ? (processingStep >= 3 ? 'text-green-400' : 'text-primary') : 'text-text-muted'}`}>
                                                 Submitting to Solana
                                             </p>
                                             <p className="text-xs text-text-muted mt-0.5">
-                                                {processingStep >= 2 ? 'Sending transaction to the network...' : 'Waiting to submit...'}
+                                                {processingStep >= 3 ? 'Transaction submitted!' : processingStep === 2 ? 'Sending transaction to the network...' : 'Waiting to submit...'}
                                             </p>
                                             {claimStatus?.tx_signature && (
-                                                <div className="mt-2 bg-background-dark/50 rounded-lg p-3 border border-border-dark/40 flex items-center justify-between gap-4">
+                                                <div className="mt-4 bg-background-dark/50 rounded-lg p-3 border border-border-dark/40 flex items-center justify-between gap-4">
                                                     <span className="text-xs font-mono text-text-muted truncate">TX: {shortenTx(claimStatus.tx_signature)}</span>
                                                     <a
                                                         href={solscanUrl(claimStatus.tx_signature)}
@@ -893,18 +898,29 @@ export default function ClaimPageClient() {
                                     <div className="flex gap-4">
                                         <div className="flex flex-col items-center">
                                             {processingStep >= 3 ? (
-                                                <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center check-bounce">
-                                                    <span className="material-icons text-green-400 text-[18px]">check</span>
-                                                </div>
+                                                processingStep >= 4 ? (
+                                                    <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center check-bounce shrink-0">
+                                                        <span className="material-icons text-green-400 text-[18px]">check</span>
+                                                    </div>
+                                                ) : (
+                                                    <div className="relative shrink-0">
+                                                        <div className="absolute inset-0 bg-primary/30 rounded-full pulse-ring"></div>
+                                                        <div className="relative w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
+                                                            <span className="material-icons text-primary text-[18px] animate-spin">sync</span>
+                                                        </div>
+                                                    </div>
+                                                )
                                             ) : (
-                                                <div className="w-8 h-8 rounded-full border-2 border-dashed border-border-dark/60 flex items-center justify-center">
+                                                <div className="w-8 h-8 rounded-full border-2 border-dashed border-border-dark/60 flex items-center justify-center shrink-0">
                                                     <span className="material-icons text-text-muted text-[18px]">hourglass_top</span>
                                                 </div>
                                             )}
                                         </div>
-                                        <div>
-                                            <p className={`text-sm font-semibold ${processingStep >= 3 ? 'text-green-400' : 'text-text-muted'}`}>Finalizing</p>
-                                            <p className="text-xs text-text-muted mt-0.5">Waiting for confirmation...</p>
+                                        <div className="pt-1 flex-1">
+                                            <p className={`text-sm font-semibold ${processingStep >= 4 ? 'text-green-400' : processingStep === 3 ? 'text-primary' : 'text-text-muted'}`}>Finalizing</p>
+                                            <p className="text-xs text-text-muted mt-0.5">
+                                                {processingStep >= 4 ? 'Done!' : processingStep === 3 ? 'Waiting for network confirmation...' : 'Waiting for confirmation...'}
+                                            </p>
                                         </div>
                                     </div>
                                 </div>

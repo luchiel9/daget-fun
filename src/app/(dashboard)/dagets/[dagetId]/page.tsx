@@ -12,7 +12,18 @@ export default function DagetDetailPage() {
     const [loading, setLoading] = useState(true);
     const [showStopModal, setShowStopModal] = useState(false);
     const [showCopiedTooltip, setShowCopiedTooltip] = useState(false);
+    const [showShareModal, setShowShareModal] = useState(false);
+    const [copied, setCopied] = useState(false);
     const [stopping, setStopping] = useState(false);
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('new') === 'true') {
+            setShowShareModal(true);
+            // Optional: clean up the URL to prevent showing on refresh
+            window.history.replaceState({}, '', `/dagets/${dagetId}`);
+        }
+    }, [dagetId]);
 
     useEffect(() => { fetchDaget(); }, [dagetId]);
 
@@ -132,9 +143,6 @@ export default function DagetDetailPage() {
                                         </div>
                                     )}
                                 </div>
-                                <button className="w-10 h-10 flex items-center justify-center bg-surface rounded-xl hover:bg-border-dark transition-all duration-200 active:scale-[0.98]">
-                                    <span className="material-icons text-sm text-text-secondary">share</span>
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -334,6 +342,51 @@ export default function DagetDetailPage() {
                         message="This will prevent new claims. Existing pending claims will still process. This action cannot be undone."
                         confirmLabel="Stop Daget"
                         loading={stopping}
+                    />
+
+                    <Modal
+                        isOpen={showShareModal}
+                        onClose={() => {
+                            setShowShareModal(false);
+                            setTimeout(() => setCopied(false), 300); // reset state after close animation
+                        }}
+                        title="Daget Created Successfully!"
+                        icon="celebration"
+                        iconColor="text-green-400"
+                        iconBg="bg-green-500/20"
+                        borderColor="border-green-500/30"
+                        primaryAction={{
+                            label: copied ? 'Copied!' : 'Copy Link',
+                            onClick: () => {
+                                navigator.clipboard.writeText(claimUrl);
+                                setCopied(true);
+                                setTimeout(() => setCopied(false), 3000);
+                            }
+                        }}
+                        secondaryAction={{
+                            label: 'Close',
+                            onClick: () => {
+                                setShowShareModal(false);
+                                setTimeout(() => setCopied(false), 300);
+                            }
+                        }}
+                        message={
+                            <div className="mt-4 w-full">
+                                <p className="text-sm text-text-secondary mb-4 leading-relaxed">
+                                    Your giveaway is now live. Share this link with your community so they can start claiming their tokens!
+                                </p>
+                                <div className="bg-background-dark/80 border border-border-dark/60 rounded-xl p-4 flex items-center justify-between group hover:border-primary/50 transition-colors cursor-pointer" onClick={() => {
+                                    navigator.clipboard.writeText(claimUrl);
+                                    setCopied(true);
+                                    setTimeout(() => setCopied(false), 3000);
+                                }}>
+                                    <span className="text-sm font-mono text-primary font-medium break-all pr-4 select-all">{claimUrl}</span>
+                                    <button className="flex-shrink-0 w-8 h-8 rounded-lg bg-surface/80 flex items-center justify-center text-text-muted group-hover:text-primary transition-colors">
+                                        <span className="material-icons text-[18px]">{copied ? 'check' : 'content_copy'}</span>
+                                    </button>
+                                </div>
+                            </div>
+                        }
                     />
                 </div>
             </div>
