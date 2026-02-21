@@ -567,31 +567,6 @@ body {
     color: var(--text-primary);
   }
 
-  /* ─── TipTap Editor ─── */
-  .ProseMirror {
-    outline: none;
-    min-height: 150px;
-  }
-
-  .ProseMirror p.is-editor-empty:first-child::before {
-    color: #A8A3B0;
-    content: attr(data-placeholder);
-    float: left;
-    height: 0;
-    pointer-events: none;
-  }
-
-  /* Image Resizing */
-  .ProseMirror img {
-    border-radius: 0.5rem;
-    max-width: 100%;
-    height: auto;
-  }
-
-  .ProseMirror-selectednode {
-    outline: 2px solid var(--primary);
-    border-radius: 0.5rem;
-  }
 }
 
 /* ─── Driver.js Custom Theme ─── */
@@ -729,9 +704,11 @@ body {
     padding: 8px 12px;
   }
 }
+
 /* ─── Quill Editor Styles ─── */
 .quill-wrapper {
-  background-color: transparent; /* Or match theme */
+  background-color: transparent;
+  /* Or match theme */
   color: var(--text-primary);
   min-height: 200px;
 }
@@ -748,6 +725,7 @@ body {
   border-bottom-left-radius: 0.75rem;
   border-bottom-right-radius: 0.75rem;
   font-size: 1rem;
+  overflow: visible !important;
 }
 
 .quill-wrapper .ql-editor {
@@ -784,4 +762,51 @@ body {
 .ql-snow .ql-picker-options {
   background-color: var(--surface) !important;
   border-color: var(--border-dark) !important;
+}
+
+/* Image URL bar — inline URL input for image insertion */
+.ql-image-url-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: var(--surface);
+  white-space: nowrap;
+  position: relative;
+  z-index: 100;
+}
+
+.ql-image-url-bar span {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.ql-image-url-bar input {
+  flex: 1;
+  min-width: 0;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-dark);
+  border-radius: 4px;
+  padding: 4px 8px;
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+}
+
+.ql-image-url-bar input:focus {
+  border-color: var(--primary);
+}
+
+.ql-image-url-bar .ql-action {
+  color: var(--primary);
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.ql-image-url-bar .ql-action:hover {
+  text-decoration: underline;
 }
