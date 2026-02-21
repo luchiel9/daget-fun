@@ -186,7 +186,10 @@ export async function checkRateLimit(
     limiterFactory: () => RateLimiterConfig,
     identifier: string,
 ): Promise<{ success: boolean; remaining: number; reset: number }> {
-    // If Redis isn't even connected yet, short-circuit
+    // Ensure Redis connection is initiated (lazy-connect on first call)
+    getRedis();
+
+    // If Redis hasn't finished connecting yet, short-circuit
     if (!isRedisReady()) {
         if (isProduction) {
             console.error('[RateLimit] Redis not ready, denying request (fail-closed)');
