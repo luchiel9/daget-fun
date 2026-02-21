@@ -68,6 +68,9 @@ function getRedis(): Redis {
     return globalForRedis._redis;
 }
 
+// Eagerly initialize Redis at module load time so it's ready before the first request
+getRedis();
+
 // Convert "1 m" format to seconds
 function parseWindowToSeconds(window: string): number {
     const [valStr, unit] = window.split(' ');
