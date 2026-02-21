@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { Errors } from '@/lib/errors';
+import { timingSafeEqual } from 'crypto';
 
 // Processor state (in-memory, same process)
 let loopRunning = false;
@@ -25,7 +26,12 @@ export async function GET(request: Request) {
     const token = request.headers.get('X-Internal-Token');
     const expectedToken = process.env.PROCESSOR_HEALTH_TOKEN;
 
-    if (!expectedToken || token !== expectedToken) {
+    if (
+        !expectedToken ||
+        !token ||
+        token.length !== expectedToken.length ||
+        !timingSafeEqual(Buffer.from(token), Buffer.from(expectedToken))
+    ) {
         return Errors.unauthorized();
     }
 

@@ -6,7 +6,7 @@ import { dagets, claims, dagetRequirements } from '@/db/schema';
 import { eq, and, desc, lt, sql } from 'drizzle-orm';
 import { createClaimSchema, paginationSchema } from '@/lib/validation';
 import { checkIdempotency, storeIdempotency } from '@/lib/idempotency';
-import { checkRateLimit, rateLimiters } from '@/lib/rate-limit';
+import { checkRateLimit, rateLimiters, getClientIp } from '@/lib/rate-limit';
 import { encodeCursor, decodeCursor } from '@/lib/cursor';
 import { headers } from 'next/headers';
 import crypto from 'crypto';
@@ -21,8 +21,7 @@ export async function POST(request: NextRequest) {
         const user = await requireAuth();
 
         // Rate limit — per user AND per IP to prevent multi-account bypass
-        const ipHeader = request.headers.get('x-forwarded-for');
-        const ip = ipHeader ? ipHeader.split(',')[0].trim() : 'unknown';
+        const ip = getClientIp(request);
         const [userLimit, ipLimit] = await Promise.all([
             checkRateLimit(rateLimiters.claimsPerUser, user.id),
             checkRateLimit(rateLimiters.claimsPerIp, ip),
@@ -146,14 +145,14 @@ export async function POST(request: NextRequest) {
                 }
             } else {
                 // Random mode
-                // [CRITICAL FIX] Logic must INCLUDE released claims in 'usedAmount'
-                // We only exclude 'failed_permanent' which returns money to the pool.
-                // 'released', 'confirmed', 'submitted', 'created', 'failed_retryable' ALL count as used.
+                // Exclude statuses that return money to the pool:
+                //   - failed_permanent: never sent on-chain
+                //   - released: creator freed the slot, funds returned to pool
                 const claimedSoFar = await tx.execute(sql`
           SELECT COALESCE(SUM(amount_base_units), 0) as total
           FROM claims
           WHERE daget_id = ${daget.id}
-          AND status != 'failed_permanent'
+          AND status NOT IN ('failed_permanent', 'released')
           AND amount_base_units IS NOT NULL
         `) as any[];
                 const usedAmount = Number(claimedSoFar[0]?.total || 0);

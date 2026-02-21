@@ -10,9 +10,10 @@ import { getTokenConfig, displayToBaseUnits } from '@/lib/tokens';
 import DOMPurify from 'isomorphic-dompurify';
 
 const MESSAGE_SANITIZE_OPTS = {
-    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'br', 'p', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'code', 'pre', 'img', 'span', 'div', 'iframe', 'video'],
-    ALLOWED_ATTR: ['href', 'target', 'rel', 'src', 'alt', 'class', 'style', 'width', 'height', 'data-id', 'frameborder', 'allowfullscreen'],
-    ADD_URI_SCHEMES: ['data'],
+    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'br', 'p', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'code', 'pre', 'img', 'span', 'div'],
+    ALLOWED_ATTR: ['href', 'target', 'rel', 'src', 'alt', 'width', 'height'],
+    FORBID_ATTR: ['style', 'class', 'onerror', 'onload'],
+    ALLOW_DATA_ATTR: false,
 };
 
 /**

@@ -3,16 +3,21 @@ import { Errors } from '@/lib/errors';
 import { db } from '@/db';
 import { dagets, dagetRequirements } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { checkRateLimit, rateLimiters, getClientIp } from '@/lib/rate-limit';
 
 /**
  * GET /api/claim/:claimSlug — Public Daget data for claim page.
  * No auth required.
  */
 export async function GET(
-    _request: Request,
+    request: Request,
     { params }: { params: Promise<{ claimSlug: string }> },
 ) {
     try {
+        const ip = getClientIp(request);
+        const limit = await checkRateLimit(rateLimiters.publicClaimPerIp, ip);
+        if (!limit.success) return Errors.rateLimited();
+
         const { claimSlug } = await params;
 
         const daget = await db.query.dagets.findFirst({

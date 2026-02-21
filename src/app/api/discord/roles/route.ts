@@ -1,16 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, getDiscordAccessToken } from '@/lib/auth';
 import { Errors } from '@/lib/errors';
+import { checkRateLimit, rateLimiters } from '@/lib/rate-limit';
 
 export async function GET(request: NextRequest) {
     try {
-        await requireAuth();
+        const user = await requireAuth();
+
+        const limit = await checkRateLimit(rateLimiters.discordApiPerUser, user.id);
+        if (!limit.success) return Errors.rateLimited();
 
         const { searchParams } = new URL(request.url);
         const guildId = searchParams.get('guild_id');
 
-        if (!guildId) {
-            return Errors.validation('Guild ID is required');
+        if (!guildId || !/^\d{17,20}$/.test(guildId)) {
+            return Errors.validation('Invalid Guild ID');
         }
 
         // Strategy: Try User Token first (preferred for "Bot-less" setup if user has permissions)

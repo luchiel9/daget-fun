@@ -16,13 +16,19 @@ import {
     TokenAccountNotFoundError,
 } from '@solana/spl-token';
 
+// Singleton to avoid creating a new HTTP connection on every call
+const globalForSolana = globalThis as unknown as { _solanaConnection: Connection | undefined };
+
 /**
- * Get a Solana connection instance.
+ * Get a Solana connection instance (singleton).
  */
 export function getSolanaConnection(): Connection {
-    const cluster = (process.env.SOLANA_CLUSTER || 'mainnet-beta') as 'mainnet-beta';
-    const rpcUrl = process.env.SOLANA_RPC_URL || clusterApiUrl(cluster);
-    return new Connection(rpcUrl, 'finalized');
+    if (!globalForSolana._solanaConnection) {
+        const cluster = (process.env.SOLANA_CLUSTER || 'mainnet-beta') as 'mainnet-beta';
+        const rpcUrl = process.env.SOLANA_RPC_URL || clusterApiUrl(cluster);
+        globalForSolana._solanaConnection = new Connection(rpcUrl, 'finalized');
+    }
+    return globalForSolana._solanaConnection;
 }
 
 /**

@@ -4,23 +4,27 @@ import { Errors, ErrorCodes } from '@/lib/errors';
 import { db } from '@/db';
 import { claims, dagets, claimRetryAudit } from '@/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
-import { checkRateLimit, rateLimiters } from '@/lib/rate-limit';
+import { checkRateLimit, rateLimiters, getClientIp } from '@/lib/rate-limit';
 import { headers } from 'next/headers';
 
 /**
  * POST /api/claims/:claimId/retry — Manual retry for failed_permanent claim.
  */
 export async function POST(
-    _request: Request,
+    request: Request,
     { params }: { params: Promise<{ claimId: string }> },
 ) {
     try {
         const user = await requireAuth();
         const { claimId } = await params;
 
-        // Rate limit
-        const limit = await checkRateLimit(rateLimiters.retryPerUser, user.id);
-        if (!limit.success) return Errors.rateLimited();
+        // Rate limit — per user AND per IP
+        const ip = getClientIp(request);
+        const [userLimit, ipLimit] = await Promise.all([
+            checkRateLimit(rateLimiters.retryPerUser, user.id),
+            checkRateLimit(rateLimiters.retryPerIp, ip),
+        ]);
+        if (!userLimit.success || !ipLimit.success) return Errors.rateLimited();
 
         const claim = await db.query.claims.findFirst({
             where: eq(claims.id, claimId),

@@ -7,6 +7,10 @@ import crypto from 'crypto';
 
 const CURSOR_SECRET = process.env.CURSOR_SECRET || 'dev-cursor-secret-key-change-me';
 
+if (process.env.NODE_ENV === 'production' && !process.env.CURSOR_SECRET) {
+    console.error('[SECURITY] CURSOR_SECRET is not set in production — cursors are forgeable!');
+}
+
 interface CursorPayload {
     /** The value to paginate on (typically created_at ISO string) */
     v: string;
@@ -34,7 +38,10 @@ export function decodeCursor(cursor: string): CursorPayload | null {
         if (!data || !hmac) return null;
 
         const expectedHmac = crypto.createHmac('sha256', CURSOR_SECRET).update(data).digest('base64url');
-        if (hmac !== expectedHmac) return null;
+        if (
+            hmac.length !== expectedHmac.length ||
+            !crypto.timingSafeEqual(Buffer.from(hmac), Buffer.from(expectedHmac))
+        ) return null;
 
         const json = Buffer.from(data, 'base64url').toString();
         const payload = JSON.parse(json) as CursorPayload;

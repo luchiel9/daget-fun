@@ -21,7 +21,7 @@ export async function runReconciliation() {
     SELECT id, tx_signature, submitted_at, attempt_count
     FROM claims
     WHERE status = 'submitted'
-    AND submitted_at < now() - interval '${sql.raw(String(SUBMITTED_TIMEOUT_SECONDS))} seconds'
+    AND submitted_at < now() - make_interval(secs => ${SUBMITTED_TIMEOUT_SECONDS})
     LIMIT 20
   `) as any[];
 

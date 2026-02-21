@@ -8,21 +8,24 @@ const solanaAddressSchema = z.string()
     .max(44, 'Invalid Solana address')
     .regex(/^[1-9A-HJ-NP-Za-km-z]+$/, 'Invalid Solana base58 address');
 
+/** Discord snowflake ID (17-20 digit numeric string). */
+const discordSnowflakeSchema = z.string().regex(/^\d{17,20}$/, 'Invalid Discord ID');
+
 /**
  * POST /api/dagets — Create Daget
  */
 export const createDagetSchema = z.object({
     name: z.string().min(1).max(120),
-    message_html: z.string().optional(),
-    discord_guild_id: z.string().min(1),
+    message_html: z.string().max(50000).optional(),
+    discord_guild_id: discordSnowflakeSchema,
     discord_guild_name: z.string().optional(),
     discord_guild_icon: z.string().optional().nullable(),
     required_roles: z.array(z.object({
-        id: z.string().min(1),
+        id: discordSnowflakeSchema,
         name: z.string().min(1),
         color: z.number().optional().nullable(),
     })).max(20).optional(),
-    required_role_ids: z.array(z.string()).optional(), // Keep for backward compatibility or alternative input
+    required_role_ids: z.array(discordSnowflakeSchema).optional(), // Keep for backward compatibility or alternative input
     token_symbol: z.enum(['USDC', 'USDT', 'SOL']),
     amount_display: z.string().regex(
         /^\d+(\.\d{1,9})?$/,
@@ -44,16 +47,16 @@ export const createDagetSchema = z.object({
 
 export const updateDagetSchema = z.object({
     name: z.string().min(1).max(120).optional(),
-    message_html: z.string().optional(),
-    discord_guild_id: z.string().min(1).optional(),
+    message_html: z.string().max(50000).optional(),
+    discord_guild_id: discordSnowflakeSchema.optional(),
     discord_guild_name: z.string().optional(),
     discord_guild_icon: z.string().optional().nullable(),
     required_roles: z.array(z.object({
-        id: z.string().min(1),
+        id: discordSnowflakeSchema,
         name: z.string().min(1),
         color: z.number().optional().nullable(),
     })).max(20).optional(),
-    required_role_ids: z.array(z.string()).optional(),
+    required_role_ids: z.array(discordSnowflakeSchema).optional(),
     // Conditional fields (only allowed if no claims)
     token_symbol: z.enum(['USDC', 'USDT', 'SOL']).optional(),
     amount_display: z.string().regex(

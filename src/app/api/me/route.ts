@@ -4,6 +4,16 @@ import { Errors } from '@/lib/errors';
 import { db } from '@/db';
 import { users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { z } from 'zod';
+
+const updateMeSchema = z.object({
+    receiving_address: z.string()
+        .min(32).max(44)
+        .regex(/^[1-9A-HJ-NP-Za-km-z]+$/, 'Invalid Solana address')
+        .nullable()
+        .optional(),
+    finished_guide: z.boolean().optional(),
+}).strict();
 
 /**
  * GET /api/me — Get current user's profile
@@ -37,25 +47,16 @@ export async function PATCH(request: Request) {
         const user = await requireAuth();
         const body = await request.json();
 
-        const { receiving_address, finished_guide } = body;
-
-        // Validate Solana address — same rules as the claims schema (base58, 32-44 chars).
-        if (receiving_address !== undefined && receiving_address !== null) {
-            if (
-                typeof receiving_address !== 'string' ||
-                receiving_address.length < 32 ||
-                receiving_address.length > 44 ||
-                !/^[1-9A-HJ-NP-Za-km-z]+$/.test(receiving_address)
-            ) {
-                return Errors.validation('Invalid Solana address');
-            }
+        const parsed = updateMeSchema.safeParse(body);
+        if (!parsed.success) {
+            return Errors.validation('Invalid input', { errors: parsed.error.flatten() });
         }
+        const { receiving_address, finished_guide } = parsed.data;
 
         const updates: Partial<typeof users.$inferInsert> = { updatedAt: new Date() };
         if (receiving_address !== undefined) updates.receivingAddress = receiving_address;
         if (finished_guide !== undefined) updates.finishedGuide = finished_guide;
 
-        // Update user
         await db
             .update(users)
             .set(updates)

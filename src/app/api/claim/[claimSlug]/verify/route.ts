@@ -5,6 +5,7 @@ import { db } from '@/db';
 import { dagets, dagetRequirements, claims } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { verifyDiscordRoles } from '@/lib/discord-verify';
+import { checkRateLimit, rateLimiters } from '@/lib/rate-limit';
 
 /**
  * GET /api/claim/:claimSlug/verify — Check if the current user meets the role requirements.
@@ -16,6 +17,9 @@ export async function GET(
 ) {
     try {
         const user = await requireAuth();
+
+        const limit = await checkRateLimit(rateLimiters.verifyPerUser, user.id);
+        if (!limit.success) return Errors.rateLimited();
         const { claimSlug } = await params;
 
         const daget = await db.query.dagets.findFirst({

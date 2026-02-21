@@ -4,7 +4,7 @@ import { Errors, ErrorCodes } from '@/lib/errors';
 import { db } from '@/db';
 import { wallets, exportTokens, walletExports } from '@/db/schema';
 import { eq, and, isNull, gt } from 'drizzle-orm';
-import { checkRateLimit, rateLimiters } from '@/lib/rate-limit';
+import { checkRateLimit, rateLimiters, getClientIp } from '@/lib/rate-limit';
 import { decryptPrivateKey, zeroize } from '@/lib/crypto';
 import { exportKeyDownloadSchema } from '@/lib/validation';
 import { headers } from 'next/headers';
@@ -14,9 +14,14 @@ export async function POST(request: Request) {
     try {
         const user = await requireAuth();
 
-        // Rate limit
-        const limit = await checkRateLimit(rateLimiters.exportDlPerUser, user.id);
-        if (!limit.success) return Errors.rateLimited();
+        // Rate limit — per user (hourly + daily) AND per IP
+        const ip = getClientIp(request);
+        const [hourlyLimit, dailyLimit, ipLimit] = await Promise.all([
+            checkRateLimit(rateLimiters.exportDlPerUser, user.id),
+            checkRateLimit(rateLimiters.exportDlPerUserDaily, user.id),
+            checkRateLimit(rateLimiters.exportDlPerIp, ip),
+        ]);
+        if (!hourlyLimit.success || !dailyLimit.success || !ipLimit.success) return Errors.rateLimited();
 
         const body = await request.json();
         const parsed = exportKeyDownloadSchema.safeParse(body);

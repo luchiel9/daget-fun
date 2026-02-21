@@ -27,9 +27,12 @@ export async function GET(
         if (daget.creatorUserId !== user.id) return Errors.forbidden('Not the creator');
 
         const { searchParams } = new URL(request.url);
-        // Default limit 10, max 50
-        const limit = Math.min(parseInt(searchParams.get('limit') || '10'), 50);
-        const cursor = searchParams.get('cursor') || undefined;
+        const parsedQuery = paginationSchema.safeParse({
+            cursor: searchParams.get('cursor') || undefined,
+            limit: searchParams.get('limit') || 10,
+        });
+        if (!parsedQuery.success) return Errors.validation('Invalid query');
+        const { limit, cursor } = parsedQuery.data;
 
         // Build query
         const claimConditions: any[] = [eq(claims.dagetId, dagetId)];
