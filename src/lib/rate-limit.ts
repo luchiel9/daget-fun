@@ -78,15 +78,15 @@ function createLimiter(
 
 export const rateLimiters = {
     /** POST /api/claims: 3/min/user */
-    claimsPerUser: () => createLimiter(3, '1 m', 'claims:user'),
+    claimsPerUser: () => createLimiter(10, '1 m', 'claims:user'),
     /** POST /api/claims: 10/min/ip */
     claimsPerIp: () => createLimiter(10, '1 m', 'claims:ip'),
     /** POST /api/dagets: 10/hour/user */
     dagetsPerUser: () => createLimiter(10, '1 h', 'dagets:user'),
     /** POST /api/wallet/generate: 3/day/user */
-    walletGenPerUser: () => createLimiter(3, '1 d', 'wallet-gen:user'),
+    walletGenPerUser: () => createLimiter(10, '1 d', 'wallet-gen:user'),
     /** POST /api/export-key/request: 3/day/user */
-    exportReqPerUser: () => createLimiter(3, '1 d', 'export-req:user'),
+    exportReqPerUser: () => createLimiter(10, '1 d', 'export-req:user'),
     /** POST /api/export-key/download: 10/hour/user */
     exportDlPerUser: () => createLimiter(10, '1 h', 'export-dl:user'),
     /** POST /api/export-key/download: 30/day/user */
@@ -94,17 +94,17 @@ export const rateLimiters = {
     /** POST /api/export-key/download: 60/day/ip */
     exportDlPerIp: () => createLimiter(60, '1 d', 'export-dl:ip'),
     /** POST /api/claims/:claimId/retry: 5/hour/user */
-    retryPerUser: () => createLimiter(5, '1 h', 'retry:user'),
+    retryPerUser: () => createLimiter(10, '1 h', 'retry:user'),
     /** POST /api/claims/:claimId/retry: 20/hour/ip */
-    retryPerIp: () => createLimiter(20, '1 h', 'retry:ip'),
+    retryPerIp: () => createLimiter(60, '1 h', 'retry:ip'),
     /** POST /api/validate-address: 60/min/ip — prevents RPC cost abuse */
     validateAddressPerIp: () => createLimiter(60, '1 m', 'validate-address:ip'),
     /** GET /api/discord/guilds + /roles: 30/min/user — prevents Discord API proxy abuse */
     discordApiPerUser: () => createLimiter(30, '1 m', 'discord-api:user'),
     /** GET /api/claim/:slug/verify: 20/min/user — Discord API call per request */
-    verifyPerUser: () => createLimiter(20, '1 m', 'verify:user'),
+    verifyPerUser: () => createLimiter(45, '1 m', 'verify:user'),
     /** GET /api/wallet/balances: 30/min/user — Solana RPC call per request */
-    walletBalancesPerUser: () => createLimiter(30, '1 m', 'wallet-bal:user'),
+    walletBalancesPerUser: () => createLimiter(60, '1 m', 'wallet-bal:user'),
     /** GET /api/claim/:slug: 60/min/ip — public endpoint, no auth required */
     publicClaimPerIp: () => createLimiter(60, '1 m', 'public-claim:ip'),
 };
