@@ -63,6 +63,47 @@ export default function DagetDetailPage() {
         } catch { } finally { setClaimsLoading(false); }
     }, [dagetId]);
 
+    const exportCSV = async () => {
+        // Fetch ALL claims by walking through cursor pagination
+        let allClaims: any[] = [];
+        let cursor: string | undefined;
+        const decimals = daget?.token_symbol === 'SOL' ? 9 : 6;
+        const displayDecimals = daget?.token_symbol === 'SOL' ? 5 : 2;
+
+        while (true) {
+            const params = new URLSearchParams({ limit: '100' });
+            if (cursor) params.set('cursor', cursor);
+            const res = await fetch(`/api/dagets/${dagetId}?${params.toString()}`);
+            if (!res.ok) break;
+            const data = await res.json();
+            allClaims.push(...(data.claims || []));
+            if (!data.next_cursor) break;
+            cursor = data.next_cursor;
+        }
+
+        // Build CSV
+        const header = '#,Discord,Amount,Status,TX Hash,Date';
+        const rows = allClaims.map((c: any, idx: number) => {
+            const amount = c.amount_base_units != null
+                ? (c.amount_base_units / 10 ** decimals).toFixed(displayDecimals)
+                : '';
+            const date = new Date(c.created_at).toLocaleString('en-GB', {
+                day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+            });
+            const name = (c.claimant_discord_name || 'Unknown').replace(/,/g, ' ');
+            return `${idx + 1},${name},${amount} ${daget?.token_symbol || ''},${c.status},${c.tx_signature || ''},${date}`;
+        });
+
+        const csv = [header, ...rows].join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${daget?.name || 'daget'}-claims.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
     const stopDaget = async () => {
         setStopping(true);
         try {
@@ -291,7 +332,7 @@ export default function DagetDetailPage() {
                     <div className="bg-card-dark rounded-xl border border-border-dark/40 overflow-hidden">
                         <div className="p-5 border-b border-border-dark/40 flex justify-between items-center">
                             <h4 className="font-bold text-text-primary text-sm">Claims ({daget.claimed_count || 0})</h4>
-                            <button className="text-xs text-text-muted hover:text-primary transition-colors font-semibold">Export CSV</button>
+                            <button onClick={exportCSV} className="text-xs text-text-muted hover:text-primary transition-colors font-semibold">Export CSV</button>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">
@@ -309,7 +350,7 @@ export default function DagetDetailPage() {
                                 <tbody>
                                     {claimsList.length > 0 ? claimsList.map((c: any, idx: number) => (
                                         <tr key={c.claim_id} className="border-b border-border-dark/20 group hover:bg-primary/5 transition-colors">
-                                            <td className="py-4 px-6 text-sm text-text-muted font-mono">{daget.claimed_count - (claimsPage * CLAIMS_PER_PAGE) - idx}</td>
+                                            <td className="py-4 px-6 text-sm text-text-muted font-mono">{claimsPage * CLAIMS_PER_PAGE + idx + 1}</td>
                                             <td className="py-4 px-6 text-sm text-text-primary font-medium">
                                                 <div className="flex items-center gap-3">
                                                     {c.claimant_discord_avatar ? (
@@ -363,10 +404,10 @@ export default function DagetDetailPage() {
                         </div>
 
                         {/* Pagination Controls */}
-                        {(claimsPage > 0 || claimsNextCursor) && (
+                        {daget.claimed_count > 0 && (
                             <div className="p-4 border-t border-border-dark/40 flex items-center justify-between">
                                 <span className="text-xs text-text-muted">
-                                    Page {claimsPage + 1}{daget.claimed_count ? ` · ${daget.claimed_count} total` : ''}
+                                    Showing {claimsPage * CLAIMS_PER_PAGE + 1}–{Math.min((claimsPage + 1) * CLAIMS_PER_PAGE, daget.claimed_count)} of {daget.claimed_count}
                                 </span>
                                 <div className="flex items-center gap-2">
                                     <button
@@ -383,6 +424,9 @@ export default function DagetDetailPage() {
                                     >
                                         <span className="material-icons text-[14px]">chevron_left</span>Prev
                                     </button>
+                                    <span className="text-xs text-text-muted font-mono">
+                                        {claimsPage + 1} / {Math.ceil(daget.claimed_count / CLAIMS_PER_PAGE)}
+                                    </span>
                                     <button
                                         disabled={!claimsNextCursor || claimsLoading}
                                         onClick={() => {
