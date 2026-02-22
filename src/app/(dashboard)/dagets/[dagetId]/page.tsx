@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { GlassCard, StatusChip, Button, SecurityModal, Modal, Input } from '@/components/ui';
 import DOMPurify from 'isomorphic-dompurify';
@@ -16,6 +16,14 @@ export default function DagetDetailPage() {
     const [copied, setCopied] = useState(false);
     const [stopping, setStopping] = useState(false);
 
+    // Claims pagination state
+    const CLAIMS_PER_PAGE = 25;
+    const [claimsList, setClaimsList] = useState<any[]>([]);
+    const [claimsNextCursor, setClaimsNextCursor] = useState<string | null>(null);
+    const [claimsCursorStack, setClaimsCursorStack] = useState<string[]>([]);
+    const [claimsLoading, setClaimsLoading] = useState(false);
+    const [claimsPage, setClaimsPage] = useState(0);
+
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         if (params.get('new') === 'true') {
@@ -29,10 +37,31 @@ export default function DagetDetailPage() {
 
     const fetchDaget = async () => {
         try {
-            const res = await fetch(`/api/dagets/${dagetId}`);
-            if (res.ok) setDaget(await res.json());
+            const res = await fetch(`/api/dagets/${dagetId}?limit=${CLAIMS_PER_PAGE}`);
+            if (res.ok) {
+                const data = await res.json();
+                setDaget(data);
+                setClaimsList(data.claims || []);
+                setClaimsNextCursor(data.next_cursor || null);
+                setClaimsCursorStack([]);
+                setClaimsPage(0);
+            }
         } catch { } finally { setLoading(false); }
     };
+
+    const fetchClaims = useCallback(async (cursor?: string) => {
+        setClaimsLoading(true);
+        try {
+            const params = new URLSearchParams({ limit: String(CLAIMS_PER_PAGE) });
+            if (cursor) params.set('cursor', cursor);
+            const res = await fetch(`/api/dagets/${dagetId}?${params.toString()}`);
+            if (res.ok) {
+                const data = await res.json();
+                setClaimsList(data.claims || []);
+                setClaimsNextCursor(data.next_cursor || null);
+            }
+        } catch { } finally { setClaimsLoading(false); }
+    }, [dagetId]);
 
     const stopDaget = async () => {
         setStopping(true);
@@ -261,7 +290,7 @@ export default function DagetDetailPage() {
 
                     <div className="bg-card-dark rounded-xl border border-border-dark/40 overflow-hidden">
                         <div className="p-5 border-b border-border-dark/40 flex justify-between items-center">
-                            <h4 className="font-bold text-text-primary text-sm">Claims ({daget.claims?.length || 0})</h4>
+                            <h4 className="font-bold text-text-primary text-sm">Claims ({daget.claimed_count || 0})</h4>
                             <button className="text-xs text-text-muted hover:text-primary transition-colors font-semibold">Export CSV</button>
                         </div>
                         <div className="overflow-x-auto">
@@ -278,9 +307,9 @@ export default function DagetDetailPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {daget.claims?.length > 0 ? daget.claims.map((c: any, idx: number) => (
+                                    {claimsList.length > 0 ? claimsList.map((c: any, idx: number) => (
                                         <tr key={c.claim_id} className="border-b border-border-dark/20 group hover:bg-primary/5 transition-colors">
-                                            <td className="py-4 px-6 text-sm text-text-muted font-mono">{daget.claims.length - idx}</td>
+                                            <td className="py-4 px-6 text-sm text-text-muted font-mono">{daget.claimed_count - (claimsPage * CLAIMS_PER_PAGE) - idx}</td>
                                             <td className="py-4 px-6 text-sm text-text-primary font-medium">
                                                 <div className="flex items-center gap-3">
                                                     {c.claimant_discord_avatar ? (
@@ -332,6 +361,43 @@ export default function DagetDetailPage() {
                                 </tbody>
                             </table>
                         </div>
+
+                        {/* Pagination Controls */}
+                        {(claimsPage > 0 || claimsNextCursor) && (
+                            <div className="p-4 border-t border-border-dark/40 flex items-center justify-between">
+                                <span className="text-xs text-text-muted">
+                                    Page {claimsPage + 1}{daget.claimed_count ? ` · ${daget.claimed_count} total` : ''}
+                                </span>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        disabled={claimsPage === 0 || claimsLoading}
+                                        onClick={() => {
+                                            const prevStack = [...claimsCursorStack];
+                                            prevStack.pop();
+                                            const prevCursor = prevStack.length > 0 ? prevStack[prevStack.length - 1] : undefined;
+                                            setClaimsCursorStack(prevStack);
+                                            setClaimsPage(p => p - 1);
+                                            fetchClaims(prevCursor);
+                                        }}
+                                        className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-semibold text-text-secondary disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+                                    >
+                                        <span className="material-icons text-[14px]">chevron_left</span>Prev
+                                    </button>
+                                    <button
+                                        disabled={!claimsNextCursor || claimsLoading}
+                                        onClick={() => {
+                                            if (!claimsNextCursor) return;
+                                            setClaimsCursorStack(s => [...s, claimsNextCursor!]);
+                                            setClaimsPage(p => p + 1);
+                                            fetchClaims(claimsNextCursor!);
+                                        }}
+                                        className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-semibold text-text-secondary disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+                                    >
+                                        Next<span className="material-icons text-[14px]">chevron_right</span>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <SecurityModal

@@ -93,17 +93,24 @@ export default function ClaimPageClient() {
     const [showWinnersModal, setShowWinnersModal] = useState(false);
     const [winnersList, setWinnersList] = useState<ActivityClaim[]>([]);
     const [loadingWinners, setLoadingWinners] = useState(false);
+    const [winnersPage, setWinnersPage] = useState(0);
+    const [winnersTotal, setWinnersTotal] = useState(0);
+    const [winnersHasMore, setWinnersHasMore] = useState(false);
+    const WINNERS_PER_PAGE = 25;
 
     // SOL price for success view (show USD value when token is SOL)
     const [solPrice, setSolPrice] = useState<number>(0);
 
-    const fetchWinners = async () => {
+    const fetchWinners = async (page = 0) => {
         setLoadingWinners(true);
         try {
-            const res = await fetch(`/api/claim/${claimSlug}/activity?limit=50`);
+            const res = await fetch(`/api/claim/${claimSlug}/activity?limit=${WINNERS_PER_PAGE}&offset=${page * WINNERS_PER_PAGE}`);
             if (res.ok) {
                 const data = await res.json();
                 setWinnersList(data.claims || []);
+                setWinnersTotal(data.total ?? 0);
+                setWinnersHasMore(data.has_more ?? false);
+                setWinnersPage(page);
             }
         } catch { } finally { setLoadingWinners(false); }
     };
@@ -536,7 +543,7 @@ export default function ClaimPageClient() {
                                         ) : <span />}
 
                                         <button
-                                            onClick={() => { setShowWinnersModal(true); fetchWinners(); }}
+                                            onClick={() => { setShowWinnersModal(true); setWinnersPage(0); fetchWinners(0); }}
                                             className="group flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 text-[9px] font-bold text-white transition-all duration-200 border border-white/10 hover:bg-white/20 active:scale-95"
                                         >
                                             <span className="material-icons text-[11px] text-primary">emoji_events</span>
@@ -1204,6 +1211,34 @@ export default function ClaimPageClient() {
                                     </table>
                                 )}
                             </div>
+
+                            {/* Pagination Controls */}
+                            {winnersTotal > 0 && (
+                                <div className="p-4 border-t border-border-dark/60 bg-card-dark/50 flex items-center justify-between">
+                                    <span className="text-xs text-text-muted">
+                                        Showing {winnersPage * WINNERS_PER_PAGE + 1}–{Math.min((winnersPage + 1) * WINNERS_PER_PAGE, winnersTotal)} of {winnersTotal}
+                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            disabled={winnersPage === 0 || loadingWinners}
+                                            onClick={() => fetchWinners(winnersPage - 1)}
+                                            className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-semibold text-text-secondary disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+                                        >
+                                            <span className="material-icons text-[14px]">chevron_left</span>Prev
+                                        </button>
+                                        <span className="text-xs text-text-muted font-mono">
+                                            {winnersPage + 1} / {Math.ceil(winnersTotal / WINNERS_PER_PAGE)}
+                                        </span>
+                                        <button
+                                            disabled={!winnersHasMore || loadingWinners}
+                                            onClick={() => fetchWinners(winnersPage + 1)}
+                                            className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-semibold text-text-secondary disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+                                        >
+                                            Next<span className="material-icons text-[14px]">chevron_right</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )
