@@ -3,7 +3,7 @@ Role-gated onchain giveaways for your community.
 SECURE, TRANSPARENT, AND AUTOMATED. REWARD YOUR DISCORD MEMBERS WITH SOLANA TOKENS BASED ON THEIR SERVER ROLES.
 Free to use · Only pay Solana gas fees · No connect wallet needed
 
-Built with Next.js, Drizzle ORM, Supabase, and Solana Web3.
+Built with Next.js, Drizzle ORM, PostgreSQL, and Solana Web3. 
 
 ## Getting Started
 
