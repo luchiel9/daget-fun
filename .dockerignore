@@ -10,3 +10,4 @@ Dockerfile*
 docker-compose*
 .vscode
 .idea
+.pnpm-store

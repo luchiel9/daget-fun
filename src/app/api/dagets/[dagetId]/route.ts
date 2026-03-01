@@ -3,7 +3,7 @@ import { requireAuth } from '@/lib/auth';
 import { Errors } from '@/lib/errors';
 import { db } from '@/db';
 import { dagets, claims, dagetRequirements } from '@/db/schema';
-import { eq, and, desc, lt } from 'drizzle-orm';
+import { eq, and, desc, lt, sql, inArray } from 'drizzle-orm';
 import { paginationSchema, updateDagetSchema } from '@/lib/validation';
 import { encodeCursor, decodeCursor } from '@/lib/cursor';
 import { getTokenConfig, displayToBaseUnits } from '@/lib/tokens';
@@ -67,6 +67,14 @@ export async function GET(
             ? encodeCursor(claimItems[claimItems.length - 1].createdAt.toISOString(), claimItems[claimItems.length - 1].id)
             : null;
 
+        // Compute distributed amount (sum of confirmed claim amounts)
+        const distributedResult = await db
+            .select({ total: sql<string>`COALESCE(SUM(${claims.amountBaseUnits}), 0)` })
+            .from(claims)
+            .where(and(eq(claims.dagetId, dagetId), inArray(claims.status, ['confirmed', 'submitted'])))
+            .then((r) => r[0]?.total ?? '0');
+        const distributedAmountBaseUnits = Number(distributedResult);
+
         // Fetch requirements
         const requirements = await db.query.dagetRequirements.findMany({
             where: eq(dagetRequirements.dagetId, dagetId),
@@ -80,6 +88,7 @@ export async function GET(
             total_amount_base_units: daget.totalAmountBaseUnits,
             total_winners: daget.totalWinners,
             claimed_count: daget.claimedCount,
+            distributed_amount_base_units: distributedAmountBaseUnits,
             daget_type: daget.dagetType,
             random_min_bps: daget.randomMinBps,
             random_max_bps: daget.randomMaxBps,

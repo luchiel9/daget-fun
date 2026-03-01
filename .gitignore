@@ -7,3 +7,4 @@ blueprint.md
 design_v2/
 .env*
 tsconfig.tsbuildinfo
+.pnpm-store

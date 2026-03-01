@@ -139,11 +139,11 @@ export default function DagetDetailPage() {
     const totalAmount = daget.total_amount_base_units != null
         ? (daget.total_amount_base_units / 10 ** decimals).toFixed(displayDecimals)
         : '—';
-    const distributedAmount = (daget.total_amount_base_units != null && daget.total_winners > 0)
-        ? ((daget.total_amount_base_units / daget.total_winners) * daget.claimed_count / 10 ** decimals).toFixed(displayDecimals)
+    const distributedAmount = daget.distributed_amount_base_units != null
+        ? (daget.distributed_amount_base_units / 10 ** decimals).toFixed(displayDecimals)
         : '—';
-    const remainingAmount = (daget.total_amount_base_units != null && daget.total_winners > 0)
-        ? ((daget.total_amount_base_units / 10 ** decimals) - ((daget.total_amount_base_units / daget.total_winners) * daget.claimed_count / 10 ** decimals)).toFixed(displayDecimals)
+    const remainingAmount = (daget.total_amount_base_units != null && daget.distributed_amount_base_units != null)
+        ? ((daget.total_amount_base_units - daget.distributed_amount_base_units) / 10 ** decimals).toFixed(displayDecimals)
         : '—';
     const failedCount = daget.failed_count ?? (daget.claims?.filter((c: any) => c.status === 'failed_permanent').length || 0);
 
