@@ -3,7 +3,7 @@ import { requireAuth, getDiscordAccessToken } from '@/lib/auth';
 import { Errors, ErrorCodes } from '@/lib/errors';
 import { db } from '@/db';
 import { dagets, claims, dagetRequirements } from '@/db/schema';
-import { eq, and, desc, lt, sql } from 'drizzle-orm';
+import { eq, and, desc, lt, sql, type SQL } from 'drizzle-orm';
 import { createClaimSchema, paginationSchema } from '@/lib/validation';
 import { checkIdempotency, storeIdempotency } from '@/lib/idempotency';
 import { checkRateLimit, rateLimiters, getClientIp } from '@/lib/rate-limit';
@@ -11,6 +11,7 @@ import { encodeCursor, decodeCursor } from '@/lib/cursor';
 import { headers } from 'next/headers';
 import crypto from 'crypto';
 import { verifyDiscordRoles } from '@/lib/discord-verify';
+import type { LockedDagetRow, ClaimedSumRow } from '@/worker/types';
 
 /**
  * POST /api/claims — Reserve a claim slot.
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest) {
             const guildId = requirements[0].discordGuildId;
             const requiredRoleIds = requirements.map((r) => r.discordRoleId);
 
-            const verification = await verifyDiscordRoles(accessToken, guildId, requiredRoleIds);
+            const verification = await verifyDiscordRoles(accessToken, guildId, requiredRoleIds, user.discordUserId);
 
             if (!verification.eligible) {
                 return Errors.forbidden(
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest) {
         SELECT claimed_count, total_winners, total_amount_base_units, daget_type,
                random_min_bps, random_max_bps, token_decimals
         FROM dagets WHERE id = ${daget.id} AND status = 'active' FOR UPDATE
-      `) as any[];
+      `) as unknown as LockedDagetRow[];
 
             if (!lockedDaget) {
                 return { error: 'DAGET_NOT_ACTIVE' as const };
@@ -154,8 +155,11 @@ export async function POST(request: NextRequest) {
           WHERE daget_id = ${daget.id}
           AND status NOT IN ('failed_permanent', 'released')
           AND amount_base_units IS NOT NULL
-        `) as any[];
+        `) as unknown as ClaimedSumRow[];
                 const usedAmount = Number(claimedSoFar[0]?.total || 0);
+                if (isNaN(usedAmount)) {
+                    throw new Error(`Failed to calculate claimed amount for daget ${daget.id}`);
+                }
                 const remainingPool = totalAmount - usedAmount;
                 const remainingClaimers = totalWinners - claimedCount;
 
@@ -271,7 +275,7 @@ export async function GET(request: NextRequest) {
         if (!parsed.success) return Errors.validation('Invalid query');
         const { cursor, limit } = parsed.data;
 
-        const conditions: any[] = [eq(claims.claimantUserId, user.id)];
+        const conditions: SQL[] = [eq(claims.claimantUserId, user.id)];
         if (cursor) {
             const decoded = decodeCursor(cursor);
             if (!decoded) return Errors.validation('Invalid cursor');

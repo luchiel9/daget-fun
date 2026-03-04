@@ -4,4 +4,6 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile --prod
 COPY . .
+ENV POSTGRES_POOL_MAX=20
+STOPSIGNAL SIGTERM
 CMD ["pnpm", "run", "worker"]

@@ -75,7 +75,7 @@ export async function GET(
         const guildId = requirements[0].discordGuildId;
         const requiredRoleIds = requirements.map((r) => r.discordRoleId);
 
-        const result = await verifyDiscordRoles(accessToken, guildId, requiredRoleIds);
+        const result = await verifyDiscordRoles(accessToken, guildId, requiredRoleIds, user.discordUserId);
 
         return NextResponse.json({
             eligible: result.eligible,

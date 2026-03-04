@@ -8,6 +8,7 @@ const nextConfig = {
     'bs58',
     'drizzle-orm',
     'postgres',
+    'pino',
   ],
   images: {
     remotePatterns: [
@@ -19,9 +20,6 @@ const nextConfig = {
   output: 'standalone',
   productionBrowserSourceMaps: false,
   cacheMaxMemorySize: 0,
-  typescript: {
-    ignoreBuildErrors: true,
-  },
 };
 
 export default nextConfig;

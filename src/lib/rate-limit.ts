@@ -1,4 +1,5 @@
 import Redis from 'ioredis';
+import { getRedis, isRedisReady } from '@/lib/redis';
 
 /**
  * Rate limiters per endpoint, per blueprint §4.6.
@@ -6,70 +7,27 @@ import Redis from 'ioredis';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-// Survive Next.js hot reloads in dev without leaking connections
-const globalForRedis = globalThis as unknown as {
-    _redis: Redis | undefined;
-    _redisReady: boolean;
-};
-
-function isRedisReady(): boolean {
-    return globalForRedis._redisReady === true;
+// Register the Lua script once on the shared Redis instance
+const globalForRateLimit = globalThis as unknown as { _rateLimitScriptRegistered?: boolean };
+if (!globalForRateLimit._rateLimitScriptRegistered) {
+    const redis = getRedis();
+    redis.defineCommand('ratelimit', {
+        numberOfKeys: 1,
+        lua: `
+            local current = redis.call("INCR", KEYS[1])
+            if current == 1 then
+                redis.call("EXPIRE", KEYS[1], ARGV[1])
+            end
+            local ttl = redis.call("TTL", KEYS[1])
+            if ttl == -1 then
+                redis.call("EXPIRE", KEYS[1], ARGV[1])
+            end
+            local pttl = redis.call("PTTL", KEYS[1])
+            return {current, pttl}
+        `,
+    });
+    globalForRateLimit._rateLimitScriptRegistered = true;
 }
-
-function getRedis(): Redis {
-    if (!globalForRedis._redis) {
-        globalForRedis._redisReady = false;
-
-        globalForRedis._redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
-            maxRetriesPerRequest: 3,
-            enableReadyCheck: true,
-            lazyConnect: true,
-            retryStrategy(times) {
-                // Exponential backoff: 200ms, 400ms, 800ms... max 10s
-                return Math.min(times * 200, 10_000);
-            },
-        });
-
-        // Register the Lua script once so ioredis uses EVALSHA on subsequent calls
-        globalForRedis._redis.defineCommand('ratelimit', {
-            numberOfKeys: 1,
-            lua: `
-                local current = redis.call("INCR", KEYS[1])
-                if current == 1 then
-                    redis.call("EXPIRE", KEYS[1], ARGV[1])
-                end
-                local ttl = redis.call("TTL", KEYS[1])
-                if ttl == -1 then
-                    redis.call("EXPIRE", KEYS[1], ARGV[1])
-                end
-                local pttl = redis.call("PTTL", KEYS[1])
-                return {current, pttl}
-            `,
-        });
-
-        globalForRedis._redis.on('ready', () => {
-            globalForRedis._redisReady = true;
-            console.log('[Redis] Connected and ready');
-        });
-
-        globalForRedis._redis.on('error', (err) => {
-            console.error('[Redis] Connection error:', err.message);
-        });
-
-        globalForRedis._redis.on('close', () => {
-            globalForRedis._redisReady = false;
-            console.warn('[Redis] Connection closed');
-        });
-
-        globalForRedis._redis.connect().catch(() => {
-            // Handled by the 'error' event listener above
-        });
-    }
-    return globalForRedis._redis;
-}
-
-// Eagerly initialize Redis at module load time so it's ready before the first request
-getRedis();
 
 // Convert "1 m" format to seconds
 function parseWindowToSeconds(window: string): number {
