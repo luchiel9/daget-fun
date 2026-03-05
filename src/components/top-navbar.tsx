@@ -20,6 +20,7 @@ export function TopNavbar() {
         if (pathname === '/claims') return 'My Claims';
         if (pathname === '/notifications') return 'Notifications';
         if (pathname === '/create') return 'Create Daget';
+        if (pathname === '/admin') return 'Admin';
         return 'Dashboard';
     };
 

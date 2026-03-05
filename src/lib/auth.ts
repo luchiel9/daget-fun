@@ -12,6 +12,7 @@ export type AuthUser = {
     discordAvatarUrl: string | null;
     receivingAddress: string | null;
     finishedGuide: boolean;
+    isAdmin: boolean;
     hasWallet: boolean;
     walletPublicKey?: string;
 };
@@ -40,6 +41,7 @@ export async function getAuthenticatedUser(): Promise<AuthUser | null> {
         discordAvatarUrl: dbUser.discordAvatarUrl,
         receivingAddress: dbUser.receivingAddress,
         finishedGuide: dbUser.finishedGuide,
+        isAdmin: dbUser.isAdmin,
         hasWallet: !!wallet,
         walletPublicKey: wallet?.publicKey,
     };
@@ -48,6 +50,12 @@ export async function getAuthenticatedUser(): Promise<AuthUser | null> {
 export async function requireAuth(): Promise<AuthUser> {
     const user = await getAuthenticatedUser();
     if (!user) throw new Error('AUTH_REQUIRED');
+    return user;
+}
+
+export async function requireAdmin(): Promise<AuthUser> {
+    const user = await requireAuth();
+    if (!user.isAdmin) throw new Error('ADMIN_REQUIRED');
     return user;
 }
 

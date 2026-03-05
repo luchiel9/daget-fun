@@ -1,0 +1,2 @@
+ALTER TABLE "users" ADD COLUMN "is_admin" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+CREATE INDEX "claims_worker_pending_idx" ON "claims" USING btree ("status","locked_until","next_retry_at") WHERE status IN ('created', 'failed_retryable', 'submitted');
