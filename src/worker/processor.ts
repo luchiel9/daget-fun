@@ -6,10 +6,27 @@ import { getSolanaConnection, buildClaimTransaction } from '@/lib/solana';
 import { NATIVE_SOL_MINT } from '@/lib/tokens';
 import { decryptPrivateKey, zeroize } from '@/lib/crypto';
 import bs58 from 'bs58';
+import { WORKER_CONFIG } from '@/config/worker';
+import { logger } from '@/lib/logger';
+import { publishClaimStatus } from '@/lib/claim-events';
+import type { ClaimRow } from './types';
 
-const SUBMITTED_TIMEOUT_SECONDS = 90;
-const BACKOFF_SCHEDULE = [10, 30, 60, 120, 300]; // seconds
-const MAX_ATTEMPTS = 5;
+const log = logger.child({ component: 'processor' });
+const { SUBMITTED_TIMEOUT_SECONDS, BACKOFF_SCHEDULE, MAX_ATTEMPTS, JOB_BATCH_SIZE } = WORKER_CONFIG;
+
+/** Thrown to signal the worker loop that the Solana RPC is unhealthy. */
+export class RpcError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'RpcError';
+    }
+}
+
+const RPC_ERROR_PATTERNS = [
+    'fetch failed', 'ECONNREFUSED', 'ENOTFOUND', 'ETIMEDOUT',
+    '429', 'Too Many Requests', 'Internal Server Error',
+    'getaddrinfo', 'socket hang up',
+];
 
 /**
  * Acquire pending claims using FOR UPDATE SKIP LOCKED lease pattern.
@@ -24,7 +41,7 @@ export async function acquireJobs() {
         AND (next_retry_at IS NULL OR next_retry_at <= now())
         AND (locked_until IS NULL OR locked_until < now())
       ORDER BY created_at ASC
-      LIMIT 5
+      LIMIT ${JOB_BATCH_SIZE}
       FOR UPDATE SKIP LOCKED
     )
     UPDATE claims c
@@ -34,13 +51,22 @@ export async function acquireJobs() {
     RETURNING c.*
   `);
 
-    return result as any[];
+    const rows = result as unknown as ClaimRow[];
+
+    // Validate critical fields to guard against schema drift in raw SQL casts
+    return rows.filter((row) => {
+        if (!row.id || !row.daget_id || !row.status || !row.receiving_address) {
+            log.error({ row }, 'acquireJobs: row missing critical fields, skipping');
+            return false;
+        }
+        return true;
+    });
 }
 
 /**
  * Process a single claim.
  */
-export async function processClaim(claim: any) {
+export async function processClaim(claim: ClaimRow) {
     const connection = getSolanaConnection();
 
     try {
@@ -54,14 +80,25 @@ export async function processClaim(claim: any) {
         await buildAndSendClaim(claim, connection);
     } catch (error: unknown) {
         const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-        console.error(`[Processor] Claim ${claim.id} error:`, errorMsg);
+        log.error({ claimId: claim.id, err: errorMsg }, 'Claim error');
 
         const isUnrecoverable = isUnrecoverableError(errorMsg);
 
-        if (isUnrecoverable || claim.attempt_count >= MAX_ATTEMPTS) {
+        // Re-read attempt_count from DB to avoid stale in-memory value
+        const [fresh] = await db.execute(sql`
+          SELECT attempt_count FROM claims WHERE id = ${claim.id}
+        `) as unknown as [{ attempt_count: number }];
+        const currentAttempts = fresh?.attempt_count ?? claim.attempt_count;
+
+        if (isUnrecoverable || currentAttempts >= MAX_ATTEMPTS) {
             await setFailedPermanent(claim, errorMsg);
         } else {
             await setFailedRetryable(claim, errorMsg);
+        }
+
+        // Re-throw RPC errors so the worker loop can trip the circuit breaker
+        if (RPC_ERROR_PATTERNS.some((p) => errorMsg.includes(p))) {
+            throw new RpcError(errorMsg);
         }
     } finally {
         // Always clear lock
@@ -71,7 +108,7 @@ export async function processClaim(claim: any) {
     }
 }
 
-async function buildAndSendClaim(claim: any, connection: Connection) {
+async function buildAndSendClaim(claim: ClaimRow, connection: Connection) {
     // Load Daget + wallet
     const daget = await db.query.dagets.findFirst({
         where: eq(dagets.id, claim.daget_id),
@@ -92,17 +129,14 @@ async function buildAndSendClaim(claim: any, connection: Connection) {
         );
 
         const creatorKeypair = Keypair.fromSecretKey(secretKey);
-        // Normalize address: raw SQL returns snake_case; trim whitespace that can cause "Invalid public key input"
-        // Handle both snake_case (from raw SQL) and camelCase (if ORM mapped)
-        const addressValue = claim.receiving_address ?? claim.receivingAddress;
-        if (!addressValue || typeof addressValue !== 'string') {
-            throw new Error(`Missing receiving address in claim ${claim.id}`);
-        }
-        const rawAddress = addressValue.trim();
+        const rawAddress = claim.receiving_address.trim();
         if (!rawAddress) {
-            throw new Error(`Empty receiving address after trim in claim ${claim.id}`);
+            throw new Error(`Empty receiving address in claim ${claim.id}`);
         }
         const claimantAddress = new PublicKey(rawAddress);
+        if (claim.amount_base_units == null) {
+            throw new Error(`Claim ${claim.id} has no amount_base_units`);
+        }
         const isNativeSol = daget.tokenMint === NATIVE_SOL_MINT;
         // For native SOL we don't use mint; pass a dummy PublicKey for the SPL path (unused when isNativeSol)
         const mintAddress = isNativeSol
@@ -125,15 +159,18 @@ async function buildAndSendClaim(claim: any, connection: Connection) {
         const txSignature = bs58.encode(tx.signature!);
 
         // Step 10: Write tx_signature to DB BEFORE sending (exactly-once guard)
+        // Clear locked_until so the claim can be polled immediately on worker restart.
+        // attempt_count is incremented only in the catch handler to avoid double-increment.
         await db.execute(sql`
       UPDATE claims SET
         tx_signature = ${txSignature},
         status = 'submitted',
         submitted_at = now(),
-        attempt_count = attempt_count + 1,
         locked_until = NULL
       WHERE id = ${claim.id}
     `);
+
+        publishClaimStatus({ claimId: claim.id, status: 'submitted', txSignature });
 
         // Step 11: Send the transaction
         const rawTx = tx.serialize();
@@ -157,39 +194,65 @@ async function buildAndSendClaim(claim: any, connection: Connection) {
         }
 
         // Success!
-        await db.execute(sql`
-      UPDATE claims SET
-        status = 'confirmed',
-        confirmed_at = now(),
-        locked_until = NULL,
-        last_error = NULL
-      WHERE id = ${claim.id}
-    `);
+        await confirmClaim(claim);
+    } finally {
+        if (secretKey) zeroize(secretKey);
+    }
+}
 
-        // Fetch claimant user for notification
+/**
+ * Shared confirm logic: update DB status, send notification, publish SSE event.
+ * Called from buildAndSendClaim, pollSubmittedClaim, and reconciliation.
+ *
+ * Accepts either a full ClaimRow (from worker) or just { id } (from reconciliation),
+ * and looks up whatever is needed from the DB.
+ */
+export async function confirmClaim(claimOrId: ClaimRow | { id: string }) {
+    const claimId = claimOrId.id;
+
+    await db.execute(sql`
+    UPDATE claims SET
+      status = 'confirmed',
+      confirmed_at = now(),
+      locked_until = NULL,
+      last_error = NULL
+    WHERE id = ${claimId}
+  `);
+
+    // Look up the full claim row for notification details
+    const fullClaim = await db.query.claims.findFirst({
+        where: eq(claims.id, claimId),
+    });
+    if (!fullClaim) {
+        log.warn({ claimId }, 'confirmClaim: claim not found after update');
+        return;
+    }
+
+    const daget = await db.query.dagets.findFirst({
+        where: eq(dagets.id, fullClaim.dagetId),
+    });
+    if (daget) {
         const claimantUser = await db.query.users.findFirst({
-            where: eq(users.id, claim.claimant_user_id),
+            where: eq(users.id, fullClaim.claimantUserId),
         });
         const discordName = claimantUser?.discordUsername || 'Unknown User';
-        const amount = (Number(claim.amount_base_units) || 0) / Math.pow(10, daget.tokenDecimals);
+        const amount = (Number(fullClaim.amountBaseUnits) || 0) / Math.pow(10, daget.tokenDecimals);
 
-        // Create notification for creator
         await db.insert(notifications).values({
             userId: daget.creatorUserId,
             type: 'claim_confirmed',
             title: 'Claim Confirmed',
             body: `**${discordName}** claimed **${amount} ${daget.tokenSymbol}**.`,
             relatedDagetId: daget.id,
-            relatedClaimId: claim.id,
+            relatedClaimId: claimId,
         });
-
-        console.log(`[Processor] Claim ${claim.id} confirmed: ${txSignature}`);
-    } finally {
-        if (secretKey) zeroize(secretKey);
     }
+
+    log.info({ claimId, txSignature: fullClaim.txSignature }, 'Claim confirmed');
+    publishClaimStatus({ claimId, status: 'confirmed', txSignature: fullClaim.txSignature });
 }
 
-async function pollSubmittedClaim(claim: any, connection: Connection) {
+async function pollSubmittedClaim(claim: ClaimRow, connection: Connection) {
     if (!claim.tx_signature) {
         // No signature — shouldn't be submitted, reset to failed_retryable
         await setFailedRetryable(claim, 'submitted_without_signature');
@@ -197,7 +260,7 @@ async function pollSubmittedClaim(claim: any, connection: Connection) {
     }
 
     // Check if submitted for too long
-    const submittedAt = new Date(claim.submitted_at);
+    const submittedAt = new Date(claim.submitted_at!);
     const elapsed = (Date.now() - submittedAt.getTime()) / 1000;
 
     if (elapsed > SUBMITTED_TIMEOUT_SECONDS) {
@@ -208,10 +271,7 @@ async function pollSubmittedClaim(claim: any, connection: Connection) {
                 if (status.value.err) {
                     await setFailedRetryable(claim, `tx_error: ${JSON.stringify(status.value.err)}`);
                 } else {
-                    await db.execute(sql`
-            UPDATE claims SET status = 'confirmed', confirmed_at = now(), locked_until = NULL
-            WHERE id = ${claim.id}
-          `);
+                    await confirmClaim(claim);
                 }
                 return;
             }
@@ -233,30 +293,7 @@ async function pollSubmittedClaim(claim: any, connection: Connection) {
             if (status.value.err) {
                 await setFailedRetryable(claim, `tx_error: ${JSON.stringify(status.value.err)}`);
             } else {
-                await db.execute(sql`
-          UPDATE claims SET status = 'confirmed', confirmed_at = now(), locked_until = NULL
-          WHERE id = ${claim.id}
-        `);
-
-                const daget = await db.query.dagets.findFirst({
-                    where: eq(dagets.id, claim.daget_id),
-                });
-                if (daget) {
-                    const claimantUser = await db.query.users.findFirst({
-                        where: eq(users.id, claim.claimant_user_id),
-                    });
-                    const discordName = claimantUser?.discordUsername || 'Unknown User';
-                    const amount = (Number(claim.amount_base_units) || 0) / Math.pow(10, daget.tokenDecimals);
-
-                    await db.insert(notifications).values({
-                        userId: daget.creatorUserId,
-                        type: 'claim_confirmed',
-                        title: 'Claim Confirmed',
-                        body: `**${discordName}** claimed **${amount} ${daget.tokenSymbol}**.`,
-                        relatedDagetId: daget.id,
-                        relatedClaimId: claim.id,
-                    });
-                }
+                await confirmClaim(claim);
             }
         }
         // else: still pending — will be picked up next tick
@@ -265,7 +302,7 @@ async function pollSubmittedClaim(claim: any, connection: Connection) {
     }
 }
 
-async function setFailedRetryable(claim: any, error: string) {
+async function setFailedRetryable(claim: ClaimRow, error: string) {
     const attempt = (claim.attempt_count || 0);
     const backoffSeconds = BACKOFF_SCHEDULE[Math.min(attempt, BACKOFF_SCHEDULE.length - 1)];
     const jitter = Math.floor(backoffSeconds * 0.2 * Math.random());
@@ -281,9 +318,10 @@ async function setFailedRetryable(claim: any, error: string) {
       failed_at = now()
     WHERE id = ${claim.id}
   `);
+    publishClaimStatus({ claimId: claim.id, status: 'failed_retryable', lastError: error });
 }
 
-async function setFailedPermanent(claim: any, error: string) {
+async function setFailedPermanent(claim: ClaimRow, error: string) {
     await db.execute(sql`
     UPDATE claims SET
       status = 'failed_permanent',
@@ -292,6 +330,7 @@ async function setFailedPermanent(claim: any, error: string) {
       failed_at = now()
     WHERE id = ${claim.id}
   `);
+    publishClaimStatus({ claimId: claim.id, status: 'failed_permanent', lastError: error });
 
     // Notification
     const daget = await db.query.dagets.findFirst({
@@ -315,8 +354,9 @@ function isUnrecoverableError(error: string): boolean {
         'program error',
         'InvalidAccountData',
         'AccountNotFound',
-        'InsufficientFunds',
         'custom program error',
+        'insufficient funds for rent',
+        // Note: InsufficientFunds is intentionally retryable — creator can top up between retries
     ];
     return unrecoverable.some(pattern => error.toLowerCase().includes(pattern.toLowerCase()));
 }

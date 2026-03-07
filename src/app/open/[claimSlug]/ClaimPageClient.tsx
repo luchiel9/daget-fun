@@ -93,17 +93,24 @@ export default function ClaimPageClient() {
     const [showWinnersModal, setShowWinnersModal] = useState(false);
     const [winnersList, setWinnersList] = useState<ActivityClaim[]>([]);
     const [loadingWinners, setLoadingWinners] = useState(false);
+    const [winnersPage, setWinnersPage] = useState(0);
+    const [winnersTotal, setWinnersTotal] = useState(0);
+    const [winnersHasMore, setWinnersHasMore] = useState(false);
+    const WINNERS_PER_PAGE = 25;
 
     // SOL price for success view (show USD value when token is SOL)
     const [solPrice, setSolPrice] = useState<number>(0);
 
-    const fetchWinners = async () => {
+    const fetchWinners = async (page = 0) => {
         setLoadingWinners(true);
         try {
-            const res = await fetch(`/api/claim/${claimSlug}/activity?limit=50`);
+            const res = await fetch(`/api/claim/${claimSlug}/activity?limit=${WINNERS_PER_PAGE}&offset=${page * WINNERS_PER_PAGE}`);
             if (res.ok) {
                 const data = await res.json();
                 setWinnersList(data.claims || []);
+                setWinnersTotal(data.total ?? 0);
+                setWinnersHasMore(data.has_more ?? false);
+                setWinnersPage(page);
             }
         } catch { } finally { setLoadingWinners(false); }
     };
@@ -137,6 +144,20 @@ export default function ClaimPageClient() {
         })();
         return () => { cancelled = true; };
     }, [viewState, daget?.token_symbol]);
+
+    // Fetch SOL price when showing winners modal and token is SOL (for USD value)
+    useEffect(() => {
+        if (!showWinnersModal || !daget || daget.token_symbol !== 'SOL') return;
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
+                const data = await res.json();
+                if (!cancelled && data.solana?.usd) setSolPrice(data.solana.usd);
+            } catch { /* ignore */ }
+        })();
+        return () => { cancelled = true; };
+    }, [showWinnersModal, daget?.token_symbol]);
 
     // Confetti effect on success
     useEffect(() => {
@@ -396,9 +417,14 @@ export default function ClaimPageClient() {
     const hasTxSignature = Boolean(claimStatus?.tx_signature);
     const processingStep = (() => {
         if (!claimStatus) return 0;
-        if (claimStatus.status === 'confirmed') return 3;
-        if (claimStatus.status === 'submitted' || claimStatus.status === 'failed_retryable' || hasTxSignature) return 2;
-        if (claimStatus.status === 'created') return 1;
+        if (claimStatus.status === 'confirmed') return 4;
+        if (hasTxSignature) return 3;
+        // status is 'created', 'submitted' or 'failed_retryable'
+        // If it was created, then picked up by the worker, it becomes submitted.
+        // During 'submitted' it usually means the worker is trying to send the TX.
+        // So step 2 is "Submitting to Solana".
+        if (claimStatus.status === 'submitted' || claimStatus.status === 'failed_retryable') return 2;
+        // Step 1: Claim Created / Data Stored
         return 1;
     })();
 
@@ -517,7 +543,7 @@ export default function ClaimPageClient() {
                                         ) : <span />}
 
                                         <button
-                                            onClick={() => { setShowWinnersModal(true); fetchWinners(); }}
+                                            onClick={() => { setShowWinnersModal(true); setWinnersPage(0); fetchWinners(0); }}
                                             className="group flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 text-[9px] font-bold text-white transition-all duration-200 border border-white/10 hover:bg-white/20 active:scale-95"
                                         >
                                             <span className="material-icons text-[11px] text-primary">emoji_events</span>
@@ -802,29 +828,29 @@ export default function ClaimPageClient() {
 
                                 {/* Timeline */}
                                 <div className="space-y-0">
-                                    {/* Step 1: Claim Created */}
+                                    {/* Step 1: Claim Created (Storing Data) */}
                                     <div className="flex gap-4">
                                         <div className="flex flex-col items-center">
                                             {processingStep >= 2 ? (
-                                                <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center check-bounce">
+                                                <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center check-bounce shrink-0">
                                                     <span className="material-icons text-green-400 text-[18px]">check</span>
                                                 </div>
                                             ) : (
-                                                <div className="relative">
+                                                <div className="relative shrink-0">
                                                     <div className="absolute inset-0 bg-primary/30 rounded-full pulse-ring"></div>
                                                     <div className="relative w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
                                                         <span className="material-icons text-primary text-[18px] animate-spin">sync</span>
                                                     </div>
                                                 </div>
                                             )}
-                                            <div className={`w-0.5 h-10 ${processingStep >= 2 ? 'bg-green-500/40' : 'bg-border-dark/40'}`}></div>
+                                            <div className={`w-0.5 h-full min-h-[40px] ${processingStep >= 2 ? 'bg-green-500/40' : 'bg-border-dark/40 border-l border-dashed border-border-dark'}`}></div>
                                         </div>
-                                        <div className="pb-6">
+                                        <div className="pb-6 pt-1 flex-1">
                                             <p className={`text-sm font-semibold transition-colors duration-300 ${processingStep >= 2 ? 'text-green-400' : 'text-primary'}`}>
-                                                {processingStep === 0 ? 'Creating Claim...' : 'Claim Created'}
+                                                {processingStep === 1 ? 'Storing Data...' : 'Claim Created'}
                                             </p>
                                             <p className="text-xs text-text-muted mt-0.5">
-                                                {processingStep >= 2 ? 'Your spot has been reserved!' : 'Locking your spot...'}
+                                                {processingStep >= 2 ? 'Your spot has been reserved!' : 'Saving claim securely...'}
                                             </p>
                                         </div>
                                     </div>
@@ -833,12 +859,12 @@ export default function ClaimPageClient() {
                                     <div className="flex gap-4">
                                         <div className="flex flex-col items-center">
                                             {processingStep >= 2 ? (
-                                                processingStep > 2 ? (
-                                                    <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center check-bounce">
+                                                processingStep >= 3 ? (
+                                                    <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center check-bounce shrink-0">
                                                         <span className="material-icons text-green-400 text-[18px]">check</span>
                                                     </div>
                                                 ) : (
-                                                    <div className="relative">
+                                                    <div className="relative shrink-0">
                                                         <div className="absolute inset-0 bg-primary/30 rounded-full pulse-ring"></div>
                                                         <div className="relative w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
                                                             <span className="material-icons text-primary text-[18px] animate-spin">sync</span>
@@ -846,21 +872,21 @@ export default function ClaimPageClient() {
                                                     </div>
                                                 )
                                             ) : (
-                                                <div className="w-8 h-8 rounded-full border-2 border-dashed border-border-dark/60 flex items-center justify-center">
+                                                <div className="w-8 h-8 rounded-full border-2 border-dashed border-border-dark/60 flex items-center justify-center shrink-0">
                                                     <span className="material-icons text-text-muted text-[18px]">send</span>
                                                 </div>
                                             )}
-                                            <div className={`w-0.5 h-10 ${processingStep > 2 ? 'bg-green-500/40' : 'bg-border-dark/40 border-l border-dashed border-border-dark'}`}></div>
+                                            <div className={`w-0.5 h-full min-h-[40px] flex-1 ${processingStep >= 3 ? 'bg-green-500/40' : processingStep === 2 ? 'bg-primary/40' : 'bg-border-dark/40 border-l border-dashed border-border-dark'}`}></div>
                                         </div>
-                                        <div className="pb-6">
-                                            <p className={`text-sm font-semibold ${processingStep >= 2 ? (processingStep > 2 ? 'text-green-400' : 'text-primary') : 'text-text-muted'}`}>
+                                        <div className="pb-6 pt-1 flex-1">
+                                            <p className={`text-sm font-semibold ${processingStep >= 2 ? (processingStep >= 3 ? 'text-green-400' : 'text-primary') : 'text-text-muted'}`}>
                                                 Submitting to Solana
                                             </p>
                                             <p className="text-xs text-text-muted mt-0.5">
-                                                {processingStep >= 2 ? 'Sending transaction to the network...' : 'Waiting to submit...'}
+                                                {processingStep >= 3 ? 'Transaction submitted!' : processingStep === 2 ? 'Sending transaction to the network...' : 'Waiting to submit...'}
                                             </p>
                                             {claimStatus?.tx_signature && (
-                                                <div className="mt-2 bg-background-dark/50 rounded-lg p-3 border border-border-dark/40 flex items-center justify-between gap-4">
+                                                <div className="mt-4 bg-background-dark/50 rounded-lg p-3 border border-border-dark/40 flex items-center justify-between gap-4">
                                                     <span className="text-xs font-mono text-text-muted truncate">TX: {shortenTx(claimStatus.tx_signature)}</span>
                                                     <a
                                                         href={solscanUrl(claimStatus.tx_signature)}
@@ -879,18 +905,29 @@ export default function ClaimPageClient() {
                                     <div className="flex gap-4">
                                         <div className="flex flex-col items-center">
                                             {processingStep >= 3 ? (
-                                                <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center check-bounce">
-                                                    <span className="material-icons text-green-400 text-[18px]">check</span>
-                                                </div>
+                                                processingStep >= 4 ? (
+                                                    <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center check-bounce shrink-0">
+                                                        <span className="material-icons text-green-400 text-[18px]">check</span>
+                                                    </div>
+                                                ) : (
+                                                    <div className="relative shrink-0">
+                                                        <div className="absolute inset-0 bg-primary/30 rounded-full pulse-ring"></div>
+                                                        <div className="relative w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
+                                                            <span className="material-icons text-primary text-[18px] animate-spin">sync</span>
+                                                        </div>
+                                                    </div>
+                                                )
                                             ) : (
-                                                <div className="w-8 h-8 rounded-full border-2 border-dashed border-border-dark/60 flex items-center justify-center">
+                                                <div className="w-8 h-8 rounded-full border-2 border-dashed border-border-dark/60 flex items-center justify-center shrink-0">
                                                     <span className="material-icons text-text-muted text-[18px]">hourglass_top</span>
                                                 </div>
                                             )}
                                         </div>
-                                        <div>
-                                            <p className={`text-sm font-semibold ${processingStep >= 3 ? 'text-green-400' : 'text-text-muted'}`}>Finalizing</p>
-                                            <p className="text-xs text-text-muted mt-0.5">Waiting for confirmation...</p>
+                                        <div className="pt-1 flex-1">
+                                            <p className={`text-sm font-semibold ${processingStep >= 4 ? 'text-green-400' : processingStep === 3 ? 'text-primary' : 'text-text-muted'}`}>Finalizing</p>
+                                            <p className="text-xs text-text-muted mt-0.5">
+                                                {processingStep >= 4 ? 'Done!' : processingStep === 3 ? 'Waiting for network confirmation...' : 'Waiting for confirmation...'}
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
@@ -1124,10 +1161,19 @@ export default function ClaimPageClient() {
                                                         </div>
                                                     </td>
                                                     <td className="px-5 py-3">
-                                                        <span className="font-mono text-sm font-bold text-text-primary">
-                                                            {formatAmount(w.amount_base_units, daget?.token_decimals || 6, daget?.token_symbol)}
-                                                        </span>
-                                                        <span className="text-xs text-text-muted ml-1">{daget?.token_symbol}</span>
+                                                        <div className="flex flex-col">
+                                                            <div>
+                                                                <span className="font-mono text-sm font-bold text-text-primary">
+                                                                    {formatAmount(w.amount_base_units, daget?.token_decimals || 6, daget?.token_symbol)}
+                                                                </span>
+                                                                <span className="text-xs text-text-muted ml-1">{daget?.token_symbol}</span>
+                                                            </div>
+                                                            {daget?.token_symbol === 'SOL' && solPrice > 0 && w.amount_base_units != null && (
+                                                                <span className="text-xs text-green-400 mt-0.5">
+                                                                    ≈ ${((w.amount_base_units / Math.pow(10, daget?.token_decimals || 9)) * solPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </td>
                                                     <td className="px-5 py-3">
                                                         <div className="flex items-center gap-1.5">
@@ -1165,6 +1211,34 @@ export default function ClaimPageClient() {
                                     </table>
                                 )}
                             </div>
+
+                            {/* Pagination Controls */}
+                            {winnersTotal > 0 && (
+                                <div className="p-4 border-t border-border-dark/60 bg-card-dark/50 flex items-center justify-between">
+                                    <span className="text-xs text-text-muted">
+                                        Showing {winnersPage * WINNERS_PER_PAGE + 1}–{Math.min((winnersPage + 1) * WINNERS_PER_PAGE, winnersTotal)} of {winnersTotal}
+                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            disabled={winnersPage === 0 || loadingWinners}
+                                            onClick={() => fetchWinners(winnersPage - 1)}
+                                            className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-semibold text-text-secondary disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+                                        >
+                                            <span className="material-icons text-[14px]">chevron_left</span>Prev
+                                        </button>
+                                        <span className="text-xs text-text-muted font-mono">
+                                            {winnersPage + 1} / {Math.ceil(winnersTotal / WINNERS_PER_PAGE)}
+                                        </span>
+                                        <button
+                                            disabled={!winnersHasMore || loadingWinners}
+                                            onClick={() => fetchWinners(winnersPage + 1)}
+                                            className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-semibold text-text-secondary disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+                                        >
+                                            Next<span className="material-icons text-[14px]">chevron_right</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )

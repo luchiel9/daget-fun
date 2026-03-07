@@ -3,14 +3,15 @@ import { requireAuth, getDiscordAccessToken } from '@/lib/auth';
 import { Errors, ErrorCodes } from '@/lib/errors';
 import { db } from '@/db';
 import { dagets, claims, dagetRequirements } from '@/db/schema';
-import { eq, and, desc, lt, sql } from 'drizzle-orm';
+import { eq, and, desc, lt, sql, type SQL } from 'drizzle-orm';
 import { createClaimSchema, paginationSchema } from '@/lib/validation';
 import { checkIdempotency, storeIdempotency } from '@/lib/idempotency';
-import { checkRateLimit, rateLimiters } from '@/lib/rate-limit';
+import { checkRateLimit, rateLimiters, getClientIp } from '@/lib/rate-limit';
 import { encodeCursor, decodeCursor } from '@/lib/cursor';
 import { headers } from 'next/headers';
 import crypto from 'crypto';
 import { verifyDiscordRoles } from '@/lib/discord-verify';
+import type { LockedDagetRow, ClaimedSumRow } from '@/worker/types';
 
 /**
  * POST /api/claims — Reserve a claim slot.
@@ -21,8 +22,7 @@ export async function POST(request: NextRequest) {
         const user = await requireAuth();
 
         // Rate limit — per user AND per IP to prevent multi-account bypass
-        const ipHeader = request.headers.get('x-forwarded-for');
-        const ip = ipHeader ? ipHeader.split(',')[0].trim() : 'unknown';
+        const ip = getClientIp(request);
         const [userLimit, ipLimit] = await Promise.all([
             checkRateLimit(rateLimiters.claimsPerUser, user.id),
             checkRateLimit(rateLimiters.claimsPerIp, ip),
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
             const guildId = requirements[0].discordGuildId;
             const requiredRoleIds = requirements.map((r) => r.discordRoleId);
 
-            const verification = await verifyDiscordRoles(accessToken, guildId, requiredRoleIds);
+            const verification = await verifyDiscordRoles(accessToken, guildId, requiredRoleIds, user.discordUserId);
 
             if (!verification.eligible) {
                 return Errors.forbidden(
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
         SELECT claimed_count, total_winners, total_amount_base_units, daget_type,
                random_min_bps, random_max_bps, token_decimals
         FROM dagets WHERE id = ${daget.id} AND status = 'active' FOR UPDATE
-      `) as any[];
+      `) as unknown as LockedDagetRow[];
 
             if (!lockedDaget) {
                 return { error: 'DAGET_NOT_ACTIVE' as const };
@@ -110,7 +110,11 @@ export async function POST(request: NextRequest) {
             });
 
             if (existingClaim) {
-                return { error: 'ALREADY_CLAIMED' as const, claim: existingClaim };
+                // Allow re-claim if the previous claim was released by the creator
+                if (existingClaim.status !== 'released') {
+                    return { error: 'ALREADY_CLAIMED' as const, claim: existingClaim };
+                }
+                // Will reuse this row below instead of inserting
             }
 
             // 2. [SECURITY] Sybil Protection: Check if wallet address is reused for this Daget
@@ -122,7 +126,7 @@ export async function POST(request: NextRequest) {
                 ),
             });
 
-            if (walletReuse) {
+            if (walletReuse && walletReuse.status !== 'released') {
                 // Return ALREADY_CLAIMED to not leak that this wallet exists, or specific error
                 // Using a specific error is better for debugging, generic is better for privacy.
                 // Given the context, we'll be explicit.
@@ -146,17 +150,20 @@ export async function POST(request: NextRequest) {
                 }
             } else {
                 // Random mode
-                // [CRITICAL FIX] Logic must INCLUDE released claims in 'usedAmount'
-                // We only exclude 'failed_permanent' which returns money to the pool.
-                // 'released', 'confirmed', 'submitted', 'created', 'failed_retryable' ALL count as used.
+                // Exclude statuses that return money to the pool:
+                //   - failed_permanent: never sent on-chain
+                //   - released: creator freed the slot, funds returned to pool
                 const claimedSoFar = await tx.execute(sql`
           SELECT COALESCE(SUM(amount_base_units), 0) as total
           FROM claims
           WHERE daget_id = ${daget.id}
-          AND status != 'failed_permanent'
+          AND status NOT IN ('failed_permanent', 'released')
           AND amount_base_units IS NOT NULL
-        `) as any[];
+        `) as unknown as ClaimedSumRow[];
                 const usedAmount = Number(claimedSoFar[0]?.total || 0);
+                if (isNaN(usedAmount)) {
+                    throw new Error(`Failed to calculate claimed amount for daget ${daget.id}`);
+                }
                 const remainingPool = totalAmount - usedAmount;
                 const remainingClaimers = totalWinners - claimedCount;
 
@@ -194,15 +201,38 @@ export async function POST(request: NextRequest) {
                 }
             }
 
-            // Insert claim
-            const [newClaim] = await tx.insert(claims).values({
-                dagetId: daget.id,
-                claimantUserId: user.id,
-                idempotencyKey,
-                receivingAddress: receiving_address,
-                amountBaseUnits,
-                status: 'created',
-            }).returning();
+            // Insert claim or reset a released claim row (unique index: one per user per daget)
+            let newClaim;
+            if (existingClaim?.status === 'released') {
+                [newClaim] = await tx.execute(sql`
+                  UPDATE claims SET
+                    status = 'created',
+                    idempotency_key = ${idempotencyKey},
+                    receiving_address = ${receiving_address},
+                    amount_base_units = ${amountBaseUnits},
+                    tx_signature = NULL,
+                    attempt_count = 0,
+                    last_error = NULL,
+                    next_retry_at = NULL,
+                    locked_until = NULL,
+                    submitted_at = NULL,
+                    confirmed_at = NULL,
+                    failed_at = NULL,
+                    released_at = NULL,
+                    created_at = NOW()
+                  WHERE id = ${existingClaim.id}
+                  RETURNING *
+                `) as unknown as any[];
+            } else {
+                [newClaim] = await tx.insert(claims).values({
+                    dagetId: daget.id,
+                    claimantUserId: user.id,
+                    idempotencyKey,
+                    receivingAddress: receiving_address,
+                    amountBaseUnits,
+                    status: 'created',
+                }).returning();
+            }
 
             // Increment claimed_count
             await tx.execute(sql`
@@ -272,7 +302,7 @@ export async function GET(request: NextRequest) {
         if (!parsed.success) return Errors.validation('Invalid query');
         const { cursor, limit } = parsed.data;
 
-        const conditions: any[] = [eq(claims.claimantUserId, user.id)];
+        const conditions: SQL[] = [eq(claims.claimantUserId, user.id)];
         if (cursor) {
             const decoded = decodeCursor(cursor);
             if (!decoded) return Errors.validation('Invalid cursor');

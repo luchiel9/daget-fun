@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { GlassCard, StatusChip, Button, SecurityModal, Modal, Input } from '@/components/ui';
 import DOMPurify from 'isomorphic-dompurify';
@@ -12,15 +12,98 @@ export default function DagetDetailPage() {
     const [loading, setLoading] = useState(true);
     const [showStopModal, setShowStopModal] = useState(false);
     const [showCopiedTooltip, setShowCopiedTooltip] = useState(false);
+    const [showShareModal, setShowShareModal] = useState(false);
+    const [copied, setCopied] = useState(false);
     const [stopping, setStopping] = useState(false);
+
+    // Claims pagination state
+    const CLAIMS_PER_PAGE = 25;
+    const [claimsList, setClaimsList] = useState<any[]>([]);
+    const [claimsNextCursor, setClaimsNextCursor] = useState<string | null>(null);
+    const [claimsCursorStack, setClaimsCursorStack] = useState<string[]>([]);
+    const [claimsLoading, setClaimsLoading] = useState(false);
+    const [claimsPage, setClaimsPage] = useState(0);
+    const [retryingClaim, setRetryingClaim] = useState<string | null>(null);
+    const [releasingClaim, setReleasingClaim] = useState<string | null>(null);
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('new') === 'true') {
+            setShowShareModal(true);
+            // Optional: clean up the URL to prevent showing on refresh
+            window.history.replaceState({}, '', `/dagets/${dagetId}`);
+        }
+    }, [dagetId]);
 
     useEffect(() => { fetchDaget(); }, [dagetId]);
 
     const fetchDaget = async () => {
         try {
-            const res = await fetch(`/api/dagets/${dagetId}`);
-            if (res.ok) setDaget(await res.json());
+            const res = await fetch(`/api/dagets/${dagetId}?limit=${CLAIMS_PER_PAGE}`);
+            if (res.ok) {
+                const data = await res.json();
+                setDaget(data);
+                setClaimsList(data.claims || []);
+                setClaimsNextCursor(data.next_cursor || null);
+                setClaimsCursorStack([]);
+                setClaimsPage(0);
+            }
         } catch { } finally { setLoading(false); }
+    };
+
+    const fetchClaims = useCallback(async (cursor?: string) => {
+        setClaimsLoading(true);
+        try {
+            const params = new URLSearchParams({ limit: String(CLAIMS_PER_PAGE) });
+            if (cursor) params.set('cursor', cursor);
+            const res = await fetch(`/api/dagets/${dagetId}?${params.toString()}`);
+            if (res.ok) {
+                const data = await res.json();
+                setClaimsList(data.claims || []);
+                setClaimsNextCursor(data.next_cursor || null);
+            }
+        } catch { } finally { setClaimsLoading(false); }
+    }, [dagetId]);
+
+    const exportCSV = async () => {
+        // Fetch ALL claims by walking through cursor pagination
+        let allClaims: any[] = [];
+        let cursor: string | undefined;
+        const decimals = daget?.token_symbol === 'SOL' ? 9 : 6;
+        const displayDecimals = daget?.token_symbol === 'SOL' ? 5 : 2;
+
+        while (true) {
+            const params = new URLSearchParams({ limit: '100' });
+            if (cursor) params.set('cursor', cursor);
+            const res = await fetch(`/api/dagets/${dagetId}?${params.toString()}`);
+            if (!res.ok) break;
+            const data = await res.json();
+            allClaims.push(...(data.claims || []));
+            if (!data.next_cursor) break;
+            cursor = data.next_cursor;
+        }
+
+        // Build CSV
+        const header = '#,Discord,Amount,Status,TX Hash,Date';
+        const rows = allClaims.map((c: any, idx: number) => {
+            const amount = c.amount_base_units != null
+                ? (c.amount_base_units / 10 ** decimals).toFixed(displayDecimals)
+                : '';
+            const date = new Date(c.created_at).toLocaleString('en-GB', {
+                day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+            });
+            const name = (c.claimant_discord_name || 'Unknown').replace(/,/g, ' ');
+            return `${idx + 1},${name},${amount} ${daget?.token_symbol || ''},${c.status},${c.tx_signature || ''},${date}`;
+        });
+
+        const csv = [header, ...rows].join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${daget?.name || 'daget'}-claims.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
     };
 
     const stopDaget = async () => {
@@ -32,14 +115,32 @@ export default function DagetDetailPage() {
     };
 
     const releaseClaim = async (claimId: string) => {
-        await fetch(`/api/claims/${claimId}/release`, { method: 'POST' });
-        fetchDaget();
+        setReleasingClaim(claimId);
+        try {
+            await fetch(`/api/claims/${claimId}/release`, { method: 'POST' });
+            await fetchDaget();
+        } finally { setReleasingClaim(null); }
     };
 
     const retryClaim = async (claimId: string) => {
-        await fetch(`/api/claims/${claimId}/retry`, { method: 'POST' });
-        fetchDaget();
+        setRetryingClaim(claimId);
+        try {
+            await fetch(`/api/claims/${claimId}/retry`, { method: 'POST' });
+            await fetchDaget();
+        } finally { setRetryingClaim(null); }
     };
+
+    // Auto-poll when claims are in processing states
+    const PROCESSING_STATUSES = ['created', 'submitted', 'failed_retryable'];
+    const hasProcessingClaims = claimsList.some((c: any) => PROCESSING_STATUSES.includes(c.status));
+
+    useEffect(() => {
+        if (!hasProcessingClaims) return;
+        const interval = setInterval(() => {
+            fetchDaget();
+        }, 5000);
+        return () => clearInterval(interval);
+    }, [hasProcessingClaims, dagetId]);
 
     if (loading) {
         return <div className="flex items-center justify-center h-64">
@@ -58,11 +159,11 @@ export default function DagetDetailPage() {
     const totalAmount = daget.total_amount_base_units != null
         ? (daget.total_amount_base_units / 10 ** decimals).toFixed(displayDecimals)
         : '—';
-    const distributedAmount = (daget.total_amount_base_units != null && daget.total_winners > 0)
-        ? ((daget.total_amount_base_units / daget.total_winners) * daget.claimed_count / 10 ** decimals).toFixed(displayDecimals)
+    const distributedAmount = daget.distributed_amount_base_units != null
+        ? (daget.distributed_amount_base_units / 10 ** decimals).toFixed(displayDecimals)
         : '—';
-    const remainingAmount = (daget.total_amount_base_units != null && daget.total_winners > 0)
-        ? ((daget.total_amount_base_units / 10 ** decimals) - ((daget.total_amount_base_units / daget.total_winners) * daget.claimed_count / 10 ** decimals)).toFixed(displayDecimals)
+    const remainingAmount = (daget.total_amount_base_units != null && daget.distributed_amount_base_units != null)
+        ? ((daget.total_amount_base_units - daget.distributed_amount_base_units) / 10 ** decimals).toFixed(displayDecimals)
         : '—';
     const failedCount = daget.failed_count ?? (daget.claims?.filter((c: any) => c.status === 'failed_permanent').length || 0);
 
@@ -132,9 +233,6 @@ export default function DagetDetailPage() {
                                         </div>
                                     )}
                                 </div>
-                                <button className="w-10 h-10 flex items-center justify-center bg-surface rounded-xl hover:bg-border-dark transition-all duration-200 active:scale-[0.98]">
-                                    <span className="material-icons text-sm text-text-secondary">share</span>
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -253,8 +351,8 @@ export default function DagetDetailPage() {
 
                     <div className="bg-card-dark rounded-xl border border-border-dark/40 overflow-hidden">
                         <div className="p-5 border-b border-border-dark/40 flex justify-between items-center">
-                            <h4 className="font-bold text-text-primary text-sm">Claims ({daget.claims?.length || 0})</h4>
-                            <button className="text-xs text-text-muted hover:text-primary transition-colors font-semibold">Export CSV</button>
+                            <h4 className="font-bold text-text-primary text-sm">Claims ({daget.claimed_count || 0})</h4>
+                            <button onClick={exportCSV} className="text-xs text-text-muted hover:text-primary transition-colors font-semibold">Export CSV</button>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">
@@ -270,9 +368,9 @@ export default function DagetDetailPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {daget.claims?.length > 0 ? daget.claims.map((c: any, idx: number) => (
+                                    {claimsList.length > 0 ? claimsList.map((c: any, idx: number) => (
                                         <tr key={c.claim_id} className="border-b border-border-dark/20 group hover:bg-primary/5 transition-colors">
-                                            <td className="py-4 px-6 text-sm text-text-muted font-mono">{daget.claims.length - idx}</td>
+                                            <td className="py-4 px-6 text-sm text-text-muted font-mono">{claimsPage * CLAIMS_PER_PAGE + idx + 1}</td>
                                             <td className="py-4 px-6 text-sm text-text-primary font-medium">
                                                 <div className="flex items-center gap-3">
                                                     {c.claimant_discord_avatar ? (
@@ -310,9 +408,19 @@ export default function DagetDetailPage() {
                                             <td className="py-4 px-6">
                                                 {c.status === 'failed_permanent' && (
                                                     <div className="flex gap-2">
-                                                        <Button variant="secondary" size="sm" onClick={() => retryClaim(c.claim_id)}>Retry</Button>
-                                                        <Button variant="danger" size="sm" onClick={() => releaseClaim(c.claim_id)}>Release</Button>
+                                                        <Button variant="secondary" size="sm" onClick={() => retryClaim(c.claim_id)} loading={retryingClaim === c.claim_id} disabled={releasingClaim === c.claim_id}>
+                                                            Retry
+                                                        </Button>
+                                                        <Button variant="danger" size="sm" onClick={() => releaseClaim(c.claim_id)} loading={releasingClaim === c.claim_id} disabled={retryingClaim === c.claim_id}>
+                                                            Release
+                                                        </Button>
                                                     </div>
+                                                )}
+                                                {PROCESSING_STATUSES.includes(c.status) && (
+                                                    <span className="flex items-center gap-1.5 text-xs text-yellow-400">
+                                                        <span className="animate-spin rounded-full h-3 w-3 border-b-2 border-yellow-400" />
+                                                        Processing
+                                                    </span>
                                                 )}
                                             </td>
                                         </tr>
@@ -324,6 +432,46 @@ export default function DagetDetailPage() {
                                 </tbody>
                             </table>
                         </div>
+
+                        {/* Pagination Controls */}
+                        {daget.claimed_count > 0 && (
+                            <div className="p-4 border-t border-border-dark/40 flex items-center justify-between">
+                                <span className="text-xs text-text-muted">
+                                    Showing {claimsPage * CLAIMS_PER_PAGE + 1}–{Math.min((claimsPage + 1) * CLAIMS_PER_PAGE, daget.claimed_count)} of {daget.claimed_count}
+                                </span>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        disabled={claimsPage === 0 || claimsLoading}
+                                        onClick={() => {
+                                            const prevStack = [...claimsCursorStack];
+                                            prevStack.pop();
+                                            const prevCursor = prevStack.length > 0 ? prevStack[prevStack.length - 1] : undefined;
+                                            setClaimsCursorStack(prevStack);
+                                            setClaimsPage(p => p - 1);
+                                            fetchClaims(prevCursor);
+                                        }}
+                                        className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-semibold text-text-secondary disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+                                    >
+                                        <span className="material-icons text-[14px]">chevron_left</span>Prev
+                                    </button>
+                                    <span className="text-xs text-text-muted font-mono">
+                                        {claimsPage + 1} / {Math.ceil(daget.claimed_count / CLAIMS_PER_PAGE)}
+                                    </span>
+                                    <button
+                                        disabled={!claimsNextCursor || claimsLoading}
+                                        onClick={() => {
+                                            if (!claimsNextCursor) return;
+                                            setClaimsCursorStack(s => [...s, claimsNextCursor!]);
+                                            setClaimsPage(p => p + 1);
+                                            fetchClaims(claimsNextCursor!);
+                                        }}
+                                        className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-semibold text-text-secondary disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+                                    >
+                                        Next<span className="material-icons text-[14px]">chevron_right</span>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <SecurityModal
@@ -334,6 +482,51 @@ export default function DagetDetailPage() {
                         message="This will prevent new claims. Existing pending claims will still process. This action cannot be undone."
                         confirmLabel="Stop Daget"
                         loading={stopping}
+                    />
+
+                    <Modal
+                        isOpen={showShareModal}
+                        onClose={() => {
+                            setShowShareModal(false);
+                            setTimeout(() => setCopied(false), 300); // reset state after close animation
+                        }}
+                        title="Daget Created Successfully!"
+                        icon="celebration"
+                        iconColor="text-green-400"
+                        iconBg="bg-green-500/20"
+                        borderColor="border-green-500/30"
+                        primaryAction={{
+                            label: copied ? 'Copied!' : 'Copy Link',
+                            onClick: () => {
+                                navigator.clipboard.writeText(claimUrl);
+                                setCopied(true);
+                                setTimeout(() => setCopied(false), 3000);
+                            }
+                        }}
+                        secondaryAction={{
+                            label: 'Close',
+                            onClick: () => {
+                                setShowShareModal(false);
+                                setTimeout(() => setCopied(false), 300);
+                            }
+                        }}
+                        message={
+                            <div className="mt-4 w-full">
+                                <p className="text-sm text-text-secondary mb-4 leading-relaxed">
+                                    Your giveaway is now live. Share this link with your community so they can start claiming their tokens!
+                                </p>
+                                <div className="bg-background-dark/80 border border-border-dark/60 rounded-xl p-4 flex items-center justify-between group hover:border-primary/50 transition-colors cursor-pointer" onClick={() => {
+                                    navigator.clipboard.writeText(claimUrl);
+                                    setCopied(true);
+                                    setTimeout(() => setCopied(false), 3000);
+                                }}>
+                                    <span className="text-sm font-mono text-primary font-medium break-all pr-4 select-all">{claimUrl}</span>
+                                    <button className="flex-shrink-0 w-8 h-8 rounded-lg bg-surface/80 flex items-center justify-center text-text-muted group-hover:text-primary transition-colors">
+                                        <span className="material-icons text-[18px]">{copied ? 'check' : 'content_copy'}</span>
+                                    </button>
+                                </div>
+                            </div>
+                        }
                     />
                 </div>
             </div>

@@ -59,55 +59,55 @@ export default function CreateDagetPage() {
             <div className="flex-1 overflow-y-auto custom-scrollbar">
                 <WalletBar onRefresh={handleRefresh} />
                 <div className="p-4 md:p-8">
-                <div className="max-w-7xl mx-auto">
-                    <DagetForm
-                        mode="create"
-                        refreshTrigger={refreshCount}
-                        onSubmit={async (values) => {
-                            const body: any = {
-                                name: values.name,
-                                message_html: values.message_html || undefined,
-                                discord_guild_id: values.discord_guild_id,
-                                discord_guild_name: values.discord_guild_name,
-                                discord_guild_icon: values.discord_guild_icon,
-                                required_role_ids: values.required_role_ids.split(',').map(s => s.trim()).filter(Boolean),
-                                required_roles: values.required_roles, // Assuming DagetForm populates this
-                                token_symbol: values.token_symbol,
-                                amount_display: values.amount_display,
-                                total_winners: parseInt(values.total_winners),
-                                daget_type: values.daget_type,
-                            };
+                    <div className="max-w-7xl mx-auto">
+                        <DagetForm
+                            mode="create"
+                            refreshTrigger={refreshCount}
+                            onSubmit={async (values) => {
+                                const body: any = {
+                                    name: values.name,
+                                    message_html: values.message_html || undefined,
+                                    discord_guild_id: values.discord_guild_id,
+                                    discord_guild_name: values.discord_guild_name,
+                                    discord_guild_icon: values.discord_guild_icon,
+                                    required_role_ids: values.required_role_ids.split(',').map(s => s.trim()).filter(Boolean),
+                                    required_roles: values.required_roles, // Assuming DagetForm populates this
+                                    token_symbol: values.token_symbol,
+                                    amount_display: values.amount_display,
+                                    total_winners: parseInt(values.total_winners),
+                                    daget_type: values.daget_type,
+                                };
 
-                            if (values.daget_type === 'random') {
-                                if (!values.random_min_percent || !values.random_max_percent) {
-                                    // Should be caught by form validation, but double check
-                                    throw new Error('Random distribution profile not selected');
+                                if (values.daget_type === 'random') {
+                                    if (!values.random_min_percent || !values.random_max_percent) {
+                                        // Should be caught by form validation, but double check
+                                        throw new Error('Random distribution profile not selected');
+                                    }
+                                    body.random_min_percent = parseFloat(values.random_min_percent);
+                                    body.random_max_percent = parseFloat(values.random_max_percent);
+                                } else {
+                                    body.random_min_percent = null;
+                                    body.random_max_percent = null;
                                 }
-                                body.random_min_percent = parseFloat(values.random_min_percent);
-                                body.random_max_percent = parseFloat(values.random_max_percent);
-                            } else {
-                                body.random_min_percent = null;
-                                body.random_max_percent = null;
-                            }
 
-                            const res = await fetch('/api/dagets', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Idempotency-Key': nanoid(),
-                                },
-                                body: JSON.stringify(body),
-                            });
+                                const res = await fetch('/api/dagets', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'Idempotency-Key': nanoid(),
+                                    },
+                                    body: JSON.stringify(body),
+                                });
 
-                            const data = await res.json();
-                            if (!res.ok) {
-                                throw new Error(data.error?.message || 'Failed to create Daget');
-                            }
+                                const data = await res.json();
+                                if (!res.ok) {
+                                    throw new Error(data.error?.message || 'Failed to create Daget');
+                                }
 
-                            router.push(`/dagets/${data.daget_id}`);
-                        }}
-                    />
-                </div>
+                                router.push(`/dagets/${data.daget_id}?new=true`);
+                            }}
+                        />
+                    </div>
                 </div>
             </div>
         </div>

@@ -28,6 +28,7 @@ interface DagetItem {
     claimed_count: number;
     created_at: string;
     total_amount_base_units?: number;
+    distributed_amount_base_units?: number;
     token_decimals?: number;
     daget_type?: string;
     message_html?: string;
@@ -166,6 +167,7 @@ export default function DashboardPage() {
                             ? {
                                 ...prev,
                                 total_amount_base_units: detail.total_amount_base_units,
+                                distributed_amount_base_units: detail.distributed_amount_base_units,
                                 daget_type: detail.daget_type,
                                 message_html: detail.message_html,
                             }
@@ -375,8 +377,8 @@ export default function DashboardPage() {
     const totalBudgetDisplay = activeDaget?.total_amount_base_units
         ? formatAmount(activeDaget.total_amount_base_units, tokenDecimals, activeDaget?.token_symbol)
         : '—';
-    const distributedDisplay = activeDaget?.total_amount_base_units && totalWinners > 0
-        ? formatAmount(Math.round((activeDaget.total_amount_base_units / totalWinners) * claimedCount), tokenDecimals, activeDaget?.token_symbol)
+    const distributedDisplay = activeDaget?.distributed_amount_base_units != null
+        ? formatAmount(activeDaget.distributed_amount_base_units, tokenDecimals, activeDaget?.token_symbol)
         : '—';
 
     /* ── Actions ── */

@@ -15,6 +15,7 @@ interface QuillEditorProps {
 export default function QuillEditor({ value, onChange, placeholder, className, readOnly = false }: QuillEditorProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const quillRef = useRef<Quill | null>(null);
+    const wrapperRef = useRef<HTMLDivElement>(null);
     const [isInternalUpdate, setIsInternalUpdate] = useState(false);
 
     // Track the last value we emitted to avoid loops
@@ -50,9 +51,69 @@ export default function QuillEditor({ value, onChange, placeholder, className, r
                     [{ 'font': [] }],
                     [{ 'align': [] }],
                     ['clean'],
-                    ['link', 'image'] // Removed video
+                    ['link', 'image']
                 ]
             }
+        });
+
+        // Override image handler → show inline tooltip instead of file picker
+        const toolbar = quill.getModule('toolbar') as any;
+        toolbar.addHandler('image', () => {
+            const wrapper = wrapperRef.current;
+            if (!wrapper) return;
+
+            // Toggle off if already open
+            const existing = wrapper.querySelector('.ql-image-url-bar');
+            if (existing) {
+                existing.remove();
+                return;
+            }
+
+            // Build the tooltip — matches Quill's native ql-tooltip style
+            const tooltip = document.createElement('div');
+            tooltip.className = 'ql-image-url-bar';
+            tooltip.innerHTML = `
+                <span>Enter image url:</span>
+                <input type="text" placeholder="https://example.com/image.png" />
+                <a class="ql-action">Save</a>
+            `;
+
+            // Insert into the editor container (before the editor content)
+            const qlContainer = wrapper.querySelector('.ql-container');
+            if (qlContainer) {
+                qlContainer.insertBefore(tooltip, qlContainer.firstChild);
+            }
+
+            const input = tooltip.querySelector('input') as HTMLInputElement;
+            const saveBtn = tooltip.querySelector('.ql-action') as HTMLAnchorElement;
+
+            const insertAndClose = () => {
+                const url = input.value.trim();
+                if (url) {
+                    const range = quill.getSelection(true);
+                    quill.insertEmbed(range.index, 'image', url, 'user');
+                    quill.setSelection(range.index + 1, 0);
+                }
+                tooltip.remove();
+            };
+
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    insertAndClose();
+                } else if (e.key === 'Escape') {
+                    tooltip.remove();
+                    quill.focus();
+                }
+            });
+
+            saveBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                insertAndClose();
+            });
+
+            // Focus the input
+            setTimeout(() => input.focus(), 50);
         });
 
         quillRef.current = quill;
@@ -60,27 +121,19 @@ export default function QuillEditor({ value, onChange, placeholder, className, r
         // Set initial content if provided
         if (value) {
             try {
-                // Try to convert HTML to Delta to preserve structure
                 const delta = quill.clipboard.convert({ html: value });
                 quill.setContents(delta, 'silent');
             } catch (e) {
-                // Fallback: direct innerHTML manipulation
                 quill.root.innerHTML = value;
             }
         }
 
         // Handle changes
         quill.on('text-change', (delta, oldDelta, source) => {
-            // Only emit if change is from user
             if (source === 'user') {
                 const html = quill.root.innerHTML;
-
-                // Normalization: treat empty editor as empty string
-                // Quill often leaves <p><br></p> for empty content
                 const isEmpty = quill.getText().trim().length === 0 && !html.includes('<img');
-
                 const finalHtml = isEmpty && !html.includes('<img') ? '' : html;
-
                 lastEmittedValueRef.current = finalHtml;
                 onChange(finalHtml);
             }
@@ -88,10 +141,6 @@ export default function QuillEditor({ value, onChange, placeholder, className, r
 
         return () => {
             // Cleanup on unmount if needed
-            // We don't necessarily want to destroy it if we are just re-rendering, 
-            // but reacting requires cleanup. 
-            // However, strictly following the prompt "Single Quill instance per mount", 
-            // we should check existing instance.
         };
     }, []); // Run once on mount
 
@@ -100,18 +149,9 @@ export default function QuillEditor({ value, onChange, placeholder, className, r
         const quill = quillRef.current;
         if (!quill) return;
 
-        // If the value has changed externally and it's not what we just emitted
         if (value !== lastEmittedValueRef.current) {
-
-            // Basic comparison to avoid loop if normalization differs slightly
-            // But we should be careful.
-
-            // Use a flag to prevent the text-change handler from firing onChange
-            // properly handled by 'silent' source in setContents, but strictly speaking 
-            // text-change is emitted with source 'api' which we filter out above.
-
             const currentHtml = quill.root.innerHTML;
-            if (currentHtml === value) return; // No change needed
+            if (currentHtml === value) return;
 
             try {
                 const delta = quill.clipboard.convert({ html: value });
@@ -120,13 +160,12 @@ export default function QuillEditor({ value, onChange, placeholder, className, r
                 quill.root.innerHTML = value;
             }
 
-            // Update reference so we don't think we need to emit this back
             lastEmittedValueRef.current = value;
         }
     }, [value]);
 
     return (
-        <div className={`quill-wrapper ${className || ''}`}>
+        <div ref={wrapperRef} className={`quill-wrapper ${className || ''}`}>
             <div ref={containerRef} className="bg-transparent text-text-primary" />
         </div>
     );

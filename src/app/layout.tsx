@@ -28,6 +28,18 @@ export async function generateMetadata(): Promise<Metadata> {
         metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://daget.fun'),
         title: 'Daget.fun | Role-gated Onchain Giveaways',
         description: 'Role-gated onchain giveaways for your community. No connect wallet needed.',
+        openGraph: {
+            title: 'Daget.fun | Role-gated Onchain Giveaways',
+            description: 'Role-gated onchain giveaways for your community. No connect wallet needed.',
+            type: 'website',
+            images: ['/images/hero.png'],
+        },
+        twitter: {
+            card: 'summary_large_image',
+            title: 'Daget.fun | Role-gated Onchain Giveaways',
+            description: 'Role-gated onchain giveaways for your community. No connect wallet needed.',
+            images: ['/images/hero.png'],
+        },
     };
 }
 

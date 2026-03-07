@@ -155,6 +155,8 @@ export const claims = pgTable('claims', {
     index('claims_claimant_user_id_idx').on(table.claimantUserId),
     index('claims_next_retry_at_idx').on(table.nextRetryAt),
     index('claims_locked_until_idx').on(table.lockedUntil),
+    index('claims_worker_pending_idx').on(table.status, table.lockedUntil, table.nextRetryAt)
+        .where(sql`status IN ('created', 'failed_retryable', 'submitted')`),
     check('amount_base_units_safe_int', sql`amount_base_units IS NULL OR amount_base_units <= 9007199254740991`),
 ]);
 

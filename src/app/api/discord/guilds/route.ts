@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server';
 import { requireAuth, getDiscordAccessToken } from '@/lib/auth';
 import { Errors } from '@/lib/errors';
+import { checkRateLimit, rateLimiters } from '@/lib/rate-limit';
 
 export async function GET() {
     try {
-        // Ensure user is authenticated
-        await requireAuth();
+        const user = await requireAuth();
+
+        const limit = await checkRateLimit(rateLimiters.discordApiPerUser, user.id);
+        if (!limit.success) return Errors.rateLimited();
 
         // Get Discord access token from session
         const accessToken = await getDiscordAccessToken();

@@ -4,6 +4,7 @@ import { Errors, ErrorCodes } from '@/lib/errors';
 import { db } from '@/db';
 import { claims, dagets, notifications } from '@/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
+import type { LockedClaimRow } from '@/worker/types';
 
 /**
  * POST /api/claims/:claimId/release — Release slot (creator only).
@@ -33,7 +34,7 @@ export async function POST(
         const result = await db.transaction(async (tx) => {
             const [lockedClaim] = await tx.execute(sql`
         SELECT status, amount_base_units FROM claims WHERE id = ${claimId} FOR UPDATE
-      `) as any[];
+      `) as unknown as LockedClaimRow[];
 
             if (!lockedClaim || lockedClaim.status !== 'failed_permanent') {
                 return { error: true };

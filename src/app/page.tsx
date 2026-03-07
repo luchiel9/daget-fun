@@ -613,7 +613,7 @@ export default function LandingPage() {
 
                     <div className="mt-16 max-w-5xl mx-auto relative flex flex-col md:block">
                         {/* VS Badge for Desktop ONLY */}
-                        <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 w-16 h-16 bg-background-dark border-4 border-white/10 rounded-full items-center justify-center rotate-12 shadow-[0_0_30px_rgba(0,0,0,0.8)]">
+                        <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 w-16 h-16 bg-card-dark border-4 border-white/10 rounded-full items-center justify-center rotate-12 shadow-[0_0_30px_rgba(0,0,0,0.8)]">
                             <span className="font-arcade text-2xl text-white italic">VS</span>
                         </div>
 
@@ -622,7 +622,7 @@ export default function LandingPage() {
                             <div className="flex-1 bg-[#1A2624] relative p-8 md:p-12 md:pr-16 group">
                                 <div className="absolute inset-0 bg-primary/5 group-hover:bg-primary/10 transition-colors"></div>
                                 {/* Slanted overlay for desktop */}
-                                <div className="hidden md:block absolute top-0 bottom-0 right-[-20px] w-10 bg-card-dark transform skew-x-12 z-10 border-r-2 border-primary/30"></div>
+                                <div className="hidden md:block absolute top-0 bottom-0 right-[-45] w-[90px] bg-card-dark transform skew-x-12 z-10 border-l-2 border-l-primary/30 border-r-2 border-r-red-500/30"></div>
 
                                 <div className="relative z-10 text-center md:text-left">
                                     <div className="flex flex-col md:flex-row items-center md:items-end gap-3 md:gap-3 mb-8 border-b border-primary/20 pb-4 justify-center md:justify-start">
@@ -657,7 +657,7 @@ export default function LandingPage() {
 
                             {/* VS Badge for Mobile ONLY */}
                             <div className="md:hidden flex justify-center -my-8 z-20 relative">
-                                <div className="w-16 h-16 bg-background-dark border-4 border-white/10 rounded-full flex items-center justify-center rotate-12 shadow-[0_0_30px_rgba(0,0,0,0.8)]">
+                                <div className="w-16 h-16 bg-card-dark border-4 border-white/10 rounded-full flex items-center justify-center rotate-12 shadow-[0_0_30px_rgba(0,0,0,0.8)]">
                                     <span className="font-arcade text-2xl text-white italic">VS</span>
                                 </div>
                             </div>

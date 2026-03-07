@@ -5,6 +5,7 @@ import { db } from '@/db';
 import { dagets, dagetRequirements, claims } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { verifyDiscordRoles } from '@/lib/discord-verify';
+import { checkRateLimit, rateLimiters } from '@/lib/rate-limit';
 
 /**
  * GET /api/claim/:claimSlug/verify — Check if the current user meets the role requirements.
@@ -16,6 +17,9 @@ export async function GET(
 ) {
     try {
         const user = await requireAuth();
+
+        const limit = await checkRateLimit(rateLimiters.verifyPerUser, user.id);
+        if (!limit.success) return Errors.rateLimited();
         const { claimSlug } = await params;
 
         const daget = await db.query.dagets.findFirst({
@@ -41,7 +45,7 @@ export async function GET(
             ),
         });
 
-        if (existingClaim) {
+        if (existingClaim && existingClaim.status !== 'released') {
             return NextResponse.json({
                 eligible: false,
                 claimed: true,
@@ -71,7 +75,7 @@ export async function GET(
         const guildId = requirements[0].discordGuildId;
         const requiredRoleIds = requirements.map((r) => r.discordRoleId);
 
-        const result = await verifyDiscordRoles(accessToken, guildId, requiredRoleIds);
+        const result = await verifyDiscordRoles(accessToken, guildId, requiredRoleIds, user.discordUserId);
 
         return NextResponse.json({
             eligible: result.eligible,

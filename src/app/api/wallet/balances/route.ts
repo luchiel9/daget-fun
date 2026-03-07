@@ -7,10 +7,14 @@ import { eq, and } from 'drizzle-orm';
 import { getSolanaConnection, getSolBalance, getTokenBalance, deriveATA } from '@/lib/solana';
 import { getTokenConfig, baseUnitsToDisplay } from '@/lib/tokens';
 import { PublicKey } from '@solana/web3.js';
+import { checkRateLimit, rateLimiters } from '@/lib/rate-limit';
 
 export async function GET() {
     try {
         const user = await requireAuth();
+
+        const limit = await checkRateLimit(rateLimiters.walletBalancesPerUser, user.id);
+        if (!limit.success) return Errors.rateLimited();
 
         // Get active wallet
         const wallet = await db.query.wallets.findFirst({

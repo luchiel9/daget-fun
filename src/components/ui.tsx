@@ -381,7 +381,7 @@ interface ModalProps {
     isOpen: boolean;
     onClose: () => void;
     title: string;
-    message?: string;
+    message?: React.ReactNode;
     children?: React.ReactNode;
     icon?: string;
     iconColor?: string;
@@ -426,7 +426,7 @@ export function Modal({
                     </div>
                     <div className="flex-1">
                         <h3 className="text-lg font-bold text-text-primary mb-1">{title}</h3>
-                        {message && <p className="text-sm text-text-secondary leading-relaxed">{message}</p>}
+                        {message && (typeof message === 'string' ? <p className="text-sm text-text-secondary leading-relaxed">{message}</p> : message)}
                     </div>
                 </div>
 
