@@ -45,7 +45,7 @@ export async function GET(
             ),
         });
 
-        if (existingClaim) {
+        if (existingClaim && existingClaim.status !== 'released') {
             return NextResponse.json({
                 eligible: false,
                 claimed: true,

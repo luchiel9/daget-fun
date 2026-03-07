@@ -110,7 +110,11 @@ export async function POST(request: NextRequest) {
             });
 
             if (existingClaim) {
-                return { error: 'ALREADY_CLAIMED' as const, claim: existingClaim };
+                // Allow re-claim if the previous claim was released by the creator
+                if (existingClaim.status !== 'released') {
+                    return { error: 'ALREADY_CLAIMED' as const, claim: existingClaim };
+                }
+                // Will reuse this row below instead of inserting
             }
 
             // 2. [SECURITY] Sybil Protection: Check if wallet address is reused for this Daget
@@ -122,7 +126,7 @@ export async function POST(request: NextRequest) {
                 ),
             });
 
-            if (walletReuse) {
+            if (walletReuse && walletReuse.status !== 'released') {
                 // Return ALREADY_CLAIMED to not leak that this wallet exists, or specific error
                 // Using a specific error is better for debugging, generic is better for privacy.
                 // Given the context, we'll be explicit.
@@ -197,15 +201,38 @@ export async function POST(request: NextRequest) {
                 }
             }
 
-            // Insert claim
-            const [newClaim] = await tx.insert(claims).values({
-                dagetId: daget.id,
-                claimantUserId: user.id,
-                idempotencyKey,
-                receivingAddress: receiving_address,
-                amountBaseUnits,
-                status: 'created',
-            }).returning();
+            // Insert claim or reset a released claim row (unique index: one per user per daget)
+            let newClaim;
+            if (existingClaim?.status === 'released') {
+                [newClaim] = await tx.execute(sql`
+                  UPDATE claims SET
+                    status = 'created',
+                    idempotency_key = ${idempotencyKey},
+                    receiving_address = ${receiving_address},
+                    amount_base_units = ${amountBaseUnits},
+                    tx_signature = NULL,
+                    attempt_count = 0,
+                    last_error = NULL,
+                    next_retry_at = NULL,
+                    locked_until = NULL,
+                    submitted_at = NULL,
+                    confirmed_at = NULL,
+                    failed_at = NULL,
+                    released_at = NULL,
+                    created_at = NOW()
+                  WHERE id = ${existingClaim.id}
+                  RETURNING *
+                `) as unknown as any[];
+            } else {
+                [newClaim] = await tx.insert(claims).values({
+                    dagetId: daget.id,
+                    claimantUserId: user.id,
+                    idempotencyKey,
+                    receivingAddress: receiving_address,
+                    amountBaseUnits,
+                    status: 'created',
+                }).returning();
+            }
 
             // Increment claimed_count
             await tx.execute(sql`

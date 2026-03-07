@@ -84,7 +84,13 @@ export async function processClaim(claim: ClaimRow) {
 
         const isUnrecoverable = isUnrecoverableError(errorMsg);
 
-        if (isUnrecoverable || claim.attempt_count >= MAX_ATTEMPTS) {
+        // Re-read attempt_count from DB to avoid stale in-memory value
+        const [fresh] = await db.execute(sql`
+          SELECT attempt_count FROM claims WHERE id = ${claim.id}
+        `) as unknown as [{ attempt_count: number }];
+        const currentAttempts = fresh?.attempt_count ?? claim.attempt_count;
+
+        if (isUnrecoverable || currentAttempts >= MAX_ATTEMPTS) {
             await setFailedPermanent(claim, errorMsg);
         } else {
             await setFailedRetryable(claim, errorMsg);
@@ -153,12 +159,13 @@ async function buildAndSendClaim(claim: ClaimRow, connection: Connection) {
         const txSignature = bs58.encode(tx.signature!);
 
         // Step 10: Write tx_signature to DB BEFORE sending (exactly-once guard)
+        // Clear locked_until so the claim can be polled immediately on worker restart.
+        // attempt_count is incremented only in the catch handler to avoid double-increment.
         await db.execute(sql`
       UPDATE claims SET
         tx_signature = ${txSignature},
         status = 'submitted',
         submitted_at = now(),
-        attempt_count = attempt_count + 1,
         locked_until = NULL
       WHERE id = ${claim.id}
     `);
@@ -348,6 +355,7 @@ function isUnrecoverableError(error: string): boolean {
         'InvalidAccountData',
         'AccountNotFound',
         'custom program error',
+        'insufficient funds for rent',
         // Note: InsufficientFunds is intentionally retryable — creator can top up between retries
     ];
     return unrecoverable.some(pattern => error.toLowerCase().includes(pattern.toLowerCase()));

@@ -2,6 +2,8 @@ import { acquireJobs, processClaim, RpcError } from './processor';
 import { WORKER_CONFIG } from '@/config/worker';
 import { logger } from '@/lib/logger';
 import { CircuitBreaker } from '@/lib/circuit-breaker';
+import { db } from '@/db';
+import { sql } from 'drizzle-orm';
 
 const log = logger.child({ component: 'worker' });
 const { TICK_INTERVAL_MS, CONCURRENCY } = WORKER_CONFIG;
@@ -15,8 +17,21 @@ let lastClaimProcessedAt: Date | null = null;
  * Main worker loop — runs as a background process.
  * Picks up pending claims every 3 seconds and processes them.
  */
+async function clearStaleLocks() {
+    const result = await db.execute(sql`
+    UPDATE claims
+    SET locked_until = NULL
+    WHERE locked_until IS NOT NULL AND locked_until < now()
+  `);
+    const count = (result as unknown as { rowCount?: number }).rowCount ?? 0;
+    if (count > 0) {
+        log.info({ count }, 'Cleared stale locks from previous run');
+    }
+}
+
 async function runLoop() {
     log.info('Starting background transaction processor...');
+    await clearStaleLocks();
     running = true;
 
     while (running) {
