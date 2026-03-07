@@ -26,6 +26,7 @@ export const users = pgTable('users', {
     discordAvatarUrl: text('discord_avatar_url'),
     receivingAddress: text('receiving_address'),
     finishedGuide: boolean('finished_guide').notNull().default(false),
+    isAdmin: boolean('is_admin').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
@@ -155,6 +156,8 @@ export const claims = pgTable('claims', {
     index('claims_claimant_user_id_idx').on(table.claimantUserId),
     index('claims_next_retry_at_idx').on(table.nextRetryAt),
     index('claims_locked_until_idx').on(table.lockedUntil),
+    index('claims_worker_pending_idx').on(table.status, table.lockedUntil, table.nextRetryAt)
+        .where(sql`status IN ('created', 'failed_retryable', 'submitted')`),
     check('amount_base_units_safe_int', sql`amount_base_units IS NULL OR amount_base_units <= 9007199254740991`),
 ]);
 

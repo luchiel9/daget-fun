@@ -10,8 +10,10 @@ const globalForDb = globalThis as unknown as {
     connection: ReturnType<typeof postgres> | undefined;
 };
 
+const poolMax = parseInt(process.env.POSTGRES_POOL_MAX || '10', 10);
+
 const connection = globalForDb.connection ?? postgres(connectionString, {
-    max: 10,
+    max: poolMax,
     idle_timeout: 20,
     connect_timeout: 10,
 });

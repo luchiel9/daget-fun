@@ -11,6 +11,7 @@ const navItems = [
     { href: '/dagets', icon: 'redeem', label: 'My Dagets' },
     { href: '/claims', icon: 'account_balance_wallet', label: 'My Claims' },
     { href: '/notifications', icon: 'notifications', label: 'Notifications' },
+    { href: '/admin', icon: 'admin_panel_settings', label: 'Admin', adminOnly: true },
 ];
 
 const UserContext = React.createContext<{
@@ -86,7 +87,7 @@ export function Sidebar() {
                     </div>
                 </Link>
                 <nav className="flex-1 px-4 space-y-1 mt-4">
-                    {navItems.map((item) => {
+                    {navItems.filter(item => !item.adminOnly || user?.isAdmin).map((item) => {
                         const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
                         const isDashboard = item.href === '/dashboard';
                         const handleNavClick = (e: React.MouseEvent) => {

@@ -23,6 +23,8 @@ export default function DagetDetailPage() {
     const [claimsCursorStack, setClaimsCursorStack] = useState<string[]>([]);
     const [claimsLoading, setClaimsLoading] = useState(false);
     const [claimsPage, setClaimsPage] = useState(0);
+    const [retryingClaim, setRetryingClaim] = useState<string | null>(null);
+    const [releasingClaim, setReleasingClaim] = useState<string | null>(null);
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -113,14 +115,32 @@ export default function DagetDetailPage() {
     };
 
     const releaseClaim = async (claimId: string) => {
-        await fetch(`/api/claims/${claimId}/release`, { method: 'POST' });
-        fetchDaget();
+        setReleasingClaim(claimId);
+        try {
+            await fetch(`/api/claims/${claimId}/release`, { method: 'POST' });
+            await fetchDaget();
+        } finally { setReleasingClaim(null); }
     };
 
     const retryClaim = async (claimId: string) => {
-        await fetch(`/api/claims/${claimId}/retry`, { method: 'POST' });
-        fetchDaget();
+        setRetryingClaim(claimId);
+        try {
+            await fetch(`/api/claims/${claimId}/retry`, { method: 'POST' });
+            await fetchDaget();
+        } finally { setRetryingClaim(null); }
     };
+
+    // Auto-poll when claims are in processing states
+    const PROCESSING_STATUSES = ['created', 'submitted', 'failed_retryable'];
+    const hasProcessingClaims = claimsList.some((c: any) => PROCESSING_STATUSES.includes(c.status));
+
+    useEffect(() => {
+        if (!hasProcessingClaims) return;
+        const interval = setInterval(() => {
+            fetchDaget();
+        }, 5000);
+        return () => clearInterval(interval);
+    }, [hasProcessingClaims, dagetId]);
 
     if (loading) {
         return <div className="flex items-center justify-center h-64">
@@ -388,9 +408,19 @@ export default function DagetDetailPage() {
                                             <td className="py-4 px-6">
                                                 {c.status === 'failed_permanent' && (
                                                     <div className="flex gap-2">
-                                                        <Button variant="secondary" size="sm" onClick={() => retryClaim(c.claim_id)}>Retry</Button>
-                                                        <Button variant="danger" size="sm" onClick={() => releaseClaim(c.claim_id)}>Release</Button>
+                                                        <Button variant="secondary" size="sm" onClick={() => retryClaim(c.claim_id)} loading={retryingClaim === c.claim_id} disabled={releasingClaim === c.claim_id}>
+                                                            Retry
+                                                        </Button>
+                                                        <Button variant="danger" size="sm" onClick={() => releaseClaim(c.claim_id)} loading={releasingClaim === c.claim_id} disabled={retryingClaim === c.claim_id}>
+                                                            Release
+                                                        </Button>
                                                     </div>
+                                                )}
+                                                {PROCESSING_STATUSES.includes(c.status) && (
+                                                    <span className="flex items-center gap-1.5 text-xs text-yellow-400">
+                                                        <span className="animate-spin rounded-full h-3 w-3 border-b-2 border-yellow-400" />
+                                                        Processing
+                                                    </span>
                                                 )}
                                             </td>
                                         </tr>
