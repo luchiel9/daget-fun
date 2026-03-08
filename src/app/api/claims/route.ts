@@ -89,6 +89,10 @@ export async function POST(request: NextRequest) {
         // Atomic slot reservation with row lock (anti-overclaim per blueprint §4.6)
         // This uses raw SQL for the SELECT FOR UPDATE + INSERT + UPDATE pattern
         const result = await db.transaction(async (tx) => {
+            // Timeout the entire transaction at 10s — prevents unbounded lock hold
+            // if the DB is slow or a downstream call stalls inside the tx.
+            await tx.execute(sql`SET LOCAL statement_timeout = '10s'`);
+
             // Lock the daget row
             const [lockedDaget] = await tx.execute(sql`
         SELECT claimed_count, total_winners, total_amount_base_units, daget_type,
@@ -169,26 +173,38 @@ export async function POST(request: NextRequest) {
 
                 if (remainingClaimers === 1) {
                     // Final claimer gets all remaining
+                    // Guard: pool should never be 0 here — if it is, something
+                    // went wrong in prior random calculations. Fail loudly.
+                    if (remainingPool <= 0) {
+                        throw new Error(
+                            `Pool exhausted for daget ${daget.id}: remainingPool=${remainingPool}. ` +
+                            `Prior claims over-distributed the fund.`
+                        );
+                    }
                     amountBaseUnits = remainingPool;
                 } else {
                     // Fair Share Algorithm
+                    // Each claim is independently bounded between [minBps%, maxBps%] of
+                    // the current fair share, where bps are basis points (100 bps = 1%).
+                    //
+                    // Previously the code used (maxBps - minBps) as a symmetric variance
+                    // factor, which produced amounts OUTSIDE the [min, max] range.
+                    // Correct approach: map the random float directly into [minAmount, maxAmount].
                     const fairShare = Math.floor(remainingPool / remainingClaimers);
 
-                    const minBps = lockedDaget.random_min_bps || 0;
-                    const maxBps = lockedDaget.random_max_bps || 0;
+                    const minBps = lockedDaget.random_min_bps ?? 10000;
+                    const maxBps = lockedDaget.random_max_bps ?? 10000;
 
-                    // Use the spread between min/max as the variance factor
-                    const varianceBps = Math.max(0, maxBps - minBps);
-                    const varianceFactor = varianceBps / 10000;
+                    // Compute the absolute [min, max] amount for this claim
+                    const minAmount = Math.floor(fairShare * minBps / 10000);
+                    const maxAmount = Math.floor(fairShare * maxBps / 10000);
 
                     // [SECURITY] Use crypto for secure randomness instead of Math.random
                     const randomBuffer = crypto.randomBytes(4);
-                    const randomFloat = randomBuffer.readUInt32LE(0) / 0xffffffff; // 0.0 to 1.0 (approx)
-                    const randomScalar = (randomFloat * 2) - 1; // -1 to 1
+                    const randomFloat = randomBuffer.readUInt32LE(0) / 0xffffffff; // [0.0, 1.0]
 
-                    // Calculate fluctuation
-                    const fluctuation = Math.floor(fairShare * varianceFactor * randomScalar);
-                    amountBaseUnits = fairShare + fluctuation;
+                    // Map into [minAmount, maxAmount]
+                    amountBaseUnits = minAmount + Math.floor(randomFloat * (maxAmount - minAmount + 1));
 
                     // Safety Checks
                     // 1. Minimum 1 unit
@@ -198,6 +214,10 @@ export async function POST(request: NextRequest) {
                     const claimsLeftAfterThis = remainingClaimers - 1;
                     const maxSafe = remainingPool - claimsLeftAfterThis;
                     amountBaseUnits = Math.min(amountBaseUnits, maxSafe);
+
+                    // 3. maxSafe could itself be 0 if remainingPool equals remainingClaimers
+                    //    (everyone gets exactly 1 unit). Ensure we never send 0.
+                    amountBaseUnits = Math.max(1, amountBaseUnits);
                 }
             }
 
@@ -264,7 +284,7 @@ export async function POST(request: NextRequest) {
                 return Errors.conflict(ErrorCodes.ALREADY_CLAIMED, 'You have already claimed this Daget.');
             }
             if (result.error === 'WALLET_ALREADY_USED') {
-                return Errors.conflict(ErrorCodes.ALREADY_CLAIMED, 'This wallet address has already been used for this Daget.');
+                return Errors.conflict(ErrorCodes.WALLET_ALREADY_USED, 'This wallet address has already been used for this Daget.');
             }
         }
 

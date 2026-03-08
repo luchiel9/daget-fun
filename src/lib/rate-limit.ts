@@ -129,7 +129,14 @@ export function getClientIp(request: { headers: { get(name: string): string | nu
         if (ip) return ip;
     }
 
-    return `unresolved:${Math.random().toString(36).slice(2)}`;
+    // In production this should never happen behind Cloudflare/Nginx.
+    // Use a shared bucket so unresolved requests still hit rate limits
+    // rather than each getting their own unique bucket (which would
+    // effectively bypass all IP-based rate limiting).
+    if (isProduction) {
+        console.error('[RateLimit] Could not determine client IP — using shared fallback bucket');
+    }
+    return 'unresolved:shared';
 }
 
 // Extend Redis type to include our custom command

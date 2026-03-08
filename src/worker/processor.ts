@@ -219,6 +219,17 @@ export async function confirmClaim(claimOrId: ClaimRow | { id: string }) {
     WHERE id = ${claimId}
   `);
 
+    // Update daget's running total — do this after confirming the claim
+    // so total_claimed_amount_base_units always reflects on-chain-confirmed funds only.
+    await db.execute(sql`
+    UPDATE dagets SET
+      total_claimed_amount_base_units = total_claimed_amount_base_units + (
+        SELECT COALESCE(amount_base_units, 0) FROM claims WHERE id = ${claimId}
+      ),
+      updated_at = now()
+    WHERE id = (SELECT daget_id FROM claims WHERE id = ${claimId})
+  `);
+
     // Look up the full claim row for notification details
     const fullClaim = await db.query.claims.findFirst({
         where: eq(claims.id, claimId),
@@ -297,8 +308,9 @@ async function pollSubmittedClaim(claim: ClaimRow, connection: Connection) {
             }
         }
         // else: still pending — will be picked up next tick
-    } catch {
-        // Network error during poll — will retry next tick
+    } catch (err) {
+        // Transient network error — will retry next tick. Log for visibility.
+        log.warn({ claimId: claim.id, txSignature: claim.tx_signature, err }, 'Poll error — will retry next tick');
     }
 }
 

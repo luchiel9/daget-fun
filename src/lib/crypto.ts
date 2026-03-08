@@ -88,12 +88,13 @@ export async function decryptPrivateKey(
     const nonce = combined.slice(0, nonceLength);
     const ciphertext = combined.slice(nonceLength);
 
-    const plaintext = sodium.crypto_secretbox_open_easy(ciphertext, nonce, encKey);
-
-    // Best-effort zeroize encryption key
-    encKey.fill(0);
-
-    return plaintext;
+    // Zeroize in finally so the key is cleared even if decryption throws
+    // (e.g. tampered ciphertext, wrong key version)
+    try {
+        return sodium.crypto_secretbox_open_easy(ciphertext, nonce, encKey);
+    } finally {
+        encKey.fill(0);
+    }
 }
 
 /**
