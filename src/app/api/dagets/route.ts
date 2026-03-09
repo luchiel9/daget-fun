@@ -31,12 +31,17 @@ export async function POST(request: NextRequest) {
         const limit = await checkRateLimit(rateLimiters.dagetsPerUser, user.id);
         if (!limit.success) return Errors.rateLimited();
 
-        const body = await request.json();
+        let body: unknown;
+        try {
+            body = await request.json();
+        } catch {
+            return Errors.validation('Invalid JSON body');
+        }
 
         // Idempotency check
         const idempotencyKey = request.headers.get('Idempotency-Key');
-        if (!idempotencyKey) {
-            return Errors.validation('Idempotency-Key header is required');
+        if (!idempotencyKey || idempotencyKey.length > 128) {
+            return Errors.validation('Idempotency-Key header is required (max 128 characters)');
         }
         const replay = await checkIdempotency(idempotencyKey, user.id, 'POST /api/dagets', body);
         if (replay) return replay;

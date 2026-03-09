@@ -29,11 +29,18 @@ export async function POST(request: NextRequest) {
         ]);
         if (!userLimit.success || !ipLimit.success) return Errors.rateLimited();
 
-        const body = await request.json();
+        let body: unknown;
+        try {
+            body = await request.json();
+        } catch {
+            return Errors.validation('Invalid JSON body');
+        }
 
         // Idempotency
         const idempotencyKey = request.headers.get('Idempotency-Key');
-        if (!idempotencyKey) return Errors.validation('Idempotency-Key header is required');
+        if (!idempotencyKey || idempotencyKey.length > 128) {
+            return Errors.validation('Idempotency-Key header is required (max 128 characters)');
+        }
         const replay = await checkIdempotency(idempotencyKey, user.id, 'POST /api/claims', body);
         if (replay) return replay;
 

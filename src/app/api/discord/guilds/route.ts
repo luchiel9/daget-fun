@@ -24,8 +24,8 @@ export async function GET() {
         });
 
         if (!res.ok) {
-            const error = await res.json();
-            console.error('Discord API Error (Guilds):', error);
+            const errorText = await res.text();
+            console.error(`Discord API Error (Guilds) [${res.status}]:`, errorText);
             if (res.status === 401) {
                 return Errors.unauthorized('Discord session expired');
             }

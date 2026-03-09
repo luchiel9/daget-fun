@@ -14,6 +14,9 @@ import { NextResponse } from 'next/server';
  */
 
 function hashBody(body: unknown): string {
+    if (body == null || typeof body !== 'object') {
+        return crypto.createHash('sha256').update(JSON.stringify(body ?? '')).digest('hex');
+    }
     const normalized = JSON.stringify(body, Object.keys(body as object).sort());
     return crypto.createHash('sha256').update(normalized).digest('hex');
 }
