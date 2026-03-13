@@ -285,15 +285,6 @@ async function createDrawNotifications(
         relatedDagetId: daget.id,
     }));
 
-    // Loser notifications
-    const loserNotifs = losers.map((l) => ({
-        userId: l.claimant_user_id,
-        type: 'raffle_lost' as const,
-        title: 'Raffle drawn',
-        body: `The raffle **${daget.name}** has been drawn. Unfortunately you weren't selected.`,
-        relatedDagetId: daget.id,
-    }));
-
     // Creator notification
     const creatorNotif = {
         userId: daget.creator_user_id,
@@ -304,7 +295,7 @@ async function createDrawNotifications(
     };
 
     // Batch insert all notifications
-    const allNotifs = [...winnerNotifs, ...loserNotifs, creatorNotif];
+    const allNotifs = [...winnerNotifs, creatorNotif];
     if (allNotifs.length > 0) {
         // Insert in batches of 500 to avoid query size limits
         for (let i = 0; i < allNotifs.length; i += 500) {

@@ -455,6 +455,11 @@ body {
     box-shadow: 4px 4px 0px 0px var(--neon-magenta-subtle);
   }
 
+  .arcade-border-amber {
+    border-color: rgba(251, 191, 36, 0.3);
+    box-shadow: 4px 4px 0px 0px rgba(251, 191, 36, 0.3);
+  }
+
   /* ─── Glitch Text ─── */
   .glitch-text {
     text-shadow: 2px 2px 0px var(--neon-magenta-subtle);
