@@ -2,6 +2,7 @@ import { relations } from 'drizzle-orm';
 import {
     users, wallets, walletExports, dagets, dagetRequirements,
     claims, notifications, idempotencyKeys, exportTokens, claimRetryAudit,
+    discordBotInstallations,
 } from './schema';
 
 /* ── User Relations ── */
@@ -49,4 +50,9 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
     user: one(users, { fields: [notifications.userId], references: [users.id] }),
     relatedDaget: one(dagets, { fields: [notifications.relatedDagetId], references: [dagets.id] }),
     relatedClaim: one(claims, { fields: [notifications.relatedClaimId], references: [claims.id] }),
+}));
+
+/* ── Discord Bot Installation Relations ── */
+export const discordBotInstallationsRelations = relations(discordBotInstallations, ({ one }) => ({
+    installer: one(users, { fields: [discordBotInstallations.installedByUser], references: [users.id] }),
 }));

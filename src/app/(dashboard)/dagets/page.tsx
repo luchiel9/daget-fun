@@ -114,12 +114,14 @@ export default function DagetsListPage() {
         if (status === 'active') return 'bg-green-500/10 text-green-400 border border-green-500/20';
         if (status === 'stopped') return 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20';
         if (status === 'closed' || status === 'released') return 'bg-slate-500/10 text-slate-400 border border-slate-500/20';
+        if (status === 'drawing') return 'bg-amber-500/10 text-amber-400 border border-amber-500/20';
         if (status === 'created') return 'bg-blue-500/10 text-blue-400 border border-blue-500/20';
         return 'bg-primary/10 text-primary border border-primary/20';
     };
 
-    const getStatusLabel = (status: string) => {
-        if (status === 'closed' || status === 'released') return 'Fully Claimed';
+    const getStatusLabel = (status: string, dagetType?: string) => {
+        if (status === 'closed' || status === 'released') return dagetType === 'raffle' ? 'Drawn' : 'Fully Claimed';
+        if (status === 'drawing') return 'Drawing...';
         return status;
     };
 
@@ -132,6 +134,7 @@ export default function DagetsListPage() {
                             <button onClick={() => setStatusFilter(undefined)} className={`whitespace-nowrap px-4 py-2 rounded-full text-xs font-semibold transition-all duration-150 active:scale-[0.95] ${!statusFilter ? 'bg-primary/10 text-primary border border-primary/20' : 'text-text-secondary hover:text-primary hover:bg-primary/5 border border-transparent'}`}>All</button>
                             <button onClick={() => setStatusFilter('active')} className={`whitespace-nowrap px-4 py-2 rounded-full text-xs font-semibold transition-all duration-150 active:scale-[0.95] ${statusFilter === 'active' ? 'bg-primary/10 text-primary border border-primary/20' : 'text-text-secondary hover:text-primary hover:bg-primary/5 border border-transparent'}`}>Active</button>
                             <button onClick={() => setStatusFilter('stopped')} className={`whitespace-nowrap px-4 py-2 rounded-full text-xs font-semibold transition-all duration-150 active:scale-[0.95] ${statusFilter === 'stopped' ? 'bg-primary/10 text-primary border border-primary/20' : 'text-text-secondary hover:text-primary hover:bg-primary/5 border border-transparent'}`}>Stopped</button>
+                            <button onClick={() => setStatusFilter('drawing')} className={`whitespace-nowrap px-4 py-2 rounded-full text-xs font-semibold transition-all duration-150 active:scale-[0.95] ${statusFilter === 'drawing' ? 'bg-primary/10 text-primary border border-primary/20' : 'text-text-secondary hover:text-primary hover:bg-primary/5 border border-transparent'}`}>Drawing</button>
                             <button onClick={() => setStatusFilter('closed')} className={`whitespace-nowrap px-4 py-2 rounded-full text-xs font-semibold transition-all duration-150 active:scale-[0.95] ${statusFilter === 'closed' ? 'bg-primary/10 text-primary border border-primary/20' : 'text-text-secondary hover:text-primary hover:bg-primary/5 border border-transparent'}`}>Fully Claimed</button>
                         </div>
                         <Button
@@ -180,13 +183,17 @@ export default function DagetsListPage() {
                                                                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500"></span>
                                                             </span>
                                                         )}
-                                                        {getStatusLabel(d.status)}
+                                                        {getStatusLabel(d.status, d.daget_type)}
                                                     </span>
                                                 </div>
                                                 <div className="flex items-center gap-3 text-xs text-text-muted">
                                                     <span>{new Date(d.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                                                     <span className="w-1 h-1 rounded-full bg-text-muted/40 md:hidden"></span>
-                                                    <span className="md:hidden font-mono">{d.claimed_count}/{d.total_winners} claimed</span>
+                                                    <span className="md:hidden font-mono">
+                                                        {d.daget_type === 'raffle'
+                                                            ? `${d.claimed_count} entries`
+                                                            : `${d.claimed_count}/${d.total_winners} claimed`}
+                                                    </span>
                                                 </div>
                                             </div>
 
@@ -198,17 +205,25 @@ export default function DagetsListPage() {
                                                             <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                                                         </span>
                                                     )}
-                                                    {getStatusLabel(d.status)}
+                                                    {getStatusLabel(d.status, d.daget_type)}
                                                 </span>
 
                                                 <div className="w-40 hidden md:block">
                                                     <div className="flex items-center justify-between mb-1.5">
-                                                        <span className="text-[10px] text-text-muted uppercase tracking-wider font-semibold">Claimed</span>
-                                                        <span className="text-[10px] text-text-secondary font-mono font-bold">{d.claimed_count}/{d.total_winners}</span>
+                                                        <span className="text-[10px] text-text-muted uppercase tracking-wider font-semibold">
+                                                            {d.daget_type === 'raffle' ? 'Entries' : 'Claimed'}
+                                                        </span>
+                                                        <span className="text-[10px] text-text-secondary font-mono font-bold">
+                                                            {d.daget_type === 'raffle'
+                                                                ? `${d.claimed_count} entries`
+                                                                : `${d.claimed_count}/${d.total_winners}`}
+                                                        </span>
                                                     </div>
-                                                    <div className="h-1.5 bg-border-dark/60 rounded-full overflow-hidden">
-                                                        <div className="h-full rounded-full bg-gradient-to-r from-primary to-teal-300" style={{ width: `${progress}%`, transition: 'width 0.8s ease-out' }}></div>
-                                                    </div>
+                                                    {d.daget_type !== 'raffle' && (
+                                                        <div className="h-1.5 bg-border-dark/60 rounded-full overflow-hidden">
+                                                            <div className="h-full rounded-full bg-gradient-to-r from-primary to-teal-300" style={{ width: `${progress}%`, transition: 'width 0.8s ease-out' }}></div>
+                                                        </div>
+                                                    )}
                                                 </div>
 
                                                 <div className="flex items-center gap-3">

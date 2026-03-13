@@ -6,8 +6,8 @@ import { sql } from 'drizzle-orm';
 
 /* ── Enums ── */
 
-export const dagetTypeEnum = pgEnum('daget_type', ['fixed', 'random']);
-export const dagetStatusEnum = pgEnum('daget_status', ['active', 'stopped', 'closed']);
+export const dagetTypeEnum = pgEnum('daget_type', ['fixed', 'random', 'raffle']);
+export const dagetStatusEnum = pgEnum('daget_status', ['active', 'stopped', 'closed', 'drawing']);
 export const claimStatusEnum = pgEnum('claim_status', [
     'created', 'submitted', 'confirmed',
     'failed_retryable', 'failed_permanent', 'released',
@@ -15,6 +15,7 @@ export const claimStatusEnum = pgEnum('claim_status', [
 export const notificationTypeEnum = pgEnum('notification_type', [
     'claim_confirmed', 'claim_failed', 'claim_released',
     'daget_stopped', 'daget_closed',
+    'raffle_won', 'raffle_lost', 'raffle_drawn',
 ]);
 
 /* ── Users ── */
@@ -95,14 +96,32 @@ export const dagets = pgTable('dagets', {
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     stoppedAt: timestamp('stopped_at', { withTimezone: true }),
+
+    /* ── Raffle-specific columns ── */
+    raffleEndsAt: timestamp('raffle_ends_at', { withTimezone: true }),
+    raffleDrawnAt: timestamp('raffle_drawn_at', { withTimezone: true }),
+    discordChannelId: text('discord_channel_id'),
+    discordMessageId: text('discord_message_id'),
+    drandRound: bigint('drand_round', { mode: 'number' }),
+    drandRandomness: text('drand_randomness'),
+    drawAttemptCount: integer('draw_attempt_count').notNull().default(0),
 }, (table) => [
     index('dagets_creator_user_id_idx').on(table.creatorUserId),
-    uniqueIndex('dagets_one_active_per_creator').on(table.creatorUserId).where(sql`status = 'active'`),
+    /* Split active daget constraint: 1 instant + 1 raffle allowed simultaneously */
+    uniqueIndex('dagets_one_active_instant').on(table.creatorUserId)
+        .where(sql`status = 'active' AND daget_type != 'raffle'`),
+    uniqueIndex('dagets_one_active_raffle').on(table.creatorUserId)
+        .where(sql`status IN ('active', 'drawing') AND daget_type = 'raffle'`),
     check('token_symbol_check', sql`token_symbol IN ('USDC', 'USDT', 'SOL')`),
     check('total_amount_positive', sql`total_amount_base_units > 0`),
     check('total_amount_safe_int', sql`total_amount_base_units <= 9007199254740991`),
     check('total_winners_positive', sql`total_winners > 0`),
-    check('claimed_count_range', sql`claimed_count >= 0 AND claimed_count <= total_winners`),
+    /* Raffle allows unlimited entries (claimed_count tracks entries, not payouts) */
+    check('claimed_count_range', sql`
+    claimed_count >= 0
+    AND ((daget_type != 'raffle' AND claimed_count <= total_winners) OR daget_type = 'raffle')
+  `),
+    /* Raffle uses same config as fixed (no random bps) */
     check('random_mode_check', sql`
     (daget_type = 'fixed' AND random_min_bps IS NULL AND random_max_bps IS NULL)
     OR
@@ -112,7 +131,14 @@ export const dagets = pgTable('dagets', {
       AND random_min_bps > 0
       AND random_max_bps >= random_min_bps
       AND random_max_bps <= 10000)
+    OR
+    (daget_type = 'raffle' AND random_min_bps IS NULL AND random_max_bps IS NULL)
   `),
+    /* Raffle must have end date; non-raffle must not */
+    check('raffle_ends_at_required', sql`daget_type != 'raffle' OR raffle_ends_at IS NOT NULL`),
+    check('raffle_ends_at_forbidden', sql`daget_type = 'raffle' OR raffle_ends_at IS NULL`),
+    /* drand columns are raffle-only */
+    check('drand_raffle_only', sql`daget_type = 'raffle' OR (drand_round IS NULL AND drand_randomness IS NULL)`),
 ]);
 
 /* ── Daget Requirements ── */
@@ -149,6 +175,7 @@ export const claims = pgTable('claims', {
     confirmedAt: timestamp('confirmed_at', { withTimezone: true }),
     failedAt: timestamp('failed_at', { withTimezone: true }),
     releasedAt: timestamp('released_at', { withTimezone: true }),
+    isRaffleWinner: boolean('is_raffle_winner'),
 }, (table) => [
     uniqueIndex('claims_one_per_user_per_daget').on(table.dagetId, table.claimantUserId),
     uniqueIndex('claims_tx_signature_unique').on(table.txSignature).where(sql`tx_signature IS NOT NULL`),
@@ -157,8 +184,10 @@ export const claims = pgTable('claims', {
     index('claims_next_retry_at_idx').on(table.nextRetryAt),
     index('claims_locked_until_idx').on(table.lockedUntil),
     index('claims_worker_pending_idx').on(table.status, table.lockedUntil, table.nextRetryAt)
-        .where(sql`status IN ('created', 'failed_retryable', 'submitted')`),
+        .where(sql`status IN ('created', 'failed_retryable', 'submitted') AND amount_base_units IS NOT NULL`),
     check('amount_base_units_safe_int', sql`amount_base_units IS NULL OR amount_base_units <= 9007199254740991`),
+    /* A raffle winner must have an amount assigned */
+    check('raffle_winner_has_amount', sql`is_raffle_winner IS NOT TRUE OR amount_base_units IS NOT NULL`),
 ]);
 
 /* ── Notifications ── */
@@ -204,6 +233,18 @@ export const exportTokens = pgTable('export_tokens', {
     usedAt: timestamp('used_at', { withTimezone: true }),
     expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+/* ── Discord Bot Installations ── */
+
+export const discordBotInstallations = pgTable('discord_bot_installations', {
+    guildId: text('guild_id').primaryKey(),
+    installedByUser: uuid('installed_by_user').references(() => users.id, { onDelete: 'set null' }),
+    guildName: text('guild_name'),
+    guildIcon: text('guild_icon'),
+    permissions: bigint('permissions', { mode: 'bigint' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
 /* ── Claim Retry Audit ── */

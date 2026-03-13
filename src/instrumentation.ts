@@ -1,4 +1,10 @@
 export async function register() {
+  if (process.env.NEXT_RUNTIME === 'nodejs') {
+    // Validate Discord env early — fail fast on misconfiguration
+    const { validateDiscordEnv } = await import('@/lib/discord-bot');
+    validateDiscordEnv();
+  }
+
   if (process.env.NEXT_RUNTIME === 'nodejs' && process.env.AUTO_MIGRATE_ON_STARTUP === 'true') {
     try {
       console.log('⏳ Starting database migrations...');

@@ -38,6 +38,7 @@ export async function acquireJobs() {
       SELECT id
       FROM claims
       WHERE status IN ('created', 'failed_retryable', 'submitted')
+        AND amount_base_units IS NOT NULL
         AND (next_retry_at IS NULL OR next_retry_at <= now())
         AND (locked_until IS NULL OR locked_until < now())
       ORDER BY created_at ASC

@@ -21,6 +21,10 @@ export interface FormValues {
     random_min_percent: string;
     random_max_percent: string;
     required_roles?: { id: string, name: string, color?: number }[];
+    // Raffle-specific
+    raffle_ends_at: string;
+    post_to_discord: boolean;
+    discord_channel_id: string;
 }
 
 const RANDOM_PROFILES = [
@@ -88,6 +92,9 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
         daget_type: 'fixed',
         random_min_percent: '10', // Default to Spicy (Middle)
         random_max_percent: '75', // Default to Spicy (Middle)
+        raffle_ends_at: '',
+        post_to_discord: false,
+        discord_channel_id: '',
         ...initialValues,
     });
 
@@ -99,6 +106,10 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
     const [botInviteLink, setBotInviteLink] = useState<string | null>(null);
     const [discordAuthError, setDiscordAuthError] = useState(false);
     const [manualRoles, setManualRoles] = useState<{ name: string, id: string }[]>([{ name: '', id: '' }]);
+
+    // Discord channels for raffle posting
+    const [discordChannels, setDiscordChannels] = useState<{ id: string, name: string }[]>([]);
+    const [loadingChannels, setLoadingChannels] = useState(false);
 
     // Field validation errors
     const [validationErrors, setValidationErrors] = useState<{
@@ -308,6 +319,31 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
             setLoadingGuilds(false);
         }
     };
+
+    const fetchDiscordChannels = async (guildId: string) => {
+        if (!guildId) return;
+        setLoadingChannels(true);
+        try {
+            const res = await fetch(`/api/discord/channels?guild_id=${guildId}`);
+            if (res.ok) {
+                const data = await res.json();
+                setDiscordChannels(data.channels || []);
+            } else {
+                setDiscordChannels([]);
+            }
+        } catch {
+            setDiscordChannels([]);
+        } finally {
+            setLoadingChannels(false);
+        }
+    };
+
+    // Fetch channels when post_to_discord is toggled on
+    useEffect(() => {
+        if (form.post_to_discord && form.discord_guild_id) {
+            fetchDiscordChannels(form.discord_guild_id);
+        }
+    }, [form.post_to_discord, form.discord_guild_id]);
 
     const handleDiscordLogin = () => {
         const usePopup = process.env.NEXT_PUBLIC_DISCORD_AUTH_POP_UP === '1';
@@ -540,6 +576,33 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
                 }
             }
 
+            // Validate Raffle settings
+            if (form.daget_type === 'raffle') {
+                if (!form.raffle_ends_at) {
+                    setError('Please set a raffle end date.');
+                    setLoading(false);
+                    return;
+                }
+                const endsAt = new Date(form.raffle_ends_at);
+                const minEnd = new Date(Date.now() + 5 * 60 * 1000);
+                if (endsAt < minEnd) {
+                    setError('Raffle end date must be at least 5 minutes from now.');
+                    setLoading(false);
+                    return;
+                }
+                const maxEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+                if (endsAt > maxEnd) {
+                    setError('Raffle end date cannot be more than 30 days from now.');
+                    setLoading(false);
+                    return;
+                }
+                if (form.post_to_discord && !form.discord_channel_id) {
+                    setError('Please select a Discord channel to post the raffle.');
+                    setLoading(false);
+                    return;
+                }
+            }
+
             // Validate roles
             const rolesError = validateRoles(form.required_role_ids, manualRoles);
             if (rolesError) {
@@ -600,7 +663,7 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
         const winners = parseInt(form.total_winners) || 1;
         const dec = form.token_symbol === 'SOL' ? 5 : 2;
 
-        if (form.daget_type === 'fixed') {
+        if (form.daget_type === 'fixed' || form.daget_type === 'raffle') {
             if (winners <= 0) return (0).toFixed(dec);
             return (amount / winners).toFixed(dec);
         } else {
@@ -1144,7 +1207,7 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
 
                                 <div className="space-y-4">
                                     <label className="text-sm font-semibold text-text-secondary uppercase tracking-wider">Distribution Type</label>
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-3 gap-4">
                                         <button
                                             type="button"
                                             onClick={() => updateForm('daget_type', 'fixed')}
@@ -1162,6 +1225,15 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
                                             <span className={`material-icons mb-2 ${form.daget_type === 'random' ? 'text-primary' : 'text-text-muted'}`}>casino</span>
                                             <span className="font-bold text-sm">Random/Weighted</span>
                                             <span className="text-[11px] text-text-muted">Lucky draw distribution</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => updateForm('daget_type', 'raffle')}
+                                            className={`flex flex-col items-center p-4 rounded-xl border-2 transition-all ${form.daget_type === 'raffle' ? 'border-primary bg-primary/10 ring-2 ring-primary/20' : 'border-border-dark/60 hover:border-primary/50'}`}
+                                        >
+                                            <span className={`material-icons mb-2 ${form.daget_type === 'raffle' ? 'text-primary' : 'text-text-muted'}`}>emoji_events</span>
+                                            <span className="font-bold text-sm">Raffle</span>
+                                            <span className="text-[11px] text-text-muted">Timed entry, random draw</span>
                                         </button>
                                     </div>
                                 </div>
@@ -1210,6 +1282,85 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
                                                     </div>
                                                 );
                                             })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {form.daget_type === 'raffle' && (
+                                    <div className="space-y-6 animate-in fade-in slide-in-from-top-2">
+                                        {/* Raffle End Date */}
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-semibold text-text-secondary uppercase tracking-wider">Raffle End Date</label>
+                                            <p className="text-xs text-text-muted">Entries close at this time. Winners drawn automatically after.</p>
+                                            <input
+                                                className="w-full bg-background-dark/50 border border-border-dark/60 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl p-3 text-text-primary placeholder:text-text-secondary/50 outline-none"
+                                                type="datetime-local"
+                                                min={new Date(Date.now() + 5 * 60 * 1000).toISOString().slice(0, 16)}
+                                                max={new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16)}
+                                                value={form.raffle_ends_at ? new Date(form.raffle_ends_at).toISOString().slice(0, 16) : ''}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    updateForm('raffle_ends_at', val ? new Date(val).toISOString() : '');
+                                                }}
+                                                required
+                                            />
+                                        </div>
+
+                                        {/* Post to Discord toggle */}
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <label className="text-sm font-semibold text-text-secondary uppercase tracking-wider">Post to Discord</label>
+                                                    <p className="text-xs text-text-muted mt-1">Post a raffle embed with an Enter button in a Discord channel</p>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => updateForm('post_to_discord', !form.post_to_discord)}
+                                                    className={`relative w-12 h-6 rounded-full transition-colors ${form.post_to_discord ? 'bg-primary' : 'bg-border-dark/60'}`}
+                                                >
+                                                    <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${form.post_to_discord ? 'translate-x-6' : ''}`} />
+                                                </button>
+                                            </div>
+
+                                            {/* Channel selector */}
+                                            {form.post_to_discord && (
+                                                <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                                                    <label className="text-sm font-semibold text-text-secondary uppercase tracking-wider">Discord Channel</label>
+                                                    {!form.discord_guild_id ? (
+                                                        <p className="text-xs text-amber-500">Select a Discord server above first.</p>
+                                                    ) : loadingChannels ? (
+                                                        <div className="flex items-center gap-2 p-3 rounded-xl bg-background-dark/50 border border-border-dark/60">
+                                                            <span className="material-icons animate-spin text-sm text-text-muted">sync</span>
+                                                            <span className="text-xs text-text-muted">Loading channels...</span>
+                                                        </div>
+                                                    ) : discordChannels.length === 0 ? (
+                                                        <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                                                            <p className="text-xs text-amber-500">No postable channels found. Make sure the bot is installed in this server and has Send Messages + Embed Links permissions.</p>
+                                                        </div>
+                                                    ) : (
+                                                        <select
+                                                            className="w-full bg-background-dark/50 border border-border-dark/60 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl p-3 text-text-primary outline-none"
+                                                            value={form.discord_channel_id}
+                                                            onChange={(e) => updateForm('discord_channel_id', e.target.value)}
+                                                        >
+                                                            <option value="">Select a channel...</option>
+                                                            {discordChannels.map((ch) => (
+                                                                <option key={ch.id} value={ch.id}>#{ch.name}</option>
+                                                            ))}
+                                                        </select>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Raffle info box */}
+                                        <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex gap-3">
+                                            <span className="material-icons text-primary text-xl">info</span>
+                                            <div className="text-xs text-text-secondary space-y-1">
+                                                <p><strong className="text-text-primary">How raffles work:</strong></p>
+                                                <p>Users enter the raffle until the end date. After entries close, winners are drawn using provably fair randomness (drand). Each winner receives an equal share of the prize pool.</p>
+                                                <p>Unlimited entries allowed. If fewer entries than winners, each entrant still gets 1/{form.total_winners || '?'} of the pool.</p>
+                                            </div>
                                         </div>
                                     </div>
                                 )}

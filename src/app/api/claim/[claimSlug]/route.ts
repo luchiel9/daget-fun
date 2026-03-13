@@ -38,7 +38,7 @@ export async function GET(
             .map((r) => r.discordRoleNameSnapshot || r.discordRoleId)
             .join(' or ');
 
-        return NextResponse.json({
+        const responseData: Record<string, unknown> = {
             id: daget.id,
             name: daget.name,
             message_html: daget.messageHtml,
@@ -57,11 +57,25 @@ export async function GET(
             author_discord_avatar_url: daget.creator.discordAvatarUrl,
             requirements: requirements.map(r => ({
                 role_id: r.discordRoleId,
-                role_name: r.discordRoleNameSnapshot || r.discordRoleId, // Fallback to ID if no name
+                role_name: r.discordRoleNameSnapshot || r.discordRoleId,
                 role_color: r.discordRoleColor,
             })),
             requirements_summary: requirementsSummary || 'No specific roles required',
-        });
+        };
+
+        // Raffle-specific fields
+        if (daget.dagetType === 'raffle') {
+            responseData.raffle_ends_at = daget.raffleEndsAt?.toISOString() ?? null;
+            responseData.raffle_drawn_at = daget.raffleDrawnAt?.toISOString() ?? null;
+            responseData.total_amount_base_units = daget.totalAmountBaseUnits;
+            // Only expose draw proof after draw is complete
+            if (daget.status === 'closed' && daget.drandRound) {
+                responseData.drand_round = daget.drandRound.toString();
+                responseData.drand_randomness = daget.drandRandomness;
+            }
+        }
+
+        return NextResponse.json(responseData);
     } catch (error) {
         console.error('Public daget error:', error);
         return Errors.internal();
