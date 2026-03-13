@@ -1,19 +1,27 @@
 'use client';
 
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 
-const sections = [
-    { id: '01', title: 'WHAT IS DAGET.FUN?' },
-    { id: '02', title: 'HOW IT WORKS' },
-    { id: '03', title: 'DAGET MODES' },
-    { id: '04', title: 'FIXED MODE' },
-    { id: '05', title: 'RANDOM MODE' },
-    { id: '06', title: 'RAFFLE MODE' },
-    { id: '07', title: 'SUPPORTED TOKENS' },
-    { id: '08', title: 'FOR CREATORS' },
-    { id: '09', title: 'FOR CLAIMERS' },
-    { id: '10', title: 'COMMON QUESTIONS' },
+type Section = { id: string; num: string; title: string; children?: Section[] };
+
+const sections: Section[] = [
+    { id: 'what-is-daget', num: '01', title: 'WHAT IS DAGET.FUN?' },
+    { id: 'how-it-works', num: '02', title: 'HOW IT WORKS' },
+    {
+        id: 'daget-modes', num: '03', title: 'DAGET MODES', children: [
+            { id: 'fixed-mode', num: '03a', title: 'FIXED MODE' },
+            { id: 'random-mode', num: '03b', title: 'RANDOM MODE' },
+            { id: 'raffle-mode', num: '03c', title: 'RAFFLE MODE' },
+        ],
+    },
+    { id: 'supported-tokens', num: '04', title: 'SUPPORTED TOKENS' },
+    { id: 'for-creators', num: '05', title: 'FOR CREATORS' },
+    { id: 'for-claimers', num: '06', title: 'FOR CLAIMERS' },
+    { id: 'common-questions', num: '07', title: 'COMMON QUESTIONS' },
 ];
+
+const flatSections = sections.flatMap((s) => s.children ? [s, ...s.children] : [s]);
 
 /* ─── Reusable visual components ─── */
 
@@ -88,7 +96,31 @@ function ModeCard({ title, subtitle, accent, icon, children }: {
     );
 }
 
+const sectionIds = new Set(flatSections.map((s) => s.id));
+
+function getInitialSection(): string {
+    if (typeof window === 'undefined') return 'what-is-daget';
+    const hash = window.location.hash.replace('#', '');
+    return sectionIds.has(hash) ? hash : 'what-is-daget';
+}
+
 export default function DocsPage() {
+    const [activeSection, setActiveSection] = useState(getInitialSection);
+
+    const navigate = useCallback((id: string) => {
+        setActiveSection(id);
+        window.history.replaceState(null, '', `#${id}`);
+    }, []);
+
+    useEffect(() => {
+        const onHashChange = () => {
+            const hash = window.location.hash.replace('#', '');
+            if (sectionIds.has(hash)) setActiveSection(hash);
+        };
+        window.addEventListener('hashchange', onHashChange);
+        return () => window.removeEventListener('hashchange', onHashChange);
+    }, []);
+
     return (
         <div className="min-h-screen bg-background-dark text-text-secondary font-mono antialiased overflow-x-hidden">
 
@@ -137,26 +169,61 @@ export default function DocsPage() {
                                 <p className="font-arcade text-[9px] text-text-muted mb-4 tracking-widest">CONTENTS</p>
                                 <nav className="space-y-1">
                                     {sections.map((s) => (
-                                        <a
-                                            key={s.id}
-                                            href={`#section-${s.id}`}
-                                            className="flex items-center gap-2 text-[10px] font-mono text-text-muted hover:text-primary transition-colors py-1 border-l-2 border-transparent hover:border-primary pl-2"
-                                        >
-                                            <span className="text-border-dark">{s.id}.</span>
-                                            {s.title}
-                                        </a>
+                                        <div key={s.id}>
+                                            <button
+                                                onClick={() => navigate(s.id)}
+                                                className={`flex items-center gap-2 text-[10px] font-mono transition-colors py-1 border-l-2 pl-2 w-full text-left ${
+                                                    activeSection === s.id || s.children?.some((c) => c.id === activeSection)
+                                                        ? 'text-primary border-primary'
+                                                        : 'text-gray-400 border-transparent hover:text-primary hover:border-primary/50'
+                                                }`}
+                                            >
+                                                <span className={activeSection === s.id || s.children?.some((c) => c.id === activeSection) ? 'text-primary/60' : 'text-gray-500'}>{s.num}.</span>
+                                                {s.title}
+                                            </button>
+                                            {s.children && (
+                                                <div className="ml-5 space-y-0.5 mt-0.5">
+                                                    {s.children.map((child) => (
+                                                        <button
+                                                            key={child.id}
+                                                            onClick={() => navigate(child.id)}
+                                                            className={`flex items-center gap-1.5 text-[10px] font-mono transition-colors py-1 border-l border-border-dark/40 pl-3 w-full text-left ${
+                                                                activeSection === child.id
+                                                                    ? 'text-primary border-primary'
+                                                                    : 'text-gray-400 hover:text-primary hover:border-primary/50'
+                                                            }`}
+                                                        >
+                                                            {child.title}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
                                     ))}
                                 </nav>
                             </div>
                         </aside>
 
+                        {/* ─── MOBILE TOC ─── */}
+                        <div className="lg:hidden mb-8">
+                            <select
+                                value={activeSection}
+                                onChange={(e) => navigate(e.target.value)}
+                                className="w-full bg-card-dark border border-border-dark/40 text-primary font-mono text-xs p-3 rounded-sm focus:outline-none focus:border-primary/50"
+                            >
+                                {flatSections.map((s) => (
+                                    <option key={s.id} value={s.id}>{s.num}. {s.title}</option>
+                                ))}
+                            </select>
+                        </div>
+
                         {/* ─── CONTENT ─── */}
-                        <div className="flex-1 space-y-16 text-[15px] leading-[1.9] text-text-secondary">
+                        <div className="flex-1 text-[15px] leading-[1.9] text-text-secondary">
 
                             {/* ══════════════════════════════════════════════════ */}
                             {/* 01 — WHAT IS DAGET.FUN? */}
                             {/* ══════════════════════════════════════════════════ */}
-                            <section id="section-01">
+                            {activeSection === 'what-is-daget' && (<section id="what-is-daget">
                                 <h2 className="font-arcade text-xs text-primary mb-6 flex items-center gap-3">
                                     <span className="text-text-muted">01.</span> WHAT IS DAGET.FUN?
                                 </h2>
@@ -189,12 +256,12 @@ export default function DocsPage() {
                                 <p className="mt-4">
                                     Daget.fun runs on the <strong className="text-white">Solana</strong> blockchain — a fast, low-cost network where transactions typically confirm in seconds and cost fractions of a cent.
                                 </p>
-                            </section>
+                            </section>)}
 
                             {/* ══════════════════════════════════════════════════ */}
                             {/* 02 — HOW IT WORKS */}
                             {/* ══════════════════════════════════════════════════ */}
-                            <section id="section-02">
+                            {activeSection === 'how-it-works' && (<section id="how-it-works">
                                 <h2 className="font-arcade text-xs text-primary mb-6 flex items-center gap-3">
                                     <span className="text-text-muted">02.</span> HOW IT WORKS
                                 </h2>
@@ -226,12 +293,12 @@ export default function DocsPage() {
                                         <FlowStep number="05" label="Receive your tokens" description="Within seconds, the tokens arrive in your Solana wallet. You'll see a transaction link to verify it on the blockchain." accent="magenta" />
                                     </div>
                                 </div>
-                            </section>
+                            </section>)}
 
                             {/* ══════════════════════════════════════════════════ */}
                             {/* 03 — DAGET MODES OVERVIEW */}
                             {/* ══════════════════════════════════════════════════ */}
-                            <section id="section-03">
+                            {activeSection === 'daget-modes' && (<section id="daget-modes">
                                 <h2 className="font-arcade text-xs text-primary mb-6 flex items-center gap-3">
                                     <span className="text-text-muted">03.</span> DAGET MODES
                                 </h2>
@@ -279,14 +346,14 @@ export default function DocsPage() {
                                 <p className="mt-6 text-[14px] text-text-muted">
                                     Read the detailed sections below to understand exactly how each mode works and when to use it.
                                 </p>
-                            </section>
+                            </section>)}
 
                             {/* ══════════════════════════════════════════════════ */}
                             {/* 04 — FIXED MODE */}
                             {/* ══════════════════════════════════════════════════ */}
-                            <section id="section-04">
+                            {activeSection === 'fixed-mode' && (<section id="fixed-mode">
                                 <h2 className="font-arcade text-xs text-primary mb-6 flex items-center gap-3">
-                                    <span className="text-text-muted">04.</span> FIXED MODE
+                                    <span className="text-text-muted">03a.</span> FIXED MODE
                                 </h2>
 
                                 <div className="arcade-border-cyan bg-card-dark p-6 mb-6">
@@ -344,14 +411,14 @@ export default function DocsPage() {
                                 <p>
                                     In Fixed mode, claims are processed <strong className="text-white">immediately</strong> as they come in. When someone claims, tokens are sent right away. Once all winner slots are filled, the Daget closes automatically and no more claims are accepted.
                                 </p>
-                            </section>
+                            </section>)}
 
                             {/* ══════════════════════════════════════════════════ */}
                             {/* 05 — RANDOM MODE */}
                             {/* ══════════════════════════════════════════════════ */}
-                            <section id="section-05">
+                            {activeSection === 'random-mode' && (<section id="random-mode">
                                 <h2 className="font-arcade text-xs text-neon-magenta mb-6 flex items-center gap-3">
-                                    <span className="text-text-muted">05.</span> RANDOM MODE
+                                    <span className="text-text-muted">03b.</span> RANDOM MODE
                                 </h2>
 
                                 <div className="arcade-border-magenta bg-card-dark p-6 mb-6">
@@ -452,14 +519,14 @@ export default function DocsPage() {
                                 <p>
                                     Like Fixed mode, Random mode processes claims <strong className="text-white">immediately</strong>. Tokens are sent as soon as someone claims. The Daget closes when all winner slots are filled.
                                 </p>
-                            </section>
+                            </section>)}
 
                             {/* ══════════════════════════════════════════════════ */}
                             {/* 06 — RAFFLE MODE */}
                             {/* ══════════════════════════════════════════════════ */}
-                            <section id="section-06">
+                            {activeSection === 'raffle-mode' && (<section id="raffle-mode">
                                 <h2 className="font-arcade text-xs text-amber-400 mb-6 flex items-center gap-3">
-                                    <span className="text-text-muted">06.</span> RAFFLE MODE
+                                    <span className="text-text-muted">03c.</span> RAFFLE MODE
                                 </h2>
 
                                 <div className="arcade-border-amber bg-card-dark p-6 mb-6">
@@ -542,14 +609,14 @@ export default function DocsPage() {
                                 <p>
                                     Raffle mode optionally integrates with Discord. If the Daget.fun bot is installed in your server, you can have the raffle automatically posted to a Discord channel, making it easy for members to discover and enter.
                                 </p>
-                            </section>
+                            </section>)}
 
                             {/* ══════════════════════════════════════════════════ */}
                             {/* 07 — SUPPORTED TOKENS */}
                             {/* ══════════════════════════════════════════════════ */}
-                            <section id="section-07">
+                            {activeSection === 'supported-tokens' && (<section id="supported-tokens">
                                 <h2 className="font-arcade text-xs text-primary mb-6 flex items-center gap-3">
-                                    <span className="text-text-muted">07.</span> SUPPORTED TOKENS
+                                    <span className="text-text-muted">04.</span> SUPPORTED TOKENS
                                 </h2>
 
                                 <p className="mb-6">
@@ -597,14 +664,14 @@ export default function DocsPage() {
                                         <strong className="text-white">Stablecoins (USDC, USDT)</strong> maintain a steady value — if you send 10 USDC, the recipient gets the equivalent of $10. <strong className="text-white">SOL</strong>, on the other hand, has a market price that changes constantly. If you create a Daget with 1 SOL when SOL is $150, recipients get 1 SOL — but its dollar value might be higher or lower by the time they receive it.
                                     </p>
                                 </div>
-                            </section>
+                            </section>)}
 
                             {/* ══════════════════════════════════════════════════ */}
                             {/* 08 — FOR CREATORS */}
                             {/* ══════════════════════════════════════════════════ */}
-                            <section id="section-08">
+                            {activeSection === 'for-creators' && (<section id="for-creators">
                                 <h2 className="font-arcade text-xs text-primary mb-6 flex items-center gap-3">
-                                    <span className="text-text-muted">08.</span> FOR CREATORS
+                                    <span className="text-text-muted">05.</span> FOR CREATORS
                                 </h2>
 
                                 <p className="mb-4">
@@ -648,14 +715,14 @@ export default function DocsPage() {
                                 <p>
                                     Daget.fun currently charges <strong className="text-white">no platform fees</strong>. The only cost is Solana network gas fees for each token transfer — typically fractions of a cent per transaction. These are paid from your managed wallet&apos;s SOL balance.
                                 </p>
-                            </section>
+                            </section>)}
 
                             {/* ══════════════════════════════════════════════════ */}
                             {/* 09 — FOR CLAIMERS */}
                             {/* ══════════════════════════════════════════════════ */}
-                            <section id="section-09">
+                            {activeSection === 'for-claimers' && (<section id="for-claimers">
                                 <h2 className="font-arcade text-xs text-primary mb-6 flex items-center gap-3">
-                                    <span className="text-text-muted">09.</span> FOR CLAIMERS
+                                    <span className="text-text-muted">06.</span> FOR CLAIMERS
                                 </h2>
 
                                 <p className="mb-4">
@@ -711,14 +778,14 @@ export default function DocsPage() {
                                 <p>
                                     Once you claim, the system queues your token transfer. Most transfers confirm within seconds. You&apos;ll see a transaction link that lets you verify the transfer on a Solana block explorer. Your tokens will appear in your wallet shortly after confirmation.
                                 </p>
-                            </section>
+                            </section>)}
 
                             {/* ══════════════════════════════════════════════════ */}
                             {/* 10 — COMMON QUESTIONS */}
                             {/* ══════════════════════════════════════════════════ */}
-                            <section id="section-10">
+                            {activeSection === 'common-questions' && (<section id="common-questions">
                                 <h2 className="font-arcade text-xs text-primary mb-6 flex items-center gap-3">
-                                    <span className="text-text-muted">10.</span> COMMON QUESTIONS
+                                    <span className="text-text-muted">07.</span> COMMON QUESTIONS
                                 </h2>
 
                                 <div className="space-y-6">
@@ -786,7 +853,7 @@ export default function DocsPage() {
                                         <span className="text-primary">support@daget.fun</span>.
                                     </p>
                                 </div>
-                            </section>
+                            </section>)}
 
                         </div>
                     </div>
