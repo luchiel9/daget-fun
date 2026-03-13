@@ -54,6 +54,13 @@
     {
       "idx": 7,
       "version": "7",
+      "when": 1773391430000,
+      "tag": "0006b_add_raffle_tables_and_constraints",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
       "when": 1773392335949,
       "tag": "0007_tighten_worker_pending_idx",
       "breakpoints": true
