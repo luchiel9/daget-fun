@@ -10,7 +10,7 @@ const globalForDb = globalThis as unknown as {
     connection: ReturnType<typeof postgres> | undefined;
 };
 
-const poolMax = parseInt(process.env.POSTGRES_POOL_MAX || '10', 10);
+const poolMax = parseInt(process.env.POSTGRES_POOL_MAX || '3', 10);
 
 const connection = globalForDb.connection ?? postgres(connectionString, {
     max: poolMax,
@@ -18,9 +18,8 @@ const connection = globalForDb.connection ?? postgres(connectionString, {
     connect_timeout: 10,
 });
 
-if (process.env.NODE_ENV !== 'production') {
-    globalForDb.connection = connection;
-}
+// Always cache the connection to prevent duplicate pools
+globalForDb.connection = connection;
 
 export const db = drizzle(connection, { schema: { ...schema, ...relations } });
 export type Database = typeof db;

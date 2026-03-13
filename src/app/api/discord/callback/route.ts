@@ -4,8 +4,17 @@ import { users } from '@/db/schema';
 import { createSessionToken } from '@/lib/session';
 import { encryptCookieValue } from '@/lib/cookie-crypto';
 
-const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID!;
-const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET!;
+function getDiscordClientId(): string {
+    const id = process.env.DISCORD_CLIENT_ID;
+    if (!id) throw new Error('DISCORD_CLIENT_ID env var is required');
+    return id;
+}
+
+function getDiscordClientSecret(): string {
+    const secret = process.env.DISCORD_CLIENT_SECRET;
+    if (!secret) throw new Error('DISCORD_CLIENT_SECRET env var is required');
+    return secret;
+}
 
 const SESSION_MAX_AGE = 60 * 60 * 24 * 7; // 7 days — matches Discord token lifetime
 
@@ -124,8 +133,8 @@ export async function GET(request: NextRequest) {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
-            client_id: DISCORD_CLIENT_ID,
-            client_secret: DISCORD_CLIENT_SECRET,
+            client_id: getDiscordClientId(),
+            client_secret: getDiscordClientSecret(),
             grant_type: 'authorization_code',
             code,
             redirect_uri: redirectUri,
@@ -146,6 +155,15 @@ export async function GET(request: NextRequest) {
     }
 
     const { access_token, expires_in } = await tokenRes.json();
+
+    if (!access_token) {
+        console.error('Discord token response missing access_token');
+        const response = isPopup
+            ? popupError()
+            : NextResponse.redirect(`${origin}/`);
+        cleanupFlowCookies(response, flowId);
+        return response;
+    }
 
     if (!expires_in) {
         console.warn(
