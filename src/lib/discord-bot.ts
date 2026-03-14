@@ -7,7 +7,7 @@
  * (key format: discord:roles:{userId}:{guildId}, 5-min TTL).
  */
 
-import { verifyKey } from 'discord-interactions';
+import { verify as cryptoVerify } from 'node:crypto';
 import { getRedis, isRedisReady } from '@/lib/redis';
 
 const DISCORD_API = 'https://discord.com/api/v10';
@@ -107,12 +107,23 @@ async function discordFetch(
  * Verify Discord interaction signature using Ed25519.
  * Must use raw body before any JSON parsing.
  */
-export async function verifyInteractionSignature(
+export function verifyInteractionSignature(
     rawBody: string,
     signature: string,
     timestamp: string,
-): Promise<boolean> {
-    return verifyKey(rawBody, signature, timestamp, getPublicKey());
+): boolean {
+    const publicKeyHex = getPublicKey();
+    // Convert 64-char hex Ed25519 public key to DER-encoded SubjectPublicKeyInfo
+    const publicKeyDer = Buffer.concat([
+        Buffer.from('302a300506032b6570032100', 'hex'), // Ed25519 OID prefix
+        Buffer.from(publicKeyHex, 'hex'),
+    ]);
+    return cryptoVerify(
+        null,
+        Buffer.from(timestamp + rawBody),
+        { key: publicKeyDer, format: 'der', type: 'spki' },
+        Buffer.from(signature, 'hex'),
+    );
 }
 
 // ─── Interaction Follow-ups ─────────────────────────────────────────────────

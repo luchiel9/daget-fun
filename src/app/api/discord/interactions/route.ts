@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 
     let isValid = false;
     try {
-        isValid = await verifyInteractionSignature(rawBody, signature, timestamp);
+        isValid = verifyInteractionSignature(rawBody, signature, timestamp);
     } catch (err) {
         console.error('[discord-interactions] Signature verification error:', err);
         return new NextResponse('Signature verification failed', { status: 401 });
