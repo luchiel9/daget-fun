@@ -163,6 +163,7 @@ export interface RaffleEmbedData {
     entryCount?: number;
     messageHtml?: string | null;
     claimSlug?: string;
+    creatorDiscordUserId?: string | null;
 }
 
 function htmlToDiscordText(html: string): string {
@@ -200,12 +201,14 @@ export async function postRaffleEmbed(
 
     const messageText = data.messageHtml ? htmlToDiscordText(data.messageHtml) : null;
     const claimUrl = data.claimSlug ? `${appUrl}/open/${data.claimSlug}` : appUrl;
+    const byLine = data.creatorDiscordUserId ? `by: <@${data.creatorDiscordUserId}>` : null;
 
     const descriptionParts = [
+        byLine,
         `**Prize Pool:** ${data.totalAmountDisplay} ${data.tokenSymbol}`,
         `**Winners:** ${data.totalWinners}`,
         endsLine,
-    ];
+    ].filter(Boolean) as string[];
     if (messageText) descriptionParts.push('', messageText);
 
     const res = await discordFetch(`/channels/${channelId}/messages`, {
@@ -262,9 +265,11 @@ export async function updateRaffleEmbed(
     const endsAtUnix = data.raffleEndsAt ? Math.floor(data.raffleEndsAt.getTime() / 1000) : null;
     const messageText = data.messageHtml ? htmlToDiscordText(data.messageHtml) : null;
     const claimUrl = data.claimSlug ? `${appUrl}/open/${data.claimSlug}` : appUrl;
+    const byLine = data.creatorDiscordUserId ? `by: <@${data.creatorDiscordUserId}>` : null;
 
     const isClosed = status === 'closed' || status === 'stopped';
     const descriptionParts = [
+        byLine,
         `**Prize Pool:** ${data.totalAmountDisplay} ${data.tokenSymbol}`,
         `**Winners:** ${data.totalWinners}`,
         status === 'drawing' ? '**Status:** Drawing...' :

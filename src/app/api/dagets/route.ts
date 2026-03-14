@@ -179,6 +179,7 @@ export async function POST(request: NextRequest) {
                     raffleEndsAt: input.raffle_ends_at ? new Date(input.raffle_ends_at) : null,
                     messageHtml: input.message_html,
                     claimSlug,
+                    creatorDiscordUserId: user.discordUserId,
                 });
                 // Store the Discord message ID for later updates
                 await db.update(dagets)
