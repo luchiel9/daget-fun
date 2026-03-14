@@ -315,6 +315,7 @@ async function sendDiscordAnnouncement(
 
     // Get Discord user IDs for winners
     const winnerUserIds = winners.map((w) => w.claimant_user_id);
+    if (winnerUserIds.length === 0) return;
     const winnerUsers = await db.execute(sql`
         SELECT id, discord_user_id FROM users WHERE id = ANY(${winnerUserIds})
     `) as unknown as Array<{ id: string; discord_user_id: string }>;
