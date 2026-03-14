@@ -148,7 +148,7 @@ export interface RaffleEmbedData {
     tokenSymbol: string;
     totalAmountDisplay: string;
     totalWinners: number;
-    raffleEndsAt: Date;
+    raffleEndsAt: Date | null;
     entryCount?: number;
 }
 
@@ -161,7 +161,9 @@ export async function postRaffleEmbed(
     data: RaffleEmbedData,
 ): Promise<string> {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? '';
-    const endsAtUnix = Math.floor(data.raffleEndsAt.getTime() / 1000);
+    const endsLine = data.raffleEndsAt
+        ? `**Ends:** <t:${Math.floor(data.raffleEndsAt.getTime() / 1000)}:R>`
+        : `**Ends:** No time limit`;
 
     const res = await discordFetch(`/channels/${channelId}/messages`, {
         method: 'POST',
@@ -171,7 +173,7 @@ export async function postRaffleEmbed(
                 description: [
                     `**Prize Pool:** ${data.totalAmountDisplay} ${data.tokenSymbol}`,
                     `**Winners:** ${data.totalWinners}`,
-                    `**Ends:** <t:${endsAtUnix}:R>`,
+                    endsLine,
                     '',
                     `Enter below or at [daget.fun](${appUrl})`,
                 ].join('\n'),
@@ -212,7 +214,7 @@ export async function updateRaffleEmbed(
     status?: 'active' | 'drawing' | 'closed' | 'stopped',
 ): Promise<void> {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? '';
-    const endsAtUnix = Math.floor(data.raffleEndsAt.getTime() / 1000);
+    const endsAtUnix = data.raffleEndsAt ? Math.floor(data.raffleEndsAt.getTime() / 1000) : null;
 
     const isClosed = status === 'closed' || status === 'stopped';
     const description = [
@@ -220,7 +222,7 @@ export async function updateRaffleEmbed(
         `**Winners:** ${data.totalWinners}`,
         status === 'drawing' ? '**Status:** Drawing...' :
             isClosed ? `**Status:** ${status === 'stopped' ? 'Cancelled' : 'Drawn'}` :
-                `**Ends:** <t:${endsAtUnix}:R>`,
+                endsAtUnix ? `**Ends:** <t:${endsAtUnix}:R>` : `**Ends:** No time limit`,
         data.entryCount != null ? `**Entries:** ${data.entryCount}` : '',
         '',
         `Enter below or at [daget.fun](${appUrl})`,

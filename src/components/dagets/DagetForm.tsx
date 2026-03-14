@@ -578,23 +578,20 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
 
             // Validate Raffle settings
             if (form.daget_type === 'raffle') {
-                if (!form.raffle_ends_at) {
-                    setError('Please set a raffle end date.');
-                    setLoading(false);
-                    return;
-                }
-                const endsAt = new Date(form.raffle_ends_at);
-                const minEnd = new Date(Date.now() + 5 * 60 * 1000);
-                if (endsAt < minEnd) {
-                    setError('Raffle end date must be at least 5 minutes from now.');
-                    setLoading(false);
-                    return;
-                }
-                const maxEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-                if (endsAt > maxEnd) {
-                    setError('Raffle end date cannot be more than 30 days from now.');
-                    setLoading(false);
-                    return;
+                if (form.raffle_ends_at) {
+                    const endsAt = new Date(form.raffle_ends_at);
+                    const minEnd = new Date(Date.now() + 60 * 1000);
+                    if (endsAt < minEnd) {
+                        setError('Raffle end time must be at least 1 minute from now.');
+                        setLoading(false);
+                        return;
+                    }
+                    const maxEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+                    if (endsAt > maxEnd) {
+                        setError('Raffle end date cannot be more than 30 days from now.');
+                        setLoading(false);
+                        return;
+                    }
                 }
                 if (form.post_to_discord && !form.discord_channel_id) {
                     setError('Please select a Discord channel to post the raffle.');
@@ -1288,22 +1285,52 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
 
                                 {form.daget_type === 'raffle' && (
                                     <div className="space-y-6 animate-in fade-in slide-in-from-top-2">
-                                        {/* Raffle End Date */}
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-semibold text-text-secondary uppercase tracking-wider">Raffle End Date</label>
-                                            <p className="text-xs text-text-muted">Entries close at this time. Winners drawn automatically after.</p>
-                                            <input
-                                                className="w-full bg-background-dark/50 border border-border-dark/60 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl p-3 text-text-primary placeholder:text-text-secondary/50 outline-none"
-                                                type="datetime-local"
-                                                min={new Date(Date.now() + 5 * 60 * 1000).toISOString().slice(0, 16)}
-                                                max={new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16)}
-                                                value={form.raffle_ends_at ? new Date(form.raffle_ends_at).toISOString().slice(0, 16) : ''}
-                                                onChange={(e) => {
-                                                    const val = e.target.value;
-                                                    updateForm('raffle_ends_at', val ? new Date(val).toISOString() : '');
-                                                }}
-                                                required
-                                            />
+                                        {/* Raffle Duration */}
+                                        <div className="space-y-3">
+                                            <div>
+                                                <label className="text-sm font-semibold text-text-secondary uppercase tracking-wider">Duration</label>
+                                                <p className="text-xs text-text-muted mt-1">Entries close after this time. Leave as &quot;No limit&quot; to draw manually.</p>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                {[
+                                                    { label: 'No limit', value: '' },
+                                                    { label: '2m', value: String(2 * 60 * 1000) },
+                                                    { label: '5m', value: String(5 * 60 * 1000) },
+                                                    { label: '30m', value: String(30 * 60 * 1000) },
+                                                    { label: '1h', value: String(60 * 60 * 1000) },
+                                                    { label: '6h', value: String(6 * 60 * 60 * 1000) },
+                                                    { label: '24h', value: String(24 * 60 * 60 * 1000) },
+                                                    { label: '7d', value: String(7 * 24 * 60 * 60 * 1000) },
+                                                    { label: '30d', value: String(30 * 24 * 60 * 60 * 1000) },
+                                                ].map(({ label, value }) => {
+                                                    const selectedMs = form.raffle_ends_at
+                                                        ? String(new Date(form.raffle_ends_at).getTime() - Date.now())
+                                                        : '';
+                                                    // Match within 10s tolerance for preset detection
+                                                    const isSelected = value === ''
+                                                        ? !form.raffle_ends_at
+                                                        : Math.abs(parseInt(selectedMs) - parseInt(value)) < 10_000;
+                                                    return (
+                                                        <button
+                                                            key={label}
+                                                            type="button"
+                                                            onClick={() => updateForm('raffle_ends_at', value ? new Date(Date.now() + parseInt(value)).toISOString() : '')}
+                                                            className={`px-3 py-1.5 rounded-lg text-sm font-mono transition-colors ${
+                                                                isSelected
+                                                                    ? 'bg-primary text-white'
+                                                                    : 'bg-background-dark/50 border border-border-dark/60 text-text-secondary hover:border-primary/60 hover:text-text-primary'
+                                                            }`}
+                                                        >
+                                                            {label}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                            {form.raffle_ends_at && (
+                                                <p className="text-xs text-text-muted font-mono">
+                                                    Ends at: {new Date(form.raffle_ends_at).toLocaleString()}
+                                                </p>
+                                            )}
                                         </div>
 
                                         {/* Post to Discord toggle */}

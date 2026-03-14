@@ -51,15 +51,16 @@ export const createDagetSchema = z.object({
     message: 'Random mode requires valid min/max percentages; fixed/raffle mode must have null percentages',
 }).refine((data) => {
     if (data.daget_type === 'raffle') {
-        if (!data.raffle_ends_at) return false;
+        // raffle_ends_at is optional — no end date = open indefinitely
+        if (!data.raffle_ends_at) return true;
         const endsAt = new Date(data.raffle_ends_at);
-        const minEndTime = new Date(Date.now() + 5 * 60 * 1000); // 5 min minimum
+        const minEndTime = new Date(Date.now() + 60 * 1000); // 1 min minimum
         const maxEndTime = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days max
         return endsAt >= minEndTime && endsAt <= maxEndTime;
     }
     return data.raffle_ends_at == null;
 }, {
-    message: 'Raffle requires raffle_ends_at (5 min to 30 days from now); non-raffle must not have it',
+    message: 'raffle_ends_at must be 1 min to 30 days from now; non-raffle must not have it',
 }).refine((data) => {
     if (data.post_to_discord) return !!data.discord_channel_id;
     return true;

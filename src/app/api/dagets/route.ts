@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
             discordGuildName: input.discord_guild_name,
             discordGuildIcon: input.discord_guild_icon,
             // Raffle-specific fields
-            raffleEndsAt: isRaffle ? new Date(input.raffle_ends_at!) : null,
+            raffleEndsAt: isRaffle && input.raffle_ends_at ? new Date(input.raffle_ends_at) : null,
             discordChannelId: isRaffle && input.post_to_discord ? input.discord_channel_id : null,
         }).returning();
 
@@ -176,7 +176,7 @@ export async function POST(request: NextRequest) {
                     tokenSymbol: input.token_symbol,
                     totalAmountDisplay: input.amount_display,
                     totalWinners: input.total_winners,
-                    raffleEndsAt: new Date(input.raffle_ends_at!),
+                    raffleEndsAt: input.raffle_ends_at ? new Date(input.raffle_ends_at) : null,
                 });
                 // Store the Discord message ID for later updates
                 await db.update(dagets)

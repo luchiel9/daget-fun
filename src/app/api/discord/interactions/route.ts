@@ -28,7 +28,13 @@ export async function POST(request: NextRequest) {
         return new NextResponse('Missing signature headers', { status: 401 });
     }
 
-    const isValid = await verifyInteractionSignature(rawBody, signature, timestamp);
+    let isValid = false;
+    try {
+        isValid = await verifyInteractionSignature(rawBody, signature, timestamp);
+    } catch (err) {
+        console.error('[discord-interactions] Signature verification error:', err);
+        return new NextResponse('Signature verification failed', { status: 401 });
+    }
     if (!isValid) {
         return new NextResponse('Invalid signature', { status: 401 });
     }
