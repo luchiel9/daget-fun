@@ -9,7 +9,6 @@ const nextConfig = {
     'drizzle-orm',
     'postgres',
     'pino',
-    'discord-interactions',
   ],
   images: {
     remotePatterns: [
