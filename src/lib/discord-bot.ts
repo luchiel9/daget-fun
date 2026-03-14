@@ -11,7 +11,7 @@ import { verify as cryptoVerify } from 'node:crypto';
 import { getRedis, isRedisReady } from '@/lib/redis';
 
 const DISCORD_API = 'https://discord.com/api/v10';
-const DISCORD_ROLE_CACHE_TTL = 300; // 5 min — matches discord-verify.ts
+const DISCORD_ROLE_CACHE_TTL = 30; // 30s — short enough to detect newly assigned roles
 
 /** Discord permission bit flags (using BigInt() for ES2017 compat) */
 export const DiscordPermissions = {
