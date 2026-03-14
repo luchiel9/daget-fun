@@ -1,6 +1,6 @@
 import { db } from '@/db';
-import { notifications } from '@/db/schema';
-import { sql } from 'drizzle-orm';
+import { claims, notifications, users } from '@/db/schema';
+import { sql, inArray } from 'drizzle-orm';
 import { createHash, createHmac } from 'crypto';
 import { logger } from '@/lib/logger';
 import { firstRoundAfter, fetchDrandRound, type DrandBeacon } from '@/config/drand';
@@ -177,24 +177,17 @@ export async function executeRaffleDraw(daget: RaffleDaget): Promise<void> {
             // Mark winners: set amount, is_raffle_winner = true (status stays 'created' for worker pickup)
             if (winners.length > 0) {
                 const winnerIds = winners.map((w) => w.id);
-                await tx.execute(sql`
-                    UPDATE claims
-                    SET is_raffle_winner = true,
-                        amount_base_units = ${amountPerWinner}
-                    WHERE id = ANY(${winnerIds})
-                `);
+                await tx.update(claims)
+                    .set({ isRaffleWinner: true, amountBaseUnits: amountPerWinner })
+                    .where(inArray(claims.id, winnerIds));
             }
 
             // Mark losers: is_raffle_winner = false, status = 'released'
             if (losers.length > 0) {
                 const loserIds = losers.map((l) => l.id);
-                await tx.execute(sql`
-                    UPDATE claims
-                    SET is_raffle_winner = false,
-                        status = 'released',
-                        released_at = now()
-                    WHERE id = ANY(${loserIds})
-                `);
+                await tx.update(claims)
+                    .set({ isRaffleWinner: false, status: 'released', releasedAt: new Date() })
+                    .where(inArray(claims.id, loserIds));
             }
 
             // Close the raffle with drand data
@@ -319,11 +312,11 @@ async function sendDiscordAnnouncement(
     // Get Discord user IDs for winners
     const winnerUserIds = winners.map((w) => w.claimant_user_id);
     if (winnerUserIds.length === 0) return;
-    const winnerUsers = await db.execute(sql`
-        SELECT id, discord_user_id FROM users WHERE id = ANY(${winnerUserIds})
-    `) as unknown as Array<{ id: string; discord_user_id: string }>;
+    const winnerUsers = await db.select({ id: users.id, discordUserId: users.discordUserId })
+        .from(users)
+        .where(inArray(users.id, winnerUserIds));
 
-    const userMap = new Map(winnerUsers.map((u) => [u.id, u.discord_user_id]));
+    const userMap = new Map(winnerUsers.map((u) => [u.id, u.discordUserId]));
     const winnerInfos: WinnerInfo[] = winners
         .map((w) => ({
             discordUserId: userMap.get(w.claimant_user_id) ?? '',
