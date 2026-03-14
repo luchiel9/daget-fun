@@ -20,7 +20,7 @@ interface RaffleDaget {
     daget_type: string;
     total_amount_base_units: number;
     total_winners: number;
-    raffle_ends_at: string;
+    raffle_ends_at: string | null;
     raffle_drawn_at: string | null;
     discord_channel_id: string | null;
     discord_message_id: string | null;
@@ -112,7 +112,10 @@ export async function recoveryTick(): Promise<void> {
  * Can be called from worker tick or early draw endpoint.
  */
 export async function executeRaffleDraw(daget: RaffleDaget): Promise<void> {
-    const raffleEndsAtUnix = Math.floor(new Date(daget.raffle_ends_at).getTime() / 1000);
+    // For raffles without an end time, use draw time as the drand seed anchor
+    const raffleEndsAtUnix = daget.raffle_ends_at
+        ? Math.floor(new Date(daget.raffle_ends_at).getTime() / 1000)
+        : Math.floor(Date.now() / 1000);
 
     // Step 1: Fetch drand randomness BEFORE changing status
     let beacon: DrandBeacon;
