@@ -161,6 +161,28 @@ export interface RaffleEmbedData {
     totalWinners: number;
     raffleEndsAt: Date | null;
     entryCount?: number;
+    messageHtml?: string | null;
+    claimSlug?: string;
+}
+
+function htmlToDiscordText(html: string): string {
+    return html
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/p>/gi, '\n')
+        .replace(/<\/h[1-6]>/gi, '\n')
+        .replace(/<li>/gi, '• ')
+        .replace(/<\/li>/gi, '\n')
+        .replace(/<strong>(.*?)<\/strong>/gi, '**$1**')
+        .replace(/<em>(.*?)<\/em>/gi, '*$1*')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&nbsp;/g, ' ')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
 }
 
 /**
@@ -176,29 +198,41 @@ export async function postRaffleEmbed(
         ? `**Ends:** <t:${Math.floor(data.raffleEndsAt.getTime() / 1000)}:R>`
         : `**Ends:** No time limit`;
 
+    const messageText = data.messageHtml ? htmlToDiscordText(data.messageHtml) : null;
+    const claimUrl = data.claimSlug ? `${appUrl}/open/${data.claimSlug}` : appUrl;
+
+    const descriptionParts = [
+        `**Prize Pool:** ${data.totalAmountDisplay} ${data.tokenSymbol}`,
+        `**Winners:** ${data.totalWinners}`,
+        endsLine,
+    ];
+    if (messageText) descriptionParts.push('', messageText);
+
     const res = await discordFetch(`/channels/${channelId}/messages`, {
         method: 'POST',
         body: JSON.stringify({
             embeds: [{
                 title: `🎲 ${data.name}`,
-                description: [
-                    `**Prize Pool:** ${data.totalAmountDisplay} ${data.tokenSymbol}`,
-                    `**Winners:** ${data.totalWinners}`,
-                    endsLine,
-                    '',
-                    `Enter below or at [daget.fun](${appUrl})`,
-                ].join('\n'),
+                description: descriptionParts.join('\n'),
                 color: 0x7C3AED, // purple
                 footer: { text: 'Powered by daget.fun' },
             }],
             components: [{
                 type: 1, // ACTION_ROW
-                components: [{
-                    type: 2, // BUTTON
-                    style: 1, // PRIMARY
-                    label: 'Enter Raffle',
-                    custom_id: `raffle_enter:${data.dagetId}`,
-                }],
+                components: [
+                    {
+                        type: 2, // BUTTON
+                        style: 1, // PRIMARY
+                        label: 'Enter Raffle',
+                        custom_id: `raffle_enter:${data.dagetId}`,
+                    },
+                    {
+                        type: 2, // BUTTON
+                        style: 5, // LINK
+                        label: 'Enter from Daget.fun',
+                        url: claimUrl,
+                    },
+                ],
             }],
         }),
     });
@@ -226,36 +260,45 @@ export async function updateRaffleEmbed(
 ): Promise<void> {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? '';
     const endsAtUnix = data.raffleEndsAt ? Math.floor(data.raffleEndsAt.getTime() / 1000) : null;
+    const messageText = data.messageHtml ? htmlToDiscordText(data.messageHtml) : null;
+    const claimUrl = data.claimSlug ? `${appUrl}/open/${data.claimSlug}` : appUrl;
 
     const isClosed = status === 'closed' || status === 'stopped';
-    const description = [
+    const descriptionParts = [
         `**Prize Pool:** ${data.totalAmountDisplay} ${data.tokenSymbol}`,
         `**Winners:** ${data.totalWinners}`,
         status === 'drawing' ? '**Status:** Drawing...' :
             isClosed ? `**Status:** ${status === 'stopped' ? 'Cancelled' : 'Drawn'}` :
                 endsAtUnix ? `**Ends:** <t:${endsAtUnix}:R>` : `**Ends:** No time limit`,
         data.entryCount != null ? `**Entries:** ${data.entryCount}` : '',
-        '',
-        `Enter below or at [daget.fun](${appUrl})`,
-    ].filter(Boolean).join('\n');
+    ].filter(Boolean) as string[];
+    if (messageText) descriptionParts.push('', messageText);
 
     const res = await discordFetch(`/channels/${channelId}/messages/${messageId}`, {
         method: 'PATCH',
         body: JSON.stringify({
             embeds: [{
                 title: `🎲 ${data.name}`,
-                description,
+                description: descriptionParts.join('\n'),
                 color: isClosed ? 0x6B7280 : 0x7C3AED,
                 footer: { text: 'Powered by daget.fun' },
             }],
             components: isClosed ? [] : [{
                 type: 1,
-                components: [{
-                    type: 2,
-                    style: 1,
-                    label: 'Enter Raffle',
-                    custom_id: `raffle_enter:${data.dagetId}`,
-                }],
+                components: [
+                    {
+                        type: 2,
+                        style: 1,
+                        label: 'Enter Raffle',
+                        custom_id: `raffle_enter:${data.dagetId}`,
+                    },
+                    {
+                        type: 2,
+                        style: 5, // LINK
+                        label: 'Enter from Daget.fun',
+                        url: claimUrl,
+                    },
+                ],
             }],
         }),
     });
