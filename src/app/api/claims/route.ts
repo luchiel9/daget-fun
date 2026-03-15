@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { requireAuth, getDiscordAccessToken } from '@/lib/auth';
 import { Errors, ErrorCodes } from '@/lib/errors';
 import { db } from '@/db';
-import { dagets, claims, dagetRequirements } from '@/db/schema';
+import { dagets, claims, dagetRequirements, users } from '@/db/schema';
 import { eq, and, desc, lt, sql, type SQL } from 'drizzle-orm';
 import { createClaimSchema, paginationSchema } from '@/lib/validation';
 import { checkIdempotency, storeIdempotency } from '@/lib/idempotency';
@@ -11,6 +11,7 @@ import { encodeCursor, decodeCursor } from '@/lib/cursor';
 import { headers } from 'next/headers';
 import crypto from 'crypto';
 import { verifyDiscordRoles } from '@/lib/discord-verify';
+import { updateRaffleEmbed, buildRaffleEmbedData } from '@/lib/discord-bot';
 import type { LockedDagetRow, ClaimedSumRow } from '@/worker/types';
 
 /**
@@ -322,6 +323,23 @@ export async function POST(request: NextRequest) {
         };
 
         await storeIdempotency(idempotencyKey, user.id, 'POST /api/claims', body, 202, responseBody);
+
+        // Update Discord embed entry count (best-effort, fire-and-forget)
+        if (isRaffleEntry && daget.discordChannelId && daget.discordMessageId) {
+            (async () => {
+                const [updatedDaget, creator] = await Promise.all([
+                    db.query.dagets.findFirst({ where: eq(dagets.id, daget.id) }),
+                    db.query.users.findFirst({ where: eq(users.id, daget.creatorUserId) }),
+                ]);
+                if (updatedDaget?.discordChannelId && updatedDaget.discordMessageId) {
+                    await updateRaffleEmbed(
+                        updatedDaget.discordChannelId,
+                        updatedDaget.discordMessageId,
+                        buildRaffleEmbedData(updatedDaget, creator?.discordUserId ?? null),
+                    );
+                }
+            })().catch((err) => console.error('Failed to update raffle embed after claim:', err));
+        }
 
         return NextResponse.json(responseBody, { status: 202 });
     } catch (error: unknown) {

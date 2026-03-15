@@ -274,6 +274,7 @@ export async function postRaffleEmbed(
         `**Prize Pool:** ${data.totalAmountDisplay} ${data.tokenSymbol}`,
         `**Winners:** ${data.totalWinners}`,
         endsLine,
+        data.entryCount != null ? `**Entries:** ${data.entryCount}` : '',
         rolesLine,
     ].filter(Boolean) as string[];
     if (messageText) descriptionParts.push('', messageText);

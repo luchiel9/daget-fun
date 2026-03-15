@@ -6,6 +6,8 @@ import {
     verifyInteractionSignature,
     editInteractionResponse,
     getGuildMemberRoles,
+    updateRaffleEmbed,
+    buildRaffleEmbedData,
     InteractionType,
     InteractionResponseType,
     MessageFlags,
@@ -443,6 +445,23 @@ async function processRaffleEntry(
                 }],
             }],
         );
+
+        // Update Discord embed entry count (best-effort)
+        if (daget.discordChannelId && daget.discordMessageId) {
+            (async () => {
+                const [refreshed, creator] = await Promise.all([
+                    db.query.dagets.findFirst({ where: eq(dagets.id, dagetId) }),
+                    db.query.users.findFirst({ where: eq(users.id, daget.creatorUserId) }),
+                ]);
+                if (refreshed?.discordChannelId && refreshed.discordMessageId) {
+                    await updateRaffleEmbed(
+                        refreshed.discordChannelId,
+                        refreshed.discordMessageId,
+                        buildRaffleEmbedData(refreshed, creator?.discordUserId ?? null),
+                    );
+                }
+            })().catch((err) => console.error('[discord-interactions] embed update error:', err));
+        }
     } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown error';
 
