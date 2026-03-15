@@ -6,7 +6,8 @@ import { GlassCard, Button, Input, Select, SearchableSelect, Modal } from '@/com
 import QuillEditor from '../ui/quill-editor';
 
 import { simulateRandomClaims } from '@/lib/random-distribution';
-import { toLocalDateString, toLocalTimeString } from './raffle-date-utils';
+import { toLocalDateString, toLocalTimeString, formatDisplayDate, formatDisplayTime } from './raffle-date-utils';
+import RaffleDateTimePicker from './RaffleDateTimePicker';
 
 export interface FormValues {
     name: string;
@@ -1376,87 +1377,60 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
                                                     );
                                                 })}
                                             </div>
-                                            {/* Date and Time inputs */}
-                                            <div className="flex gap-3">
-                                                <div className="flex-1">
-                                                    <label className="text-xs text-text-muted">Date</label>
-                                                    <input
-                                                        type="date"
-                                                        value={raffleDate}
-                                                        min={toLocalDateString(new Date())}
-                                                        onChange={(e) => {
-                                                            const newDate = e.target.value;
-                                                            setRaffleDate(newDate);
-                                                            setSelectedPreset(null);
-                                                            if (newDate && raffleTime) {
-                                                                const errors = validateRaffleDateTime(newDate, raffleTime);
-                                                                if (errors) {
-                                                                    updateForm('raffle_ends_at', '');
-                                                                    setValidationErrors(prev => ({ ...prev, ...errors, raffle_time: undefined }));
-                                                                } else {
-                                                                    updateForm('raffle_ends_at', new Date(`${newDate}T${raffleTime}`).toISOString());
-                                                                    setValidationErrors(prev => {
-                                                                        const next = { ...prev };
-                                                                        delete next.raffle_date;
-                                                                        delete next.raffle_time;
-                                                                        return next;
-                                                                    });
-                                                                }
-                                                            } else {
-                                                                updateForm('raffle_ends_at', '');
-                                                                if (newDate) setValidationErrors(prev => { const next = { ...prev }; delete next.raffle_date; return next; });
-                                                            }
-                                                        }}
-                                                        className="mt-1 w-full bg-background-dark/50 border border-border-dark/60 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl p-3 text-text-primary outline-none font-mono text-sm"
-                                                    />
-                                                    {validationErrors.raffle_date && (
-                                                        <p className="text-xs text-red-400 mt-1 flex items-center gap-1">
-                                                            <span className="material-icons text-[10px]">error</span>
-                                                            {validationErrors.raffle_date}
-                                                        </p>
-                                                    )}
-                                                </div>
-                                                <div className="flex-1">
-                                                    <label className="text-xs text-text-muted">Time</label>
-                                                    <input
-                                                        type="time"
-                                                        value={raffleTime}
-                                                        onChange={(e) => {
-                                                            const newTime = e.target.value;
-                                                            setRaffleTime(newTime);
-                                                            setSelectedPreset(null);
-                                                            if (raffleDate && newTime) {
-                                                                const errors = validateRaffleDateTime(raffleDate, newTime);
-                                                                if (errors) {
-                                                                    updateForm('raffle_ends_at', '');
-                                                                    setValidationErrors(prev => ({ ...prev, ...errors, raffle_time: undefined }));
-                                                                } else {
-                                                                    updateForm('raffle_ends_at', new Date(`${raffleDate}T${newTime}`).toISOString());
-                                                                    setValidationErrors(prev => {
-                                                                        const next = { ...prev };
-                                                                        delete next.raffle_date;
-                                                                        delete next.raffle_time;
-                                                                        return next;
-                                                                    });
-                                                                }
-                                                            } else {
-                                                                updateForm('raffle_ends_at', '');
-                                                                if (newTime) setValidationErrors(prev => { const next = { ...prev }; delete next.raffle_time; return next; });
-                                                            }
-                                                        }}
-                                                        className="mt-1 w-full bg-background-dark/50 border border-border-dark/60 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl p-3 text-text-primary outline-none font-mono text-sm"
-                                                    />
-                                                    {validationErrors.raffle_time && (
-                                                        <p className="text-xs text-red-400 mt-1 flex items-center gap-1">
-                                                            <span className="material-icons text-[10px]">error</span>
-                                                            {validationErrors.raffle_time}
-                                                        </p>
-                                                    )}
-                                                </div>
-                                            </div>
+                                            {/* Date and Time picker */}
+                                            <RaffleDateTimePicker
+                                                raffleDate={raffleDate}
+                                                raffleTime={raffleTime}
+                                                onDateChange={(newDate) => {
+                                                    setRaffleDate(newDate);
+                                                    setSelectedPreset(null);
+                                                    if (newDate && raffleTime) {
+                                                        const errors = validateRaffleDateTime(newDate, raffleTime);
+                                                        if (errors) {
+                                                            updateForm('raffle_ends_at', '');
+                                                            setValidationErrors(prev => ({ ...prev, ...errors, raffle_time: undefined }));
+                                                        } else {
+                                                            updateForm('raffle_ends_at', new Date(`${newDate}T${raffleTime}`).toISOString());
+                                                            setValidationErrors(prev => {
+                                                                const next = { ...prev };
+                                                                delete next.raffle_date;
+                                                                delete next.raffle_time;
+                                                                return next;
+                                                            });
+                                                        }
+                                                    } else {
+                                                        updateForm('raffle_ends_at', '');
+                                                        if (newDate) setValidationErrors(prev => { const next = { ...prev }; delete next.raffle_date; return next; });
+                                                    }
+                                                }}
+                                                onTimeChange={(newTime) => {
+                                                    setRaffleTime(newTime);
+                                                    setSelectedPreset(null);
+                                                    if (raffleDate && newTime) {
+                                                        const errors = validateRaffleDateTime(raffleDate, newTime);
+                                                        if (errors) {
+                                                            updateForm('raffle_ends_at', '');
+                                                            setValidationErrors(prev => ({ ...prev, ...errors, raffle_time: undefined }));
+                                                        } else {
+                                                            updateForm('raffle_ends_at', new Date(`${raffleDate}T${newTime}`).toISOString());
+                                                            setValidationErrors(prev => {
+                                                                const next = { ...prev };
+                                                                delete next.raffle_date;
+                                                                delete next.raffle_time;
+                                                                return next;
+                                                            });
+                                                        }
+                                                    } else {
+                                                        updateForm('raffle_ends_at', '');
+                                                        if (newTime) setValidationErrors(prev => { const next = { ...prev }; delete next.raffle_time; return next; });
+                                                    }
+                                                }}
+                                                dateError={validationErrors.raffle_date}
+                                                timeError={validationErrors.raffle_time}
+                                            />
                                             {form.raffle_ends_at && (
                                                 <p className="text-xs text-text-muted font-mono">
-                                                    Ends at: {new Date(form.raffle_ends_at).toLocaleString()}
+                                                    Ends at: {formatDisplayDate(new Date(form.raffle_ends_at))}, {formatDisplayTime(new Date(form.raffle_ends_at))}
                                                 </p>
                                             )}
                                         </div>

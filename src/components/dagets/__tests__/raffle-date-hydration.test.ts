@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toLocalDateString, toLocalTimeString } from '../raffle-date-utils';
+import { toLocalDateString, toLocalTimeString, formatDisplayDate, formatDisplayTime } from '../raffle-date-utils';
 
 /**
  * Test the data transformation that edit page performs on raffle_ends_at
@@ -92,5 +92,47 @@ describe('toLocalTimeString', () => {
 
     it('returns empty string for Invalid Date', () => {
         expect(toLocalTimeString(new Date('invalid'))).toBe('');
+    });
+});
+
+describe('formatDisplayDate', () => {
+    it('returns "22 Mar 2026" format', () => {
+        const d = new Date(2026, 2, 22); // March 22
+        expect(formatDisplayDate(d)).toBe('22 Mar 2026');
+    });
+
+    it('handles single-digit day', () => {
+        const d = new Date(2026, 0, 5); // Jan 5
+        expect(formatDisplayDate(d)).toBe('5 Jan 2026');
+    });
+
+    it('returns empty string for Invalid Date', () => {
+        expect(formatDisplayDate(new Date('invalid'))).toBe('');
+    });
+});
+
+describe('formatDisplayTime', () => {
+    it('returns 12-hour format with AM/PM', () => {
+        const d = new Date(2026, 0, 1, 14, 30);
+        expect(formatDisplayTime(d)).toBe('2:30 PM');
+    });
+
+    it('handles midnight as 12:00 AM', () => {
+        const d = new Date(2026, 0, 1, 0, 0);
+        expect(formatDisplayTime(d)).toBe('12:00 AM');
+    });
+
+    it('handles noon as 12:00 PM', () => {
+        const d = new Date(2026, 0, 1, 12, 0);
+        expect(formatDisplayTime(d)).toBe('12:00 PM');
+    });
+
+    it('pads single-digit minutes', () => {
+        const d = new Date(2026, 0, 1, 9, 5);
+        expect(formatDisplayTime(d)).toBe('9:05 AM');
+    });
+
+    it('returns empty string for Invalid Date', () => {
+        expect(formatDisplayTime(new Date('invalid'))).toBe('');
     });
 });
