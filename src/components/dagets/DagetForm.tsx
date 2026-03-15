@@ -1507,16 +1507,16 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
                                                             <p className="text-xs text-amber-500">No postable channels found. Make sure the bot is installed in this server and has Send Messages + Embed Links permissions.</p>
                                                         </div>
                                                     ) : (
-                                                        <select
-                                                            className="w-full bg-background-dark/50 border border-border-dark/60 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl p-3 text-text-primary outline-none"
+                                                        <SearchableSelect
+                                                            options={discordChannels.map((ch) => ({
+                                                                value: ch.id,
+                                                                label: `#${ch.name}`,
+                                                                icon: null,
+                                                            }))}
                                                             value={form.discord_channel_id}
-                                                            onChange={(e) => updateForm('discord_channel_id', e.target.value)}
-                                                        >
-                                                            <option value="">Select a channel...</option>
-                                                            {discordChannels.map((ch) => (
-                                                                <option key={ch.id} value={ch.id}>#{ch.name}</option>
-                                                            ))}
-                                                        </select>
+                                                            onChange={(value) => updateForm('discord_channel_id', value)}
+                                                            placeholder="Select a channel..."
+                                                        />
                                                     )}
                                                 </div>
                                             )}
