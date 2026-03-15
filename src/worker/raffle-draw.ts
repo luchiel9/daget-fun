@@ -1,10 +1,10 @@
 import { db } from '@/db';
-import { claims, notifications, users } from '@/db/schema';
-import { sql, inArray } from 'drizzle-orm';
+import { claims, dagets as dagetsTable, notifications, users } from '@/db/schema';
+import { eq, sql, inArray } from 'drizzle-orm';
 import { createHash, createHmac } from 'crypto';
 import { logger } from '@/lib/logger';
 import { firstRoundAfter, fetchDrandRound, type DrandBeacon } from '@/config/drand';
-import { announceWinners, type WinnerInfo } from '@/lib/discord-bot';
+import { announceWinners, updateRaffleEmbed, buildRaffleEmbedData, type WinnerInfo } from '@/lib/discord-bot';
 
 const log = logger.child({ component: 'raffle-draw' });
 
@@ -219,6 +219,26 @@ export async function executeRaffleDraw(daget: RaffleDaget): Promise<void> {
             await sendDiscordAnnouncement(daget, winners, amountPerWinner).catch((err) => {
                 log.error({ dagetId: daget.id, err }, 'Failed to send Discord winner announcement');
             });
+
+            // Update original embed to show "Drawn" status and remove entry buttons
+            if (daget.discord_message_id) {
+                const updatedDaget = await db.query.dagets.findFirst({
+                    where: eq(dagetsTable.id, daget.id),
+                });
+                if (updatedDaget?.discordChannelId && updatedDaget.discordMessageId) {
+                    const creator = await db.query.users.findFirst({
+                        where: eq(users.id, updatedDaget.creatorUserId),
+                    });
+                    await updateRaffleEmbed(
+                        updatedDaget.discordChannelId,
+                        updatedDaget.discordMessageId,
+                        buildRaffleEmbedData(updatedDaget, creator?.discordUserId ?? null),
+                        'closed',
+                    ).catch((err) => {
+                        log.error({ dagetId: daget.id, err }, 'Failed to update raffle embed after draw');
+                    });
+                }
+            }
         }
     } catch (err) {
         // If anything fails after setting status='drawing', recovery tick will handle it

@@ -345,9 +345,9 @@ export async function updateRaffleEmbed(
         byLine,
         `**Prize Pool:** ${data.totalAmountDisplay} ${data.tokenSymbol}`,
         `**Winners:** ${data.totalWinners}`,
+        endsAtUnix ? `**Ends:** <t:${endsAtUnix}:R>` : `**Ends:** No time limit`,
         status === 'drawing' ? '**Status:** Drawing...' :
-            isClosed ? `**Status:** ${status === 'stopped' ? 'Cancelled' : 'Drawn'}` :
-                endsAtUnix ? `**Ends:** <t:${endsAtUnix}:R>` : `**Ends:** No time limit`,
+            isClosed ? `**Status:** ${status === 'stopped' ? 'Cancelled' : 'Drawn'}` : '',
         data.entryCount != null ? `**Entries:** ${data.entryCount}` : '',
         rolesLine,
     ].filter(Boolean) as string[];
@@ -417,7 +417,7 @@ export async function announceWinners(
             body: JSON.stringify({
                 embeds: [{
                     title: `🎉 Raffle "${raffleName}" has been drawn!`,
-                    description: `**Winners:**\n${winnerLines}\n\nCongratulations! Prizes are being sent now.`,
+                    description: `**Winners:**\n${winnerLines}\n\nCongratulations! Prizes are being sent now.\n[View on daget.fun](${claimUrl})`,
                     color: 0x10B981, // green
                 }],
             }),
