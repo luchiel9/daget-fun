@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { toLocalDateString, toLocalTimeString } from '../raffle-date-utils';
 
 /**
  * Test the data transformation that edit page performs on raffle_ends_at
@@ -15,36 +16,14 @@ import { describe, it, expect } from 'vitest';
 
 /** Simulates what edit page does to transform the API response */
 function transformRaffleEndsAt(apiValue: string | null): string {
-    // This is the CURRENT (buggy) logic from edit/page.tsx line 53-55:
-    // return apiValue ? new Date(apiValue).toISOString().slice(0, 16) : '';
-    //
-    // This is what it SHOULD do:
     return apiValue ? new Date(apiValue).toISOString() : '';
 }
 
-/** Simulates what DagetForm does to hydrate raffleDate from initialValues */
-function hydrateRaffleDate(raffleEndsAt: string): string {
-    if (!raffleEndsAt) return '';
-    const d = new Date(raffleEndsAt);
-    if (isNaN(d.getTime())) return '';
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-/** Simulates what DagetForm does to hydrate raffleTime from initialValues */
-function hydrateRaffleTime(raffleEndsAt: string): string {
-    if (!raffleEndsAt) return '';
-    const d = new Date(raffleEndsAt);
-    if (isNaN(d.getTime())) return '';
-    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-}
-
 describe('raffle_ends_at edit mode hydration', () => {
-    // Use a fixed UTC time that we can verify
     const apiIsoString = '2026-03-20T10:30:00.000Z';
 
     it('transformRaffleEndsAt preserves full ISO string', () => {
         const result = transformRaffleEndsAt(apiIsoString);
-        // Must be a valid ISO string that new Date() can parse correctly
         expect(result).toBe('2026-03-20T10:30:00.000Z');
     });
 
@@ -54,30 +33,64 @@ describe('raffle_ends_at edit mode hydration', () => {
 
     it('round-trips correctly: transform → hydrate → recombine matches original', () => {
         const transformed = transformRaffleEndsAt(apiIsoString);
-        const date = hydrateRaffleDate(transformed);
-        const time = hydrateRaffleTime(transformed);
+        const date = toLocalDateString(new Date(transformed));
+        const time = toLocalTimeString(new Date(transformed));
 
-        // Recombine the way DagetForm does on submit
         const recombined = new Date(`${date}T${time}`);
-
-        // The original UTC time
         const original = new Date(apiIsoString);
 
-        // They should represent the same moment (within 1 minute due to seconds truncation)
+        // Within 1 minute due to seconds truncation
         expect(Math.abs(recombined.getTime() - original.getTime())).toBeLessThan(60 * 1000);
     });
 
     it('hydrated date and time match the local representation', () => {
         const transformed = transformRaffleEndsAt(apiIsoString);
-        const date = hydrateRaffleDate(transformed);
-        const time = hydrateRaffleTime(transformed);
+        const date = toLocalDateString(new Date(transformed));
+        const time = toLocalTimeString(new Date(transformed));
 
-        // The hydrated values should match what the user sees in their local timezone
         const localDate = new Date(apiIsoString);
         const expectedDate = `${localDate.getFullYear()}-${String(localDate.getMonth() + 1).padStart(2, '0')}-${String(localDate.getDate()).padStart(2, '0')}`;
         const expectedTime = `${String(localDate.getHours()).padStart(2, '0')}:${String(localDate.getMinutes()).padStart(2, '0')}`;
 
         expect(date).toBe(expectedDate);
         expect(time).toBe(expectedTime);
+    });
+});
+
+describe('toLocalDateString', () => {
+    it('returns YYYY-MM-DD in local timezone', () => {
+        // Use a date where we know the local parts
+        const d = new Date(2026, 5, 15, 14, 30); // June 15 2026, 2:30 PM local
+        expect(toLocalDateString(d)).toBe('2026-06-15');
+    });
+
+    it('pads single-digit month and day', () => {
+        const d = new Date(2026, 0, 5, 8, 0); // Jan 5
+        expect(toLocalDateString(d)).toBe('2026-01-05');
+    });
+
+    it('returns empty string for Invalid Date', () => {
+        expect(toLocalDateString(new Date('invalid'))).toBe('');
+    });
+});
+
+describe('toLocalTimeString', () => {
+    it('returns HH:MM in local timezone', () => {
+        const d = new Date(2026, 5, 15, 14, 30);
+        expect(toLocalTimeString(d)).toBe('14:30');
+    });
+
+    it('pads single-digit hours and minutes', () => {
+        const d = new Date(2026, 5, 15, 3, 5);
+        expect(toLocalTimeString(d)).toBe('03:05');
+    });
+
+    it('handles midnight', () => {
+        const d = new Date(2026, 5, 15, 0, 0);
+        expect(toLocalTimeString(d)).toBe('00:00');
+    });
+
+    it('returns empty string for Invalid Date', () => {
+        expect(toLocalTimeString(new Date('invalid'))).toBe('');
     });
 });

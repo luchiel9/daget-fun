@@ -6,6 +6,7 @@ import { GlassCard, Button, Input, Select, SearchableSelect, Modal } from '@/com
 import QuillEditor from '../ui/quill-editor';
 
 import { simulateRandomClaims } from '@/lib/random-distribution';
+import { toLocalDateString, toLocalTimeString } from './raffle-date-utils';
 
 export interface FormValues {
     name: string;
@@ -124,19 +125,13 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
     // Raffle duration local state — hydrate from initialValues in edit mode
     const [raffleDate, setRaffleDate] = useState(() => {
         if (initialValues?.raffle_ends_at) {
-            const d = new Date(initialValues.raffle_ends_at);
-            if (!isNaN(d.getTime())) {
-                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-            }
+            return toLocalDateString(new Date(initialValues.raffle_ends_at));
         }
         return '';
     });
     const [raffleTime, setRaffleTime] = useState(() => {
         if (initialValues?.raffle_ends_at) {
-            const d = new Date(initialValues.raffle_ends_at);
-            if (!isNaN(d.getTime())) {
-                return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-            }
+            return toLocalTimeString(new Date(initialValues.raffle_ends_at));
         }
         return '';
     });
@@ -312,6 +307,22 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
             } else {
                 delete newErrors.required_role_ids;
             }
+        }
+
+        // When switching to raffle type, sync local date/time state with form
+        if (key === 'daget_type' && value === 'raffle') {
+            if (!form.raffle_ends_at) {
+                setRaffleDate('');
+                setRaffleTime('');
+                setSelectedPreset(null);
+            }
+            delete newErrors.raffle_date;
+            delete newErrors.raffle_time;
+        }
+        // When switching away from raffle, clear raffle errors
+        if (key === 'daget_type' && value !== 'raffle') {
+            delete newErrors.raffle_date;
+            delete newErrors.raffle_time;
         }
 
         setValidationErrors(newErrors);
@@ -1343,15 +1354,8 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
                                                             type="button"
                                                             onClick={() => {
                                                                 const target = new Date(Date.now() + parseInt(value));
-                                                                const year = target.getFullYear();
-                                                                const month = String(target.getMonth() + 1).padStart(2, '0');
-                                                                const day = String(target.getDate()).padStart(2, '0');
-                                                                const hours = String(target.getHours()).padStart(2, '0');
-                                                                const minutes = String(target.getMinutes()).padStart(2, '0');
-                                                                const dateStr = `${year}-${month}-${day}`;
-                                                                const timeStr = `${hours}:${minutes}`;
-                                                                setRaffleDate(dateStr);
-                                                                setRaffleTime(timeStr);
+                                                                setRaffleDate(toLocalDateString(target));
+                                                                setRaffleTime(toLocalTimeString(target));
                                                                 setSelectedPreset(label);
                                                                 updateForm('raffle_ends_at', target.toISOString());
                                                                 setValidationErrors(prev => {
@@ -1379,7 +1383,7 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
                                                     <input
                                                         type="date"
                                                         value={raffleDate}
-                                                        min={new Date().toISOString().split('T')[0]}
+                                                        min={toLocalDateString(new Date())}
                                                         onChange={(e) => {
                                                             const newDate = e.target.value;
                                                             setRaffleDate(newDate);
