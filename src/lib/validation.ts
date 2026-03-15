@@ -36,6 +36,8 @@ export const createDagetSchema = z.object({
     random_min_percent: z.number().gt(0).lte(100).nullable().optional(),
     random_max_percent: z.number().gt(0).lte(100).nullable().optional(),
 
+    image_url: z.string().url().max(2048).optional().nullable(),
+
     // Raffle-specific fields
     raffle_ends_at: z.string().datetime({ offset: true }).optional(),
     post_to_discord: z.boolean().optional(),
@@ -51,16 +53,14 @@ export const createDagetSchema = z.object({
     message: 'Random mode requires valid min/max percentages; fixed/raffle mode must have null percentages',
 }).refine((data) => {
     if (data.daget_type === 'raffle') {
-        // raffle_ends_at is optional — no end date = open indefinitely
-        if (!data.raffle_ends_at) return true;
+        if (!data.raffle_ends_at) return false; // required for raffles
         const endsAt = new Date(data.raffle_ends_at);
         const minEndTime = new Date(Date.now() + 60 * 1000); // 1 min minimum
-        const maxEndTime = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days max
-        return endsAt >= minEndTime && endsAt <= maxEndTime;
+        return endsAt >= minEndTime;
     }
     return data.raffle_ends_at == null;
 }, {
-    message: 'raffle_ends_at must be 1 min to 30 days from now; non-raffle must not have it',
+    message: 'Raffles require raffle_ends_at at least 1 min from now; non-raffle must not have it',
 }).refine((data) => {
     if (data.post_to_discord) return !!data.discord_channel_id;
     return true;
@@ -71,6 +71,7 @@ export const createDagetSchema = z.object({
 export const updateDagetSchema = z.object({
     name: z.string().min(1).max(120).optional(),
     message_html: z.string().max(50000).optional(),
+    image_url: z.string().url().max(2048).optional().nullable(),
     discord_guild_id: discordSnowflakeSchema.optional(),
     discord_guild_name: z.string().optional(),
     discord_guild_icon: z.string().optional().nullable(),
