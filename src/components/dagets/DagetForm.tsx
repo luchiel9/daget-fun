@@ -117,7 +117,14 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
         discord_guild_id?: string;
         required_role_ids?: string;
         manual_roles?: { [key: number]: { name?: string; id?: string } };
+        raffle_date?: string;
+        raffle_time?: string;
     }>({});
+
+    // Raffle duration local state
+    const [raffleDate, setRaffleDate] = useState('');
+    const [raffleTime, setRaffleTime] = useState('');
+    const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
 
     // Effect to load roles if initialValues has guild ID (Edit mode)
     useEffect(() => {
@@ -578,19 +585,18 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
 
             // Validate Raffle settings
             if (form.daget_type === 'raffle') {
-                if (form.raffle_ends_at) {
+                if (!form.raffle_ends_at) {
+                    if (!raffleDate) {
+                        errors.raffle_date = 'End date is required';
+                    }
+                    if (!raffleTime) {
+                        errors.raffle_time = 'End time is required';
+                    }
+                } else {
                     const endsAt = new Date(form.raffle_ends_at);
                     const minEnd = new Date(Date.now() + 60 * 1000);
                     if (endsAt < minEnd) {
-                        setError('Raffle end time must be at least 1 minute from now.');
-                        setLoading(false);
-                        return;
-                    }
-                    const maxEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-                    if (endsAt > maxEnd) {
-                        setError('Raffle end date cannot be more than 30 days from now.');
-                        setLoading(false);
-                        return;
+                        errors.raffle_date = 'Must be at least 1 minute from now';
                     }
                 }
                 if (form.post_to_discord && !form.discord_channel_id) {
@@ -1289,32 +1295,40 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
                                         <div className="space-y-3">
                                             <div>
                                                 <label className="text-sm font-semibold text-text-secondary uppercase tracking-wider">Duration</label>
-                                                <p className="text-xs text-text-muted mt-1">Entries close after this time. Leave as &quot;No limit&quot; to draw manually.</p>
+                                                <p className="text-xs text-text-muted mt-1">Entries close after this time.</p>
                                             </div>
                                             <div className="flex flex-wrap gap-2">
                                                 {[
-                                                    { label: 'No limit', value: '' },
-                                                    { label: '2m', value: String(2 * 60 * 1000) },
-                                                    { label: '5m', value: String(5 * 60 * 1000) },
-                                                    { label: '30m', value: String(30 * 60 * 1000) },
+                                                    { label: '10m', value: String(10 * 60 * 1000) },
                                                     { label: '1h', value: String(60 * 60 * 1000) },
-                                                    { label: '6h', value: String(6 * 60 * 60 * 1000) },
-                                                    { label: '24h', value: String(24 * 60 * 60 * 1000) },
-                                                    { label: '7d', value: String(7 * 24 * 60 * 60 * 1000) },
-                                                    { label: '30d', value: String(30 * 24 * 60 * 60 * 1000) },
+                                                    { label: '12h', value: String(12 * 60 * 60 * 1000) },
+                                                    { label: '1d', value: String(24 * 60 * 60 * 1000) },
                                                 ].map(({ label, value }) => {
-                                                    const selectedMs = form.raffle_ends_at
-                                                        ? String(new Date(form.raffle_ends_at).getTime() - Date.now())
-                                                        : '';
-                                                    // Match within 10s tolerance for preset detection
-                                                    const isSelected = value === ''
-                                                        ? !form.raffle_ends_at
-                                                        : Math.abs(parseInt(selectedMs) - parseInt(value)) < 10_000;
+                                                    const isSelected = selectedPreset === label;
                                                     return (
                                                         <button
                                                             key={label}
                                                             type="button"
-                                                            onClick={() => updateForm('raffle_ends_at', value ? new Date(Date.now() + parseInt(value)).toISOString() : '')}
+                                                            onClick={() => {
+                                                                const target = new Date(Date.now() + parseInt(value));
+                                                                const year = target.getFullYear();
+                                                                const month = String(target.getMonth() + 1).padStart(2, '0');
+                                                                const day = String(target.getDate()).padStart(2, '0');
+                                                                const hours = String(target.getHours()).padStart(2, '0');
+                                                                const minutes = String(target.getMinutes()).padStart(2, '0');
+                                                                const dateStr = `${year}-${month}-${day}`;
+                                                                const timeStr = `${hours}:${minutes}`;
+                                                                setRaffleDate(dateStr);
+                                                                setRaffleTime(timeStr);
+                                                                setSelectedPreset(label);
+                                                                updateForm('raffle_ends_at', target.toISOString());
+                                                                setValidationErrors(prev => {
+                                                                    const next = { ...prev };
+                                                                    delete next.raffle_date;
+                                                                    delete next.raffle_time;
+                                                                    return next;
+                                                                });
+                                                            }}
                                                             className={`px-3 py-1.5 rounded-lg text-sm font-mono transition-colors ${
                                                                 isSelected
                                                                     ? 'bg-primary text-white'
@@ -1325,6 +1339,100 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
                                                         </button>
                                                     );
                                                 })}
+                                            </div>
+                                            {/* Date and Time inputs */}
+                                            <div className="flex gap-3">
+                                                <div className="flex-1">
+                                                    <label className="text-xs text-text-muted">Date</label>
+                                                    <input
+                                                        type="date"
+                                                        value={raffleDate}
+                                                        min={new Date().toISOString().split('T')[0]}
+                                                        onChange={(e) => {
+                                                            const newDate = e.target.value;
+                                                            setRaffleDate(newDate);
+                                                            setSelectedPreset(null);
+                                                            if (newDate && raffleTime) {
+                                                                const combined = new Date(`${newDate}T${raffleTime}`);
+                                                                updateForm('raffle_ends_at', combined.toISOString());
+                                                                // Realtime validation
+                                                                const now = Date.now();
+                                                                if (combined.getTime() < now) {
+                                                                    setValidationErrors(prev => ({ ...prev, raffle_date: 'End date must be in the future', raffle_time: undefined }));
+                                                                } else if (combined.getTime() - now < 60 * 1000) {
+                                                                    setValidationErrors(prev => ({ ...prev, raffle_date: 'Must be at least 1 minute from now', raffle_time: undefined }));
+                                                                } else {
+                                                                    setValidationErrors(prev => {
+                                                                        const next = { ...prev };
+                                                                        delete next.raffle_date;
+                                                                        delete next.raffle_time;
+                                                                        return next;
+                                                                    });
+                                                                }
+                                                            } else {
+                                                                updateForm('raffle_ends_at', '');
+                                                                // Clear errors when field has a value
+                                                                setValidationErrors(prev => {
+                                                                    const next = { ...prev };
+                                                                    if (newDate) delete next.raffle_date;
+                                                                    return next;
+                                                                });
+                                                            }
+                                                        }}
+                                                        className="mt-1 w-full bg-background-dark/50 border border-border-dark/60 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl p-3 text-text-primary outline-none font-mono text-sm"
+                                                    />
+                                                    {validationErrors.raffle_date && (
+                                                        <p className="text-xs text-red-400 mt-1 flex items-center gap-1">
+                                                            <span className="material-icons text-[10px]">error</span>
+                                                            {validationErrors.raffle_date}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <label className="text-xs text-text-muted">Time</label>
+                                                    <input
+                                                        type="time"
+                                                        value={raffleTime}
+                                                        onChange={(e) => {
+                                                            const newTime = e.target.value;
+                                                            setRaffleTime(newTime);
+                                                            setSelectedPreset(null);
+                                                            if (raffleDate && newTime) {
+                                                                const combined = new Date(`${raffleDate}T${newTime}`);
+                                                                updateForm('raffle_ends_at', combined.toISOString());
+                                                                // Realtime validation
+                                                                const now = Date.now();
+                                                                if (combined.getTime() < now) {
+                                                                    setValidationErrors(prev => ({ ...prev, raffle_date: 'End date must be in the future', raffle_time: undefined }));
+                                                                } else if (combined.getTime() - now < 60 * 1000) {
+                                                                    setValidationErrors(prev => ({ ...prev, raffle_date: 'Must be at least 1 minute from now', raffle_time: undefined }));
+                                                                } else {
+                                                                    setValidationErrors(prev => {
+                                                                        const next = { ...prev };
+                                                                        delete next.raffle_date;
+                                                                        delete next.raffle_time;
+                                                                        return next;
+                                                                    });
+                                                                }
+                                                            } else {
+                                                                updateForm('raffle_ends_at', '');
+                                                                // Clear time error when field has a value
+                                                                setValidationErrors(prev => {
+                                                                    const next = { ...prev };
+                                                                    if (newTime) delete next.raffle_time;
+                                                                    return next;
+                                                                });
+                                                            }
+                                                        }}
+                                                        className="mt-1 w-full bg-background-dark/50 border border-border-dark/60 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl p-3 text-text-primary outline-none font-mono text-sm"
+                                                    />
+                                                    {validationErrors.raffle_time && (
+                                                        <p className="text-xs text-red-400 mt-1 flex items-center gap-1">
+                                                            <span className="material-icons text-[10px]">error</span>
+                                                            {validationErrors.raffle_time}
+                                                        </p>
+                                                    )}
+                                                </div>
                                             </div>
                                             {form.raffle_ends_at && (
                                                 <p className="text-xs text-text-muted font-mono">
