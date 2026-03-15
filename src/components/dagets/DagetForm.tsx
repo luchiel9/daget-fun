@@ -139,17 +139,23 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
     const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
 
     // Shared validation for raffle date+time
-    const validateRaffleDateTime = (date: string, time: string) => {
+    const validateRaffleDateTime = (date: string, time: string): { raffle_date?: string; raffle_time?: string } | null => {
         const combined = new Date(`${date}T${time}`);
         if (isNaN(combined.getTime())) {
             return { raffle_date: 'Invalid date or time' };
         }
-        const now = Date.now();
-        if (combined.getTime() < now) {
+        const now = new Date();
+        const diff = combined.getTime() - now.getTime();
+        if (diff < 0) {
+            // Is the date itself in the past, or is it today but the time has passed?
+            const dateIsToday = date === toLocalDateString(now);
+            if (dateIsToday) {
+                return { raffle_time: 'End time must be in the future' };
+            }
             return { raffle_date: 'End date must be in the future' };
         }
-        if (combined.getTime() - now < 60 * 1000) {
-            return { raffle_date: 'Must be at least 1 minute from now' };
+        if (diff < 60 * 1000) {
+            return { raffle_time: 'Must be at least 1 minute from now' };
         }
         return null;
     };
@@ -1411,7 +1417,12 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
                                                         const errors = validateRaffleDateTime(newDate, raffleTime);
                                                         if (errors) {
                                                             updateForm('raffle_ends_at', '');
-                                                            setValidationErrors(prev => ({ ...prev, ...errors, raffle_time: undefined }));
+                                                            setValidationErrors(prev => {
+                                                                const next = { ...prev };
+                                                                if (!errors.raffle_date) delete next.raffle_date;
+                                                                if (!errors.raffle_time) delete next.raffle_time;
+                                                                return { ...next, ...errors };
+                                                            });
                                                         } else {
                                                             updateForm('raffle_ends_at', new Date(`${newDate}T${raffleTime}`).toISOString());
                                                             setValidationErrors(prev => {
@@ -1433,7 +1444,12 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
                                                         const errors = validateRaffleDateTime(raffleDate, newTime);
                                                         if (errors) {
                                                             updateForm('raffle_ends_at', '');
-                                                            setValidationErrors(prev => ({ ...prev, ...errors, raffle_time: undefined }));
+                                                            setValidationErrors(prev => {
+                                                                const next = { ...prev };
+                                                                if (!errors.raffle_date) delete next.raffle_date;
+                                                                if (!errors.raffle_time) delete next.raffle_time;
+                                                                return { ...next, ...errors };
+                                                            });
                                                         } else {
                                                             updateForm('raffle_ends_at', new Date(`${raffleDate}T${newTime}`).toISOString());
                                                             setValidationErrors(prev => {
