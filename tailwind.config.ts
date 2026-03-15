@@ -25,7 +25,7 @@ const config: Config = {
                 'border-alt': '#2E2C35',
                 'text-primary': '#F5F2ED',
                 'text-secondary': '#A8A3B0',
-                'text-muted': '#5E5B66',
+                'text-muted': '#807C8B',
                 'arcade-dark': '#0B1020',
                 'arcade-card': '#161D33',
                 'neon-cyan': '#4fd1ed',
