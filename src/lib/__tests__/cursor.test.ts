@@ -16,7 +16,9 @@ describe('cursor module', () => {
         process.env.NODE_ENV = 'production';
         delete process.env.CURSOR_SECRET;
 
-        await expect(() => import('../cursor')).rejects.toThrow(
+        const mod = await import('../cursor');
+        // Lazy check — throws on first use, not on import
+        expect(() => mod.encodeCursor('2024-01-01', 'abc')).toThrow(
             'CURSOR_SECRET'
         );
     });

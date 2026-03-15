@@ -426,6 +426,17 @@ export default function ClaimPageClient() {
             if (!res.ok) {
                 setError(data.error?.message || 'Claim failed');
                 setViewState('claim'); // Revert on error
+            } else if (data.status === 'entered') {
+                // Raffle entry — no on-chain processing, show success immediately
+                setClaimStatus({
+                    claim_id: data.claim_id,
+                    status: 'entered',
+                    amount_base_units: null,
+                    tx_signature: null,
+                    attempt_count: 0,
+                    last_error: null,
+                });
+                setViewState('success');
             } else {
                 setClaimStatus({
                     claim_id: data.claim_id,
@@ -1066,8 +1077,40 @@ export default function ClaimPageClient() {
                         </div>
                     )}
 
+                    {/* ═══════════ RAFFLE ENTRY SUCCESS ═══════════ */}
+                    {viewState === 'success' && claimStatus?.status === 'entered' && (
+                        <div className="w-full max-w-[560px] mx-auto bg-surface border border-purple-500/20 rounded-2xl shadow-2xl overflow-hidden scale-up-gentle">
+                            <div className="p-8 space-y-5 text-center relative">
+                                <div className="confetti-dot c1"></div>
+                                <div className="confetti-dot c2"></div>
+                                <div className="confetti-dot c3"></div>
+                                <div className="confetti-dot c4"></div>
+
+                                <div>
+                                    <div className="w-20 h-20 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-6 check-bounce relative group">
+                                        <div className="absolute inset-0 bg-purple-500/20 rounded-full animate-ping opacity-20"></div>
+                                        <span className="material-icons text-purple-400 text-4xl relative z-10 group-hover:scale-110 transition-transform duration-300">confirmation_number</span>
+                                    </div>
+                                    <h3 className="text-2xl font-bold text-text-primary fade-in-up">You&apos;re In!</h3>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <p className="text-text-secondary fade-in-up delay-100">Your raffle entry has been registered.</p>
+                                    {daget.raffle_ends_at && (
+                                        <p className="text-sm text-purple-400 fade-in-up delay-200">
+                                            Draw on {new Date(daget.raffle_ends_at).toLocaleString()}
+                                        </p>
+                                    )}
+                                    <p className="text-xs text-text-muted fade-in-up delay-300 mt-3">
+                                        Winners will be selected randomly. Good luck!
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* ═══════════ SUCCESS STATE ═══════════ */}
-                    {viewState === 'success' && claimStatus && (
+                    {viewState === 'success' && claimStatus && claimStatus.status !== 'entered' && (
                         <div className="w-full max-w-[560px] mx-auto bg-surface border border-green-500/20 rounded-2xl shadow-2xl overflow-hidden scale-up-gentle">
                             <div className="p-8 space-y-5 text-center relative">
                                 {/* Confetti dots */}

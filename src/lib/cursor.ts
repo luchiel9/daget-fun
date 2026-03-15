@@ -5,11 +5,17 @@ import crypto from 'crypto';
  * Cursors are opaque, signed, base64url tokens.
  */
 
-if (process.env.NODE_ENV === 'production' && !process.env.CURSOR_SECRET) {
-    throw new Error('CURSOR_SECRET is required in production — cursors are forgeable without it');
-}
+let _cursorSecret: string | undefined;
 
-const CURSOR_SECRET = process.env.CURSOR_SECRET || 'dev-cursor-secret-key-change-me';
+function getCursorSecret(): string {
+    if (!_cursorSecret) {
+        if (process.env.NODE_ENV === 'production' && !process.env.CURSOR_SECRET) {
+            throw new Error('CURSOR_SECRET is required in production — cursors are forgeable without it');
+        }
+        _cursorSecret = process.env.CURSOR_SECRET || 'dev-cursor-secret-key-change-me';
+    }
+    return _cursorSecret;
+}
 
 interface CursorPayload {
     /** The value to paginate on (typically created_at ISO string) */
@@ -25,7 +31,7 @@ export function encodeCursor(value: string, id: string): string {
     const payload: CursorPayload = { v: value, id };
     const json = JSON.stringify(payload);
     const data = Buffer.from(json).toString('base64url');
-    const hmac = crypto.createHmac('sha256', CURSOR_SECRET).update(data).digest('base64url');
+    const hmac = crypto.createHmac('sha256', getCursorSecret()).update(data).digest('base64url');
     return `${data}.${hmac}`;
 }
 
@@ -37,7 +43,7 @@ export function decodeCursor(cursor: string): CursorPayload | null {
         const [data, hmac] = cursor.split('.');
         if (!data || !hmac) return null;
 
-        const expectedHmac = crypto.createHmac('sha256', CURSOR_SECRET).update(data).digest('base64url');
+        const expectedHmac = crypto.createHmac('sha256', getCursorSecret()).update(data).digest('base64url');
         if (
             hmac.length !== expectedHmac.length ||
             !crypto.timingSafeEqual(Buffer.from(hmac), Buffer.from(expectedHmac))
