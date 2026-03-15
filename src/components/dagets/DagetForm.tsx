@@ -121,10 +121,42 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
         raffle_time?: string;
     }>({});
 
-    // Raffle duration local state
-    const [raffleDate, setRaffleDate] = useState('');
-    const [raffleTime, setRaffleTime] = useState('');
+    // Raffle duration local state — hydrate from initialValues in edit mode
+    const [raffleDate, setRaffleDate] = useState(() => {
+        if (initialValues?.raffle_ends_at) {
+            const d = new Date(initialValues.raffle_ends_at);
+            if (!isNaN(d.getTime())) {
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            }
+        }
+        return '';
+    });
+    const [raffleTime, setRaffleTime] = useState(() => {
+        if (initialValues?.raffle_ends_at) {
+            const d = new Date(initialValues.raffle_ends_at);
+            if (!isNaN(d.getTime())) {
+                return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+            }
+        }
+        return '';
+    });
     const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
+
+    // Shared validation for raffle date+time
+    const validateRaffleDateTime = (date: string, time: string) => {
+        const combined = new Date(`${date}T${time}`);
+        if (isNaN(combined.getTime())) {
+            return { raffle_date: 'Invalid date or time' };
+        }
+        const now = Date.now();
+        if (combined.getTime() < now) {
+            return { raffle_date: 'End date must be in the future' };
+        }
+        if (combined.getTime() - now < 60 * 1000) {
+            return { raffle_date: 'Must be at least 1 minute from now' };
+        }
+        return null;
+    };
 
     // Effect to load roles if initialValues has guild ID (Edit mode)
     useEffect(() => {
@@ -1353,15 +1385,12 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
                                                             setRaffleDate(newDate);
                                                             setSelectedPreset(null);
                                                             if (newDate && raffleTime) {
-                                                                const combined = new Date(`${newDate}T${raffleTime}`);
-                                                                updateForm('raffle_ends_at', combined.toISOString());
-                                                                // Realtime validation
-                                                                const now = Date.now();
-                                                                if (combined.getTime() < now) {
-                                                                    setValidationErrors(prev => ({ ...prev, raffle_date: 'End date must be in the future', raffle_time: undefined }));
-                                                                } else if (combined.getTime() - now < 60 * 1000) {
-                                                                    setValidationErrors(prev => ({ ...prev, raffle_date: 'Must be at least 1 minute from now', raffle_time: undefined }));
+                                                                const errors = validateRaffleDateTime(newDate, raffleTime);
+                                                                if (errors) {
+                                                                    updateForm('raffle_ends_at', '');
+                                                                    setValidationErrors(prev => ({ ...prev, ...errors, raffle_time: undefined }));
                                                                 } else {
+                                                                    updateForm('raffle_ends_at', new Date(`${newDate}T${raffleTime}`).toISOString());
                                                                     setValidationErrors(prev => {
                                                                         const next = { ...prev };
                                                                         delete next.raffle_date;
@@ -1371,12 +1400,7 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
                                                                 }
                                                             } else {
                                                                 updateForm('raffle_ends_at', '');
-                                                                // Clear errors when field has a value
-                                                                setValidationErrors(prev => {
-                                                                    const next = { ...prev };
-                                                                    if (newDate) delete next.raffle_date;
-                                                                    return next;
-                                                                });
+                                                                if (newDate) setValidationErrors(prev => { const next = { ...prev }; delete next.raffle_date; return next; });
                                                             }
                                                         }}
                                                         className="mt-1 w-full bg-background-dark/50 border border-border-dark/60 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl p-3 text-text-primary outline-none font-mono text-sm"
@@ -1398,15 +1422,12 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
                                                             setRaffleTime(newTime);
                                                             setSelectedPreset(null);
                                                             if (raffleDate && newTime) {
-                                                                const combined = new Date(`${raffleDate}T${newTime}`);
-                                                                updateForm('raffle_ends_at', combined.toISOString());
-                                                                // Realtime validation
-                                                                const now = Date.now();
-                                                                if (combined.getTime() < now) {
-                                                                    setValidationErrors(prev => ({ ...prev, raffle_date: 'End date must be in the future', raffle_time: undefined }));
-                                                                } else if (combined.getTime() - now < 60 * 1000) {
-                                                                    setValidationErrors(prev => ({ ...prev, raffle_date: 'Must be at least 1 minute from now', raffle_time: undefined }));
+                                                                const errors = validateRaffleDateTime(raffleDate, newTime);
+                                                                if (errors) {
+                                                                    updateForm('raffle_ends_at', '');
+                                                                    setValidationErrors(prev => ({ ...prev, ...errors, raffle_time: undefined }));
                                                                 } else {
+                                                                    updateForm('raffle_ends_at', new Date(`${raffleDate}T${newTime}`).toISOString());
                                                                     setValidationErrors(prev => {
                                                                         const next = { ...prev };
                                                                         delete next.raffle_date;
@@ -1416,12 +1437,7 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
                                                                 }
                                                             } else {
                                                                 updateForm('raffle_ends_at', '');
-                                                                // Clear time error when field has a value
-                                                                setValidationErrors(prev => {
-                                                                    const next = { ...prev };
-                                                                    if (newTime) delete next.raffle_time;
-                                                                    return next;
-                                                                });
+                                                                if (newTime) setValidationErrors(prev => { const next = { ...prev }; delete next.raffle_time; return next; });
                                                             }
                                                         }}
                                                         className="mt-1 w-full bg-background-dark/50 border border-border-dark/60 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl p-3 text-text-primary outline-none font-mono text-sm"
