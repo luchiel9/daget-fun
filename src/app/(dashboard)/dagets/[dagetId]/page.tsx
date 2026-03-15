@@ -15,6 +15,8 @@ export default function DagetDetailPage() {
     const [showShareModal, setShowShareModal] = useState(false);
     const [copied, setCopied] = useState(false);
     const [stopping, setStopping] = useState(false);
+    const [showDrawModal, setShowDrawModal] = useState(false);
+    const [drawing, setDrawing] = useState(false);
 
     // Claims pagination state
     const CLAIMS_PER_PAGE = 25;
@@ -114,6 +116,14 @@ export default function DagetDetailPage() {
         } catch { } finally { setStopping(false); }
     };
 
+    const drawNow = async () => {
+        setDrawing(true);
+        try {
+            const res = await fetch(`/api/dagets/${dagetId}/draw`, { method: 'POST' });
+            if (res.ok) { await fetchDaget(); setShowDrawModal(false); }
+        } catch { } finally { setDrawing(false); }
+    };
+
     const releaseClaim = async (claimId: string) => {
         setReleasingClaim(claimId);
         try {
@@ -171,6 +181,7 @@ export default function DagetDetailPage() {
         if (status === 'active') return 'bg-green-500/20 text-green-300 border border-green-500/30';
         if (status === 'stopped') return 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30';
         if (status === 'closed' || status === 'released') return 'bg-slate-500/20 text-slate-300 border border-slate-500/30';
+        if (status === 'drawing') return 'bg-amber-500/20 text-amber-300 border border-amber-500/30';
         return 'bg-primary/20 text-primary border border-primary/30';
     };
 
@@ -186,7 +197,7 @@ export default function DagetDetailPage() {
                             <div className="absolute bottom-4 left-6 flex items-end gap-4 z-10">
                                 <div className="mb-0.5">
                                     <h3 className="text-white font-bold text-xl">{daget.name}</h3>
-                                    <p className="text-white/70 text-sm">{daget.token_symbol} · {daget.daget_type === 'fixed' ? 'Fixed' : 'Random'}</p>
+                                    <p className="text-white/70 text-sm">{daget.token_symbol} · {daget.daget_type === 'fixed' ? 'Fixed' : daget.daget_type === 'raffle' ? 'Raffle' : 'Random'}</p>
                                 </div>
                             </div>
                             <div className="absolute top-4 right-6 flex items-center gap-2 z-10">
@@ -198,7 +209,17 @@ export default function DagetDetailPage() {
                         <div className="p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4">
                             <div className="flex flex-wrap gap-2 flex-1">
                                 <span className="bg-blue-400/10 text-blue-400 px-3 py-1.5 rounded-full text-xs font-semibold">Token: {daget.token_symbol}</span>
-                                <span className="bg-primary/10 text-primary px-3 py-1.5 rounded-full text-xs font-semibold">Type: {daget.daget_type === 'fixed' ? 'Fixed' : 'Random'}</span>
+                                <span className="bg-primary/10 text-primary px-3 py-1.5 rounded-full text-xs font-semibold">Type: {daget.daget_type === 'fixed' ? 'Fixed' : daget.daget_type === 'raffle' ? 'Raffle' : 'Random'}</span>
+                                {daget.daget_type === 'raffle' && daget.raffle_ends_at && (
+                                    <span className="bg-amber-500/10 text-amber-400 px-3 py-1.5 rounded-full text-xs font-semibold">
+                                        {daget.status === 'closed' || daget.status === 'stopped'
+                                            ? `Ended: ${new Date(daget.raffle_ends_at).toLocaleDateString()}`
+                                            : `Ends: ${new Date(daget.raffle_ends_at).toLocaleString()}`}
+                                    </span>
+                                )}
+                                {daget.daget_type === 'raffle' && (
+                                    <span className="bg-purple-500/10 text-purple-400 px-3 py-1.5 rounded-full text-xs font-semibold">{daget.claimed_count} entries · {daget.total_winners} winners</span>
+                                )}
                                 <span className="bg-surface text-text-secondary px-3 py-1.5 rounded-full text-xs font-semibold">Created: {new Date(daget.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                             </div>
                             <div className="flex gap-2">
@@ -208,12 +229,20 @@ export default function DagetDetailPage() {
                                 >
                                     <span className="material-icons text-sm">edit</span>Edit
                                 </button>
+                                {daget.status === 'active' && daget.daget_type === 'raffle' && (
+                                    <button
+                                        className="px-4 py-2 rounded-xl border border-amber-500/30 text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 transition-all duration-200 flex items-center gap-2 text-sm font-medium active:scale-[0.98]"
+                                        onClick={() => setShowDrawModal(true)}
+                                    >
+                                        <span className="material-icons text-sm">emoji_events</span>Draw Now
+                                    </button>
+                                )}
                                 {daget.status === 'active' && (
                                     <button
                                         className="px-4 py-2 rounded-xl border border-red-500/30 text-red-400 bg-red-500/10 hover:bg-red-500/20 transition-all duration-200 flex items-center gap-2 text-sm font-medium active:scale-[0.98]"
                                         onClick={() => setShowStopModal(true)}
                                     >
-                                        <span className="material-icons text-sm">stop_circle</span>Stop Daget
+                                        <span className="material-icons text-sm">stop_circle</span>{daget.daget_type === 'raffle' ? 'Cancel Raffle' : 'Stop Daget'}
                                     </button>
                                 )}
                                 <div className="relative">
@@ -478,10 +507,22 @@ export default function DagetDetailPage() {
                         isOpen={showStopModal}
                         onClose={() => setShowStopModal(false)}
                         onConfirm={stopDaget}
-                        title="Stop Daget"
-                        message="This will prevent new claims. Existing pending claims will still process. This action cannot be undone."
-                        confirmLabel="Stop Daget"
+                        title={daget.daget_type === 'raffle' ? 'Cancel Raffle' : 'Stop Daget'}
+                        message={daget.daget_type === 'raffle'
+                            ? 'This will cancel the raffle and release all entries. No winners will be drawn. This action cannot be undone.'
+                            : 'This will prevent new claims. Existing pending claims will still process. This action cannot be undone.'}
+                        confirmLabel={daget.daget_type === 'raffle' ? 'Cancel Raffle' : 'Stop Daget'}
                         loading={stopping}
+                    />
+
+                    <SecurityModal
+                        isOpen={showDrawModal}
+                        onClose={() => setShowDrawModal(false)}
+                        onConfirm={drawNow}
+                        title="Draw Now"
+                        message={`This will immediately close entries and draw ${Math.min(daget?.claimed_count ?? 0, daget?.total_winners ?? 0)} winner(s) from ${daget?.claimed_count ?? 0} entries. This action cannot be undone.`}
+                        confirmLabel="Draw Now"
+                        loading={drawing}
                     />
 
                     <Modal

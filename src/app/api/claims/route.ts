@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { requireAuth, getDiscordAccessToken } from '@/lib/auth';
 import { Errors, ErrorCodes } from '@/lib/errors';
 import { db } from '@/db';
-import { dagets, claims, dagetRequirements } from '@/db/schema';
+import { dagets, claims, dagetRequirements, users } from '@/db/schema';
 import { eq, and, desc, lt, sql, type SQL } from 'drizzle-orm';
 import { createClaimSchema, paginationSchema } from '@/lib/validation';
 import { checkIdempotency, storeIdempotency } from '@/lib/idempotency';
@@ -11,6 +11,7 @@ import { encodeCursor, decodeCursor } from '@/lib/cursor';
 import { headers } from 'next/headers';
 import crypto from 'crypto';
 import { verifyDiscordRoles } from '@/lib/discord-verify';
+import { updateRaffleEmbed, buildRaffleEmbedData } from '@/lib/discord-bot';
 import type { LockedDagetRow, ClaimedSumRow } from '@/worker/types';
 
 /**
@@ -58,10 +59,18 @@ export async function POST(request: NextRequest) {
         if (!daget) return Errors.notFound('Daget');
 
         if (daget.status !== 'active') {
+            if (daget.status === 'drawing') {
+                return Errors.conflict(ErrorCodes.DAGET_NOT_ACTIVE, 'Raffle draw is in progress.');
+            }
             return Errors.conflict(ErrorCodes.DAGET_NOT_ACTIVE,
                 daget.status === 'stopped'
                     ? 'This Daget has been stopped by the creator.'
                     : 'Daget is fully claimed.');
+        }
+
+        // Raffle-specific: check end date
+        if (daget.dagetType === 'raffle' && daget.raffleEndsAt && new Date() >= daget.raffleEndsAt) {
+            return Errors.conflict(ErrorCodes.DAGET_NOT_ACTIVE, 'This raffle has ended.');
         }
 
         // Creators cannot claim their own Daget
@@ -111,7 +120,8 @@ export async function POST(request: NextRequest) {
                 return { error: 'DAGET_NOT_ACTIVE' as const };
             }
 
-            if (lockedDaget.claimed_count >= lockedDaget.total_winners) {
+            // Raffle allows unlimited entries; fixed/random are capped
+            if (lockedDaget.daget_type !== 'raffle' && lockedDaget.claimed_count >= lockedDaget.total_winners) {
                 return { error: 'FULLY_CLAIMED' as const };
             }
 
@@ -145,12 +155,15 @@ export async function POST(request: NextRequest) {
             }
 
             // Compute amount server-side (never from client)
-            let amountBaseUnits: number;
+            let amountBaseUnits: number | null;
             const totalAmount = Number(lockedDaget.total_amount_base_units);
             const totalWinners = lockedDaget.total_winners;
             const claimedCount = lockedDaget.claimed_count;
 
-            if (lockedDaget.daget_type === 'fixed') {
+            if (lockedDaget.daget_type === 'raffle') {
+                // Raffle: no amount until draw — entry only
+                amountBaseUnits = null;
+            } else if (lockedDaget.daget_type === 'fixed') {
                 // Fixed: floor division, remainder to last claimer
                 const perClaim = Math.floor(totalAmount / totalWinners);
                 if (claimedCount === totalWinners - 1) {
@@ -228,6 +241,8 @@ export async function POST(request: NextRequest) {
                 }
             }
 
+            const isRaffle = lockedDaget.daget_type === 'raffle';
+
             // Insert claim or reset a released claim row (unique index: one per user per daget)
             let newClaim;
             if (existingClaim?.status === 'released') {
@@ -237,6 +252,7 @@ export async function POST(request: NextRequest) {
                     idempotency_key = ${idempotencyKey},
                     receiving_address = ${receiving_address},
                     amount_base_units = ${amountBaseUnits},
+                    is_raffle_winner = NULL,
                     tx_signature = NULL,
                     attempt_count = 0,
                     last_error = NULL,
@@ -257,6 +273,7 @@ export async function POST(request: NextRequest) {
                     idempotencyKey,
                     receivingAddress: receiving_address,
                     amountBaseUnits,
+                    isRaffleWinner: isRaffle ? null : null, // always null on insert
                     status: 'created',
                 }).returning();
             }
@@ -269,8 +286,8 @@ export async function POST(request: NextRequest) {
         WHERE id = ${daget.id}
       `);
 
-            // Auto-close if fully claimed
-            if (claimedCount + 1 >= totalWinners) {
+            // Auto-close if fully claimed (skip for raffle — raffle closes via draw)
+            if (!isRaffle && claimedCount + 1 >= totalWinners) {
                 await tx.execute(sql`
           UPDATE dagets SET status = 'closed', updated_at = NOW()
           WHERE id = ${daget.id}
@@ -296,13 +313,33 @@ export async function POST(request: NextRequest) {
         }
 
         const claim = result.claim!;
+        const isRaffleEntry = daget.dagetType === 'raffle';
         const responseBody = {
             claim_id: claim.id,
-            status: 'created',
-            message: 'Claim queued',
+            status: isRaffleEntry ? 'entered' : 'created',
+            message: isRaffleEntry
+                ? `Raffle entry registered. Draw on ${daget.raffleEndsAt?.toISOString() ?? 'TBD'}.`
+                : 'Claim queued',
         };
 
         await storeIdempotency(idempotencyKey, user.id, 'POST /api/claims', body, 202, responseBody);
+
+        // Update Discord embed entry count (best-effort, fire-and-forget)
+        if (isRaffleEntry && daget.discordChannelId && daget.discordMessageId) {
+            (async () => {
+                const [updatedDaget, creator] = await Promise.all([
+                    db.query.dagets.findFirst({ where: eq(dagets.id, daget.id) }),
+                    db.query.users.findFirst({ where: eq(users.id, daget.creatorUserId) }),
+                ]);
+                if (updatedDaget?.discordChannelId && updatedDaget.discordMessageId) {
+                    await updateRaffleEmbed(
+                        updatedDaget.discordChannelId,
+                        updatedDaget.discordMessageId,
+                        buildRaffleEmbedData(updatedDaget, creator?.discordUserId ?? null),
+                    );
+                }
+            })().catch((err) => console.error('Failed to update raffle embed after claim:', err));
+        }
 
         return NextResponse.json(responseBody, { status: 202 });
     } catch (error: unknown) {

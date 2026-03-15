@@ -7,6 +7,7 @@ import { eq, and, desc, lt, sql, inArray } from 'drizzle-orm';
 import { paginationSchema, updateDagetSchema } from '@/lib/validation';
 import { encodeCursor, decodeCursor } from '@/lib/cursor';
 import { getTokenConfig, displayToBaseUnits } from '@/lib/tokens';
+import { updateRaffleEmbed, buildRaffleEmbedData } from '@/lib/discord-bot';
 import DOMPurify from 'isomorphic-dompurify';
 
 const MESSAGE_SANITIZE_OPTS = {
@@ -93,10 +94,14 @@ export async function GET(
             random_min_bps: daget.randomMinBps,
             random_max_bps: daget.randomMaxBps,
             message_html: daget.messageHtml,
+            image_url: daget.imageUrl,
             claim_slug: daget.claimSlug,
             discord_guild_id: requirements[0]?.discordGuildId,
             discord_guild_name: daget.discordGuildName,
             discord_guild_icon: daget.discordGuildIcon,
+            discord_channel_id: daget.discordChannelId,
+            discord_message_id: daget.discordMessageId,
+            raffle_ends_at: daget.raffleEndsAt?.toISOString() ?? null,
             requirements: requirements.map(r => ({
                 id: r.discordRoleId,
                 name: r.discordRoleNameSnapshot,
@@ -170,6 +175,7 @@ export async function PATCH(
         }
         if (input.discord_guild_name !== undefined) updates.discordGuildName = input.discord_guild_name;
         if (input.discord_guild_icon !== undefined) updates.discordGuildIcon = input.discord_guild_icon;
+        if (input.image_url !== undefined) updates.imageUrl = input.image_url ?? null;
 
         // If no claims, allow updating everything
         if (!hasClaims) {
@@ -235,6 +241,26 @@ export async function PATCH(
                     );
                 }
             });
+        }
+
+        // Sync Discord embed if this raffle was posted to Discord (best-effort)
+        if (daget.dagetType === 'raffle' && daget.discordChannelId && daget.discordMessageId) {
+            // Re-fetch the updated daget to get the latest values
+            const updatedDaget = await db.query.dagets.findFirst({
+                where: eq(dagets.id, dagetId),
+            });
+            if (updatedDaget?.discordChannelId && updatedDaget.discordMessageId) {
+                const reqs = await db.query.dagetRequirements.findMany({
+                    where: eq(dagetRequirements.dagetId, dagetId),
+                });
+                updateRaffleEmbed(
+                    updatedDaget.discordChannelId,
+                    updatedDaget.discordMessageId,
+                    buildRaffleEmbedData(updatedDaget, user.discordUserId, reqs.map(r => ({ id: r.discordRoleId, name: r.discordRoleNameSnapshot }))),
+                ).catch((err) => {
+                    console.error('Failed to update Discord embed after edit:', err);
+                });
+            }
         }
 
         return NextResponse.json({ success: true });

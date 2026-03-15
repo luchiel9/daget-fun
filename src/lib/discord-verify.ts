@@ -9,7 +9,7 @@
 
 import { getRedis, isRedisReady } from '@/lib/redis';
 
-const DISCORD_ROLE_CACHE_TTL = 300; // 5 minutes
+const DISCORD_ROLE_CACHE_TTL = 30; // 30 seconds — short enough to detect newly assigned roles
 
 export interface DiscordVerifyResult {
     eligible: boolean;

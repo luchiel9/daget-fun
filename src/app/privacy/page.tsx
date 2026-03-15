@@ -31,6 +31,12 @@ export default function PrivacyPolicyPage() {
                     </Link>
                     <div className="flex items-center gap-6">
                         <Link
+                            href="/docs"
+                            className="flex items-center gap-3 px-4 py-2 text-[10px] font-arcade text-text-muted hover:text-primary transition-colors"
+                        >
+                            DOCS
+                        </Link>
+                        <Link
                             href="/"
                             className="flex items-center gap-3 px-4 py-2 arcade-border-cyan text-[10px] font-arcade text-primary hover:bg-primary/10 transition-colors"
                         >
@@ -539,6 +545,7 @@ export default function PrivacyPolicyPage() {
                         <div className="flex flex-wrap justify-center gap-8 font-mono text-[10px] tracking-widest uppercase items-center">
                             <Link className="text-white hover:text-primary transition-colors px-3 py-1 arcade-border-cyan bg-background-dark" href="/terms">TERMS OF USE</Link>
                             <span className="text-neon-magenta px-3 py-1 arcade-border-magenta bg-background-dark">PRIVACY POLICY</span>
+                            <Link className="text-white hover:text-primary transition-colors px-3 py-1 arcade-border-cyan bg-background-dark" href="/docs">DOCS</Link>
                         </div>
                         <div className="text-right">
                             <p className="font-arcade text-[8px] text-text-muted">

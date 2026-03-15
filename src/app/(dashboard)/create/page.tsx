@@ -80,7 +80,6 @@ export default function CreateDagetPage() {
 
                                 if (values.daget_type === 'random') {
                                     if (!values.random_min_percent || !values.random_max_percent) {
-                                        // Should be caught by form validation, but double check
                                         throw new Error('Random distribution profile not selected');
                                     }
                                     body.random_min_percent = parseFloat(values.random_min_percent);
@@ -88,6 +87,15 @@ export default function CreateDagetPage() {
                                 } else {
                                     body.random_min_percent = null;
                                     body.random_max_percent = null;
+                                }
+
+                                // Raffle-specific fields
+                                if (values.daget_type === 'raffle') {
+                                    body.raffle_ends_at = values.raffle_ends_at;
+                                    body.post_to_discord = values.post_to_discord;
+                                    if (values.post_to_discord && values.discord_channel_id) {
+                                        body.discord_channel_id = values.discord_channel_id;
+                                    }
                                 }
 
                                 const res = await fetch('/api/dagets', {
