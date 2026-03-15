@@ -348,6 +348,12 @@ async function processRaffleEntry(
             return;
         }
 
+        // Creators cannot enter their own raffle
+        if (daget.creatorUserId === user.id) {
+            await editInteractionResponse(interactionToken, 'You cannot enter a raffle you created.');
+            return;
+        }
+
         // Discord role verification (if role-gated)
         if (daget.requirements && daget.requirements.length > 0 && !guildId) {
             await editInteractionResponse(interactionToken, 'Role verification requires a server context. Please enter from the server channel.');
