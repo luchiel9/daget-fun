@@ -6,7 +6,7 @@ import { GlassCard, Button, Input, Select, SearchableSelect, Modal } from '@/com
 import QuillEditor from '../ui/quill-editor';
 
 import { simulateRandomClaims } from '@/lib/random-distribution';
-import { toLocalDateString, toLocalTimeString, formatDisplayDate, formatDisplayTime } from './raffle-date-utils';
+import { toLocalDateString, toLocalTimeString } from './raffle-date-utils';
 import RaffleDateTimePicker from './RaffleDateTimePicker';
 
 export interface FormValues {
@@ -153,6 +153,29 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
         }
         return null;
     };
+
+    // Live countdown for raffle end time
+    const [endsInText, setEndsInText] = useState('');
+    useEffect(() => {
+        if (!form.raffle_ends_at) { setEndsInText(''); return; }
+        const update = () => {
+            const diff = new Date(form.raffle_ends_at).getTime() - Date.now();
+            if (diff <= 0) { setEndsInText('expired'); return; }
+            const d = Math.floor(diff / 86400000);
+            const h = Math.floor((diff % 86400000) / 3600000);
+            const m = Math.floor((diff % 3600000) / 60000);
+            const s = Math.floor((diff % 60000) / 1000);
+            const parts: string[] = [];
+            if (d > 0) parts.push(`${d}d`);
+            if (h > 0 || d > 0) parts.push(`${h}h`);
+            parts.push(`${m}m`);
+            parts.push(`${s}s`);
+            setEndsInText(parts.join(' '));
+        };
+        update();
+        const id = setInterval(update, 1000);
+        return () => clearInterval(id);
+    }, [form.raffle_ends_at]);
 
     // Effect to load roles if initialValues has guild ID (Edit mode)
     useEffect(() => {
@@ -1428,9 +1451,10 @@ export default function DagetForm({ mode, initialValues, claimsCount = 0, onSubm
                                                 dateError={validationErrors.raffle_date}
                                                 timeError={validationErrors.raffle_time}
                                             />
-                                            {form.raffle_ends_at && (
-                                                <p className="text-xs text-text-muted font-mono">
-                                                    Ends at: {formatDisplayDate(new Date(form.raffle_ends_at))}, {formatDisplayTime(new Date(form.raffle_ends_at))}
+                                            {form.raffle_ends_at && endsInText && (
+                                                <p className="text-xs text-text-muted font-mono flex items-center gap-1.5">
+                                                    <span className="material-icons text-[12px] text-primary">timer</span>
+                                                    Ends in: <span className="text-primary">{endsInText}</span>
                                                 </p>
                                             )}
                                         </div>
