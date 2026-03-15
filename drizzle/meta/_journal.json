@@ -64,6 +64,13 @@
       "when": 1773392335949,
       "tag": "0007_tighten_worker_pending_idx",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1773783600000,
+      "tag": "0008_add_image_url",
+      "breakpoints": true
     }
   ]
 }

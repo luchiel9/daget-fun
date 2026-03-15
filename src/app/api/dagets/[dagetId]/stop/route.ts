@@ -4,7 +4,7 @@ import { Errors, ErrorCodes } from '@/lib/errors';
 import { db } from '@/db';
 import { dagets, claims, notifications } from '@/db/schema';
 import { eq, sql } from 'drizzle-orm';
-import { updateRaffleEmbed } from '@/lib/discord-bot';
+import { updateRaffleEmbed, buildRaffleEmbedData } from '@/lib/discord-bot';
 
 /**
  * POST /api/dagets/:dagetId/stop — Stop an active Daget.
@@ -68,15 +68,9 @@ export async function POST(
 
         // Update Discord embed if applicable (best-effort)
         if (daget.dagetType === 'raffle' && daget.discordChannelId && daget.discordMessageId) {
-            updateRaffleEmbed(daget.discordChannelId, daget.discordMessageId, {
-                dagetId: daget.id,
-                name: daget.name,
-                tokenSymbol: daget.tokenSymbol,
-                totalAmountDisplay: (daget.totalAmountBaseUnits / Math.pow(10, daget.tokenDecimals)).toString(),
-                totalWinners: daget.totalWinners,
-                raffleEndsAt: daget.raffleEndsAt!,
-                entryCount: daget.claimedCount,
-            }, 'stopped').catch(() => {}); // best-effort
+            const embedData = buildRaffleEmbedData(daget, user.discordUserId);
+            updateRaffleEmbed(daget.discordChannelId, daget.discordMessageId, embedData, 'stopped')
+                .catch(() => {}); // best-effort
         }
 
         return NextResponse.json({

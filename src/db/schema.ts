@@ -80,6 +80,7 @@ export const dagets = pgTable('dagets', {
     creatorWalletId: uuid('creator_wallet_id').notNull().references(() => wallets.id, { onDelete: 'restrict' }),
     name: text('name').notNull(),
     messageHtml: text('message_html'),
+    imageUrl: text('image_url'),
     tokenSymbol: text('token_symbol').notNull(),
     tokenMint: text('token_mint').notNull(),
     discordGuildName: text('discord_guild_name'),

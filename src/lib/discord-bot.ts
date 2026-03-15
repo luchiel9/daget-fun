@@ -164,10 +164,58 @@ export interface RaffleEmbedData {
     messageHtml?: string | null;
     claimSlug?: string;
     creatorDiscordUserId?: string | null;
+    imageUrl?: string | null;
 }
 
-function htmlToDiscordText(html: string): string {
+/**
+ * Build RaffleEmbedData from a daget DB record.
+ * Centralises the mapping so callers (create, update, stop) stay DRY.
+ */
+export function buildRaffleEmbedData(
+    daget: {
+        id: string;
+        name: string;
+        tokenSymbol: string;
+        tokenDecimals: number;
+        totalAmountBaseUnits: number;
+        totalWinners: number;
+        raffleEndsAt: Date | null;
+        claimedCount: number;
+        messageHtml: string | null;
+        claimSlug: string;
+        imageUrl: string | null;
+    },
+    creatorDiscordUserId: string | null,
+): RaffleEmbedData {
+    const amount = daget.totalAmountBaseUnits / Math.pow(10, daget.tokenDecimals);
+    return {
+        dagetId: daget.id,
+        name: daget.name,
+        tokenSymbol: daget.tokenSymbol,
+        totalAmountDisplay: amount.toString(),
+        totalWinners: daget.totalWinners,
+        raffleEndsAt: daget.raffleEndsAt,
+        entryCount: daget.claimedCount,
+        messageHtml: daget.messageHtml,
+        claimSlug: daget.claimSlug,
+        creatorDiscordUserId,
+        imageUrl: daget.imageUrl,
+    };
+}
+
+export function htmlToDiscordText(html: string): string {
     return html
+        // Code blocks: <pre><code>...</code></pre> or <pre>...</pre>
+        .replace(/<pre>\s*(?:<code>)?([\s\S]*?)(?:<\/code>)?\s*<\/pre>/gi, '```\n$1\n```')
+        // Blockquotes: extract content first, then prefix each line with >
+        .replace(/<blockquote>([\s\S]*?)<\/blockquote>/gi, (_match, content: string) => {
+            // Process inner HTML (br tags) before prefixing
+            const text = content
+                .replace(/<br\s*\/?>/gi, '\n')
+                .replace(/<[^>]+>/g, '')
+                .trim();
+            return text.split('\n').map((line: string) => `> ${line}`).join('\n');
+        })
         .replace(/<br\s*\/?>/gi, '\n')
         .replace(/<\/p>/gi, '\n')
         .replace(/<\/h[1-6]>/gi, '\n')
@@ -175,6 +223,8 @@ function htmlToDiscordText(html: string): string {
         .replace(/<\/li>/gi, '\n')
         .replace(/<strong>(.*?)<\/strong>/gi, '**$1**')
         .replace(/<em>(.*?)<\/em>/gi, '*$1*')
+        // Inline code (after pre blocks are already handled)
+        .replace(/<code>(.*?)<\/code>/gi, '`$1`')
         .replace(/<[^>]+>/g, '')
         .replace(/&amp;/g, '&')
         .replace(/&lt;/g, '<')
@@ -184,6 +234,15 @@ function htmlToDiscordText(html: string): string {
         .replace(/&nbsp;/g, ' ')
         .replace(/\n{3,}/g, '\n\n')
         .trim();
+}
+
+/** Discord embed description limit. */
+const DISCORD_DESCRIPTION_MAX = 4096;
+
+/** Truncate a string to fit Discord's embed description limit, appending … if cut. */
+function truncateDescription(text: string): string {
+    if (text.length <= DISCORD_DESCRIPTION_MAX) return text;
+    return text.slice(0, DISCORD_DESCRIPTION_MAX - 1) + '…';
 }
 
 /**
@@ -216,8 +275,9 @@ export async function postRaffleEmbed(
         body: JSON.stringify({
             embeds: [{
                 title: `🎲 ${data.name}`,
-                description: descriptionParts.join('\n'),
+                description: truncateDescription(descriptionParts.join('\n')),
                 color: 0x7C3AED, // purple
+                ...(data.imageUrl ? { image: { url: data.imageUrl } } : {}),
                 footer: { text: 'Powered by daget.fun' },
             }],
             components: [{
@@ -284,8 +344,9 @@ export async function updateRaffleEmbed(
         body: JSON.stringify({
             embeds: [{
                 title: `🎲 ${data.name}`,
-                description: descriptionParts.join('\n'),
+                description: truncateDescription(descriptionParts.join('\n')),
                 color: isClosed ? 0x6B7280 : 0x7C3AED,
+                ...(data.imageUrl ? { image: { url: data.imageUrl } } : {}),
                 footer: { text: 'Powered by daget.fun' },
             }],
             components: isClosed ? [] : [{

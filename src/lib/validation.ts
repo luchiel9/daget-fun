@@ -36,7 +36,7 @@ export const createDagetSchema = z.object({
     random_min_percent: z.number().gt(0).lte(100).nullable().optional(),
     random_max_percent: z.number().gt(0).lte(100).nullable().optional(),
 
-    image_url: z.string().url().max(2048).optional().nullable(),
+    image_url: z.string().url().max(2048).refine((url) => url.startsWith('https://'), 'Image URL must use HTTPS').optional().nullable(),
 
     // Raffle-specific fields
     raffle_ends_at: z.string().datetime({ offset: true }).optional(),
@@ -71,7 +71,7 @@ export const createDagetSchema = z.object({
 export const updateDagetSchema = z.object({
     name: z.string().min(1).max(120).optional(),
     message_html: z.string().max(50000).optional(),
-    image_url: z.string().url().max(2048).optional().nullable(),
+    image_url: z.string().url().max(2048).refine((url) => url.startsWith('https://'), 'Image URL must use HTTPS').optional().nullable(),
     discord_guild_id: discordSnowflakeSchema.optional(),
     discord_guild_name: z.string().optional(),
     discord_guild_icon: z.string().optional().nullable(),

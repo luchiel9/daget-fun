@@ -136,6 +136,7 @@ export async function POST(request: NextRequest) {
             randomMinBps,
             randomMaxBps,
             status: 'active',
+            imageUrl: input.image_url ?? null,
             discordGuildName: input.discord_guild_name,
             discordGuildIcon: input.discord_guild_icon,
             // Raffle-specific fields
@@ -180,6 +181,7 @@ export async function POST(request: NextRequest) {
                     messageHtml: input.message_html,
                     claimSlug,
                     creatorDiscordUserId: user.discordUserId,
+                    imageUrl: input.image_url,
                 });
                 // Store the Discord message ID for later updates
                 await db.update(dagets)
