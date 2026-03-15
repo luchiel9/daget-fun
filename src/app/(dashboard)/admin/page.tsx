@@ -103,12 +103,6 @@ function truncateAddress(addr: string): string {
     return `${addr.slice(0, 4)}...${addr.slice(-4)}`;
 }
 
-const TOKEN_COLORS: Record<string, string> = {
-    SOL: 'text-violet-400',
-    USDC: 'text-blue-400',
-    USDT: 'text-emerald-400',
-};
-
 /* ── Main Page ── */
 
 export default function AdminPage() {
@@ -121,8 +115,8 @@ export default function AdminPage() {
     const [nextCursor, setNextCursor] = useState<string | null>(null);
     const [search, setSearch] = useState('');
     const [searchDebounce, setSearchDebounce] = useState('');
+    const [activeTab, setActiveTab] = useState<'metrics' | 'users'>('metrics');
 
-    // Redirect non-admins
     useEffect(() => {
         if (user && !user.isAdmin) router.replace('/dashboard');
     }, [user, router]);
@@ -156,14 +150,14 @@ export default function AdminPage() {
 
     useEffect(() => {
         fetchMetrics();
-        // Refresh metrics every 60s
         const interval = setInterval(fetchMetrics, 60000);
         return () => clearInterval(interval);
     }, [fetchMetrics]);
 
-    useEffect(() => { fetchUsers(); }, [fetchUsers]);
+    useEffect(() => {
+        if (activeTab === 'users') fetchUsers();
+    }, [fetchUsers, activeTab]);
 
-    // Debounce search
     useEffect(() => {
         const t = setTimeout(() => setSearchDebounce(search), 400);
         return () => clearTimeout(t);
@@ -172,100 +166,136 @@ export default function AdminPage() {
     useEffect(() => { setLoading(!metrics); }, [metrics]);
 
     if (!user?.isAdmin) {
-        return (
-            <div className="flex-1 flex items-center justify-center">
-                <Spinner size="lg" />
-            </div>
-        );
+        return <div className="flex-1 flex items-center justify-center"><Spinner size="lg" /></div>;
     }
 
     if (loading) {
-        return (
-            <div className="flex-1 flex items-center justify-center">
-                <Spinner size="lg" />
-            </div>
-        );
+        return <div className="flex-1 flex items-center justify-center"><Spinner size="lg" /></div>;
     }
 
     const m = metrics!;
 
     return (
         <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
-            <div className="max-w-7xl mx-auto space-y-8">
+            <div className="max-w-7xl mx-auto space-y-6">
 
-                {/* Header */}
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                        <span className="material-icons text-primary text-[22px]">admin_panel_settings</span>
+                {/* ── Header ── */}
+                <header className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                            <span className="material-icons text-primary text-[22px]">admin_panel_settings</span>
+                        </div>
+                        <div>
+                            <h1 className="text-xl font-semibold text-text-primary">Admin Dashboard</h1>
+                            <p className="text-xs text-text-muted">Platform overview</p>
+                        </div>
                     </div>
-                    <div>
-                        <h1 className="text-xl font-semibold text-text-primary">Admin Dashboard</h1>
-                        <p className="text-xs text-text-muted">Platform overview and metrics</p>
+                    <div className="flex items-center gap-4">
+                        <HealthIndicator health={m.health} successRate={m.claims.successRate} />
+                        <span className="h-5 w-px bg-border-dark/40" />
+                        <span className="text-xs text-text-muted">
+                            SOL <span className="font-mono text-text-secondary font-medium">${m.solPrice.toFixed(2)}</span>
+                        </span>
                     </div>
-                    <div className="ml-auto text-xs text-text-muted">
-                        SOL/USD: <span className="font-mono text-text-secondary">${m.solPrice.toFixed(2)}</span>
-                    </div>
+                </header>
+
+                {/* ── Tabs ── */}
+                <div className="flex gap-1 border-b border-border-dark/40">
+                    {(['metrics', 'users'] as const).map(tab => (
+                        <button
+                            key={tab}
+                            onClick={() => setActiveTab(tab)}
+                            className={`px-4 py-2.5 text-sm font-medium transition-colors relative capitalize ${
+                                activeTab === tab
+                                    ? 'text-primary'
+                                    : 'text-text-muted hover:text-text-secondary'
+                            }`}
+                        >
+                            {tab}
+                            {activeTab === tab && (
+                                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
+                            )}
+                        </button>
+                    ))}
                 </div>
 
-                {/* ─── Top-Level KPIs ─── */}
+                {/* ── Metrics Tab ── */}
+                {activeTab === 'metrics' && <>
+
+                {/* ── KPI Row ── */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <KpiCard
-                        icon="group"
-                        label="Total Users"
-                        value={formatNumber(m.users.total)}
-                        sub={`+${m.users.new24h} today`}
-                    />
-                    <KpiCard
-                        icon="redeem"
-                        label="Dagets Created"
-                        value={formatNumber(m.dagets.total)}
-                        sub={`${formatNumber(m.dagets.totalWinnerSlots)} winner slots`}
-                    />
-                    <KpiCard
-                        icon="payments"
-                        label="Total Funded"
-                        value={formatUsd(m.dagets.totalFundedUsd)}
-                        sub={`across ${m.dagets.total} dagets`}
-                    />
-                    <KpiCard
-                        icon="check_circle"
-                        label="Total Claimed"
-                        value={formatUsd(m.claims.totalClaimedUsd)}
-                        sub={`${m.claims.successRate}% success rate`}
-                    />
+                    <KpiCard accent="border-l-violet-400" label="Total Users" value={formatNumber(m.users.total)} sub={`+${m.users.new24h} today`} />
+                    <KpiCard accent="border-l-blue-400" label="Dagets Created" value={formatNumber(m.dagets.total)} sub={`${formatNumber(m.dagets.totalWinnerSlots)} winner slots`} />
+                    <KpiCard accent="border-l-emerald-400" label="Total Funded" value={formatUsd(m.dagets.totalFundedUsd)} sub={`across ${m.dagets.total} dagets`} />
+                    <KpiCard accent="border-l-amber-400" label="Total Claimed" value={formatUsd(m.claims.totalClaimedUsd)} sub={`${m.claims.successRate}% success`} />
                 </div>
 
-                {/* ─── Platform Health ─── */}
-                <div>
-                    <SectionLabel icon="monitor_heart" label="Platform Health" />
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-3">
-                        <HealthCard
-                            label="Queue Depth"
-                            value={m.health.pendingQueue}
-                            status={m.health.pendingQueue > 50 ? 'warning' : 'ok'}
+                {/* ── Charts + Breakdown ── */}
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+                    <div className="lg:col-span-3 space-y-4">
+                        <ActivityChart
+                            title="Dagets Created"
+                            data={m.timeSeries.dailyDagets}
+                            color="bg-primary"
                         />
-                        <HealthCard
-                            label="Stuck Claims"
-                            value={m.health.stuckClaims}
-                            status={m.health.stuckClaims > 0 ? 'danger' : 'ok'}
-                        />
-                        <HealthCard
-                            label="Failed Permanent"
-                            value={m.health.failedPermanent}
-                            status={m.health.failedPermanent > 10 ? 'danger' : m.health.failedPermanent > 0 ? 'warning' : 'ok'}
-                        />
-                        <HealthCard
-                            label="Success Rate"
-                            value={`${m.claims.successRate}%`}
-                            status={m.claims.successRate < 95 ? 'warning' : 'ok'}
+                        <ActivityChart
+                            title="Claims"
+                            data={m.timeSeries.dailyClaims}
+                            color="bg-blue-400"
                         />
                     </div>
+
+                    <GlassCard className="lg:col-span-2 p-5 flex flex-col gap-5">
+                        {/* User Growth */}
+                        <div>
+                            <h3 className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-3">User Growth</h3>
+                            <div className="grid grid-cols-3 gap-2">
+                                <StatCell label="24h" value={`+${m.users.new24h}`} />
+                                <StatCell label="7d" value={`+${m.users.new7d}`} />
+                                <StatCell label="30d" value={`+${m.users.new30d}`} />
+                            </div>
+                            <div className="flex gap-4 mt-3">
+                                <span className="text-xs text-text-muted">Wallet <span className="font-mono text-text-secondary font-medium">{formatNumber(m.users.withWallet)}</span></span>
+                                <span className="text-xs text-text-muted">Address <span className="font-mono text-text-secondary font-medium">{formatNumber(m.users.withAddress)}</span></span>
+                            </div>
+                        </div>
+
+                        <hr className="border-border-dark/30" />
+
+                        {/* Daget Breakdown */}
+                        <div>
+                            <h3 className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-3">Dagets</h3>
+                            <div className="flex flex-wrap gap-2">
+                                {Object.entries(m.dagets.byStatus).map(([status, count]) => (
+                                    <DagetStatusPill key={status} status={status} count={count} />
+                                ))}
+                            </div>
+                            <div className="flex gap-4 mt-3">
+                                {Object.entries(m.dagets.byType).map(([type, count]) => (
+                                    <span key={type} className="text-xs text-text-muted capitalize">
+                                        {type} <span className="font-mono text-text-secondary font-medium">{formatNumber(count)}</span>
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+
+                        <hr className="border-border-dark/30" />
+
+                        {/* Claims Pipeline */}
+                        <div>
+                            <div className="flex items-center justify-between mb-3">
+                                <h3 className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Claims Pipeline</h3>
+                                <span className="text-xs text-text-muted font-mono">{formatNumber(m.claims.total)} total</span>
+                            </div>
+                            <ClaimsPipeline byStatus={m.claims.byStatus} />
+                        </div>
+                    </GlassCard>
                 </div>
 
-                {/* ─── Volume Breakdown ─── */}
+                {/* ── Token Volume ── */}
                 <div>
-                    <SectionLabel icon="bar_chart" label="Volume by Token" />
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
+                    <h2 className="text-sm font-semibold text-text-secondary mb-3">Volume by Token</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {['SOL', 'USDC', 'USDT'].map(symbol => {
                             const funded = m.dagets.volumeByToken.find(v => v.tokenSymbol === symbol);
                             const claimed = m.claims.claimedByToken.find(v => v.tokenSymbol === symbol);
@@ -286,72 +316,12 @@ export default function AdminPage() {
                     </div>
                 </div>
 
-                {/* ─── User & Daget Stats Row ─── */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {/* User Growth */}
-                    <GlassCard className="p-5">
-                        <SectionLabel icon="trending_up" label="User Growth" />
-                        <div className="grid grid-cols-3 gap-4 mt-4">
-                            <MiniStat label="Last 24h" value={`+${m.users.new24h}`} />
-                            <MiniStat label="Last 7d" value={`+${m.users.new7d}`} />
-                            <MiniStat label="Last 30d" value={`+${m.users.new30d}`} />
-                        </div>
-                        <div className="border-t border-border-dark/40 mt-4 pt-4 grid grid-cols-2 gap-4">
-                            <MiniStat label="With Wallet" value={formatNumber(m.users.withWallet)} />
-                            <MiniStat label="With Recv Address" value={formatNumber(m.users.withAddress)} />
-                        </div>
-                    </GlassCard>
+                </>}
 
-                    {/* Daget Breakdown */}
-                    <GlassCard className="p-5">
-                        <SectionLabel icon="donut_small" label="Daget Breakdown" />
-                        <div className="grid grid-cols-3 gap-4 mt-4">
-                            <MiniStat label="Active" value={formatNumber(m.dagets.byStatus['active'] || 0)} color="text-green-400" />
-                            <MiniStat label="Stopped" value={formatNumber(m.dagets.byStatus['stopped'] || 0)} color="text-yellow-400" />
-                            <MiniStat label="Closed" value={formatNumber(m.dagets.byStatus['closed'] || 0)} color="text-slate-400" />
-                        </div>
-                        <div className="border-t border-border-dark/40 mt-4 pt-4 grid grid-cols-2 gap-4">
-                            <MiniStat label="Fixed Type" value={formatNumber(m.dagets.byType['fixed'] || 0)} />
-                            <MiniStat label="Random Type" value={formatNumber(m.dagets.byType['random'] || 0)} />
-                        </div>
-                    </GlassCard>
-                </div>
-
-                {/* ─── Claims Breakdown ─── */}
-                <div>
-                    <SectionLabel icon="receipt_long" label="Claims Breakdown" />
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-3">
-                        <ClaimStatusCard label="Queued" value={m.claims.byStatus['created'] || 0} color="text-blue-400 bg-blue-500/10 border-blue-500/20" />
-                        <ClaimStatusCard label="Processing" value={m.claims.byStatus['submitted'] || 0} color="text-indigo-400 bg-indigo-500/10 border-indigo-500/20" />
-                        <ClaimStatusCard label="Confirmed" value={m.claims.byStatus['confirmed'] || 0} color="text-green-400 bg-green-500/10 border-green-500/20" />
-                        <ClaimStatusCard label="Retrying" value={m.claims.byStatus['failed_retryable'] || 0} color="text-orange-400 bg-orange-500/10 border-orange-500/20" />
-                        <ClaimStatusCard label="Failed" value={m.claims.byStatus['failed_permanent'] || 0} color="text-red-400 bg-red-500/10 border-red-500/20" />
-                        <ClaimStatusCard label="Released" value={m.claims.byStatus['released'] || 0} color="text-slate-400 bg-slate-500/10 border-slate-500/20" />
-                    </div>
-                </div>
-
-                {/* ─── Activity Charts ─── */}
-                {(m.timeSeries.dailyDagets.length > 0 || m.timeSeries.dailyClaims.length > 0) && (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        <MiniBarChart
-                            title="Dagets Created"
-                            subtitle="Last 30 days"
-                            data={m.timeSeries.dailyDagets}
-                            color="bg-primary"
-                        />
-                        <MiniBarChart
-                            title="Claims"
-                            subtitle="Last 30 days"
-                            data={m.timeSeries.dailyClaims}
-                            color="bg-blue-400"
-                        />
-                    </div>
-                )}
-
-                {/* ─── Users Table ─── */}
-                <div>
+                {/* ── Users Tab ── */}
+                {activeTab === 'users' && <div>
                     <div className="flex items-center justify-between mb-3">
-                        <SectionLabel icon="people" label="All Users" />
+                        <h2 className="text-sm font-semibold text-text-secondary">All Users</h2>
                         <div className="relative">
                             <span className="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-[18px]">search</span>
                             <input
@@ -411,14 +381,14 @@ export default function AdminPage() {
                                                 <span className="font-mono text-text-primary">{u.dagets_created}</span>
                                             </td>
                                             <td className="px-4 py-3 text-right hidden sm:table-cell">
-                                                <span className="font-mono text-xs text-text-primary">{u.funded_usd > 0 ? formatUsd(u.funded_usd) : '—'}</span>
+                                                <span className="font-mono text-xs text-text-primary">{u.funded_usd > 0 ? formatUsd(u.funded_usd) : '\u2014'}</span>
                                             </td>
                                             <td className="px-4 py-3 text-center">
                                                 <span className="font-mono text-text-primary">{u.confirmed_claims}</span>
                                                 <span className="text-text-muted">/{u.total_claims}</span>
                                             </td>
                                             <td className="px-4 py-3 text-right hidden sm:table-cell">
-                                                <span className="font-mono text-xs text-text-primary">{u.claimed_usd > 0 ? formatUsd(u.claimed_usd) : '—'}</span>
+                                                <span className="font-mono text-xs text-text-primary">{u.claimed_usd > 0 ? formatUsd(u.claimed_usd) : '\u2014'}</span>
                                             </td>
                                             <td className="px-4 py-3 text-right text-xs text-text-secondary hidden sm:table-cell">
                                                 {new Date(u.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' })}
@@ -454,7 +424,7 @@ export default function AdminPage() {
                             </div>
                         )}
                     </GlassCard>
-                </div>
+                </div>}
             </div>
         </div>
     );
@@ -462,53 +432,132 @@ export default function AdminPage() {
 
 /* ── Sub-components ── */
 
-function SectionLabel({ icon, label }: { icon: string; label: string }) {
+function HealthIndicator({ health, successRate }: { health: Metrics['health']; successRate: number }) {
+    const issues: { label: string; severity: 'warning' | 'danger' }[] = [];
+
+    if (health.stuckClaims > 0)
+        issues.push({ label: `${health.stuckClaims} stuck`, severity: 'danger' });
+    if (health.failedPermanent > 10)
+        issues.push({ label: `${health.failedPermanent} failed`, severity: 'danger' });
+    else if (health.failedPermanent > 0)
+        issues.push({ label: `${health.failedPermanent} failed`, severity: 'warning' });
+    if (health.pendingQueue > 50)
+        issues.push({ label: `Queue: ${health.pendingQueue}`, severity: 'warning' });
+    if (successRate < 95)
+        issues.push({ label: `${successRate}% success`, severity: 'warning' });
+
+    if (issues.length === 0) {
+        return (
+            <span className="inline-flex items-center gap-1.5 text-xs text-green-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                Healthy
+            </span>
+        );
+    }
+
     return (
-        <div className="flex items-center gap-2">
-            <span className="material-icons text-text-muted text-[18px]">{icon}</span>
-            <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wider">{label}</h2>
+        <div className="flex items-center gap-2 flex-wrap">
+            {issues.map((issue, i) => (
+                <span
+                    key={i}
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                        issue.severity === 'danger'
+                            ? 'bg-red-500/10 text-red-400 border border-red-500/20'
+                            : 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
+                    }`}
+                >
+                    <span className={`w-1 h-1 rounded-full ${issue.severity === 'danger' ? 'bg-red-400' : 'bg-yellow-400'}`} />
+                    {issue.label}
+                </span>
+            ))}
         </div>
     );
 }
 
-function KpiCard({ icon, label, value, sub }: { icon: string; label: string; value: string; sub: string }) {
+function KpiCard({ accent, label, value, sub }: { accent: string; label: string; value: string; sub: string }) {
     return (
-        <GlassCard className="p-5">
-            <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <span className="material-icons text-primary text-[18px]">{icon}</span>
-                </div>
-                <span className="text-xs font-medium text-text-muted uppercase tracking-wider">{label}</span>
-            </div>
+        <GlassCard className={`p-5 border-l-2 ${accent}`}>
+            <div className="text-[11px] font-medium text-text-muted uppercase tracking-wider mb-2">{label}</div>
             <div className="text-2xl font-bold text-text-primary font-mono">{value}</div>
             <div className="text-xs text-text-muted mt-1">{sub}</div>
         </GlassCard>
     );
 }
 
-function HealthCard({ label, value, status }: { label: string; value: number | string; status: 'ok' | 'warning' | 'danger' }) {
-    const colors = {
-        ok: 'text-green-400 bg-green-500/10 border-green-500/20',
-        warning: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20',
-        danger: 'text-red-400 bg-red-500/10 border-red-500/20',
-    };
-    const dotColors = {
-        ok: 'bg-green-400',
-        warning: 'bg-yellow-400',
-        danger: 'bg-red-400',
-    };
+function StatCell({ label, value }: { label: string; value: string }) {
     return (
-        <GlassCard className="p-4">
-            <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-text-muted">{label}</span>
-                <span className={`w-2 h-2 rounded-full ${dotColors[status]}`} />
-            </div>
-            <div className={`text-xl font-bold font-mono ${status === 'ok' ? 'text-text-primary' : colors[status].split(' ')[0]}`}>
-                {value}
-            </div>
-        </GlassCard>
+        <div className="bg-white/[0.03] rounded-lg px-3 py-2">
+            <div className="text-[10px] text-text-muted uppercase tracking-wider">{label}</div>
+            <div className="text-lg font-bold font-mono text-text-primary">{value}</div>
+        </div>
     );
 }
+
+const DAGET_STATUS_COLORS: Record<string, string> = {
+    active: 'bg-green-500/10 text-green-400',
+    stopped: 'bg-yellow-500/10 text-yellow-400',
+    closed: 'bg-slate-500/10 text-slate-400',
+    draft: 'bg-blue-500/10 text-blue-400',
+};
+
+function DagetStatusPill({ status, count }: { status: string; count: number }) {
+    const colorClass = DAGET_STATUS_COLORS[status] || 'bg-slate-500/10 text-slate-400';
+    return (
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium ${colorClass}`}>
+            <span className="w-1.5 h-1.5 rounded-full bg-current" />
+            <span className="font-mono">{formatNumber(count)}</span>
+            <span className="capitalize">{status}</span>
+        </span>
+    );
+}
+
+const PIPELINE_ITEMS = [
+    { key: 'confirmed', label: 'Confirmed', color: 'bg-green-400' },
+    { key: 'created', label: 'Queued', color: 'bg-blue-400' },
+    { key: 'submitted', label: 'Processing', color: 'bg-indigo-400' },
+    { key: 'failed_retryable', label: 'Retrying', color: 'bg-orange-400' },
+    { key: 'failed_permanent', label: 'Failed', color: 'bg-red-400' },
+    { key: 'released', label: 'Released', color: 'bg-slate-400' },
+];
+
+function ClaimsPipeline({ byStatus }: { byStatus: Record<string, number> }) {
+    const maxCount = Math.max(...PIPELINE_ITEMS.map(i => byStatus[i.key] || 0), 1);
+
+    return (
+        <div className="space-y-2">
+            {PIPELINE_ITEMS.map(item => {
+                const count = byStatus[item.key] || 0;
+                const pct = (count / maxCount) * 100;
+                return (
+                    <div key={item.key} className="flex items-center gap-3">
+                        <span className="text-[11px] text-text-muted w-[72px] shrink-0 text-right">{item.label}</span>
+                        <div className="flex-1 h-5 bg-white/[0.03] rounded overflow-hidden">
+                            {count > 0 && (
+                                <div
+                                    className={`${item.color} h-full rounded opacity-50`}
+                                    style={{ width: `${Math.max(pct, 3)}%` }}
+                                />
+                            )}
+                        </div>
+                        <span className="text-xs font-mono text-text-secondary w-12 text-right">{formatNumber(count)}</span>
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
+
+const TOKEN_ICON_URL: Record<string, string> = {
+    SOL: 'https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png',
+    USDC: 'https://s2.coinmarketcap.com/static/img/coins/64x64/3408.png',
+    USDT: 'https://s2.coinmarketcap.com/static/img/coins/64x64/825.png',
+};
+
+const TOKEN_COLORS: Record<string, string> = {
+    SOL: 'text-violet-400',
+    USDC: 'text-blue-400',
+    USDT: 'text-emerald-400',
+};
 
 function TokenVolumeCard({
     symbol, fundedBaseUnits, fundedUsd, fundedCount,
@@ -517,19 +566,12 @@ function TokenVolumeCard({
     symbol: string; fundedBaseUnits: number; fundedUsd: number; fundedCount: number;
     claimedBaseUnits: number; claimedUsd: number; claimedCount: number; decimals: number;
 }) {
-    const tokenIconUrl: Record<string, string> = {
-        SOL: 'https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png',
-        USDC: 'https://s2.coinmarketcap.com/static/img/coins/64x64/3408.png',
-        USDT: 'https://s2.coinmarketcap.com/static/img/coins/64x64/825.png',
-    };
-
     return (
         <GlassCard className="p-5">
             <div className="flex items-center gap-3 mb-4">
-                <img src={tokenIconUrl[symbol]} alt={symbol} className="w-8 h-8 rounded-full" />
+                <img src={TOKEN_ICON_URL[symbol]} alt={symbol} className="w-8 h-8 rounded-full" />
                 <span className={`text-lg font-bold ${TOKEN_COLORS[symbol] || 'text-text-primary'}`}>{symbol}</span>
             </div>
-
             <div className="grid grid-cols-2 gap-4">
                 <div>
                     <div className="text-[11px] font-medium text-text-muted uppercase tracking-wider mb-1">Funded</div>
@@ -554,55 +596,44 @@ function TokenVolumeCard({
     );
 }
 
-function MiniStat({ label, value, color }: { label: string; value: string; color?: string }) {
-    return (
-        <div>
-            <div className="text-[11px] font-medium text-text-muted uppercase tracking-wider mb-1">{label}</div>
-            <div className={`text-lg font-bold font-mono ${color || 'text-text-primary'}`}>{value}</div>
-        </div>
-    );
-}
-
-function ClaimStatusCard({ label, value, color }: { label: string; value: number; color: string }) {
-    const [bgColor, borderColor] = color.split(' ').slice(1);
-    return (
-        <GlassCard className={`p-3 border ${borderColor} ${bgColor}`}>
-            <div className="text-[11px] font-medium uppercase tracking-wider text-text-muted mb-1">{label}</div>
-            <div className={`text-xl font-bold font-mono ${color.split(' ')[0]}`}>{formatNumber(value)}</div>
-        </GlassCard>
-    );
-}
-
-function MiniBarChart({
-    title, subtitle, data, color,
+function ActivityChart({
+    title, data, color,
 }: {
-    title: string; subtitle: string; data: { date: string; count: number }[]; color: string;
+    title: string; data: { date: string; count: number }[]; color: string;
 }) {
     const maxCount = Math.max(...data.map(d => d.count), 1);
+    const total = data.reduce((sum, d) => sum + d.count, 0);
+
+    if (data.length === 0) {
+        return (
+            <GlassCard className="p-5">
+                <div className="text-sm font-semibold text-text-primary mb-1">{title}</div>
+                <div className="h-20 flex items-center justify-center text-xs text-text-muted">No data in the last 30 days</div>
+            </GlassCard>
+        );
+    }
 
     return (
         <GlassCard className="p-5">
             <div className="flex items-center justify-between mb-4">
                 <div>
                     <div className="text-sm font-semibold text-text-primary">{title}</div>
-                    <div className="text-xs text-text-muted">{subtitle}</div>
+                    <div className="text-xs text-text-muted">Last 30 days</div>
                 </div>
                 <div className="text-right">
-                    <div className="text-lg font-bold font-mono text-text-primary">
-                        {formatNumber(data.reduce((sum, d) => sum + d.count, 0))}
-                    </div>
+                    <div className="text-lg font-bold font-mono text-text-primary">{formatNumber(total)}</div>
                     <div className="text-[11px] text-text-muted">total</div>
                 </div>
             </div>
-            <div className="flex items-end gap-[2px] h-16">
-                {data.map((d, i) => (
+            <div className="flex items-end gap-[2px] h-20">
+                {data.map((d) => (
                     <div
                         key={d.date}
                         className="flex-1 group relative"
                         style={{ height: '100%' }}
                     >
                         <div
-                            className={`${color} rounded-sm opacity-70 group-hover:opacity-100 transition-opacity absolute bottom-0 left-0 right-0`}
+                            className={`${color} rounded-sm opacity-60 group-hover:opacity-100 transition-opacity absolute bottom-0 left-0 right-0`}
                             style={{ height: `${Math.max((d.count / maxCount) * 100, 2)}%` }}
                         />
                         <div className="absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover:block bg-card-dark border border-border-dark/60 rounded px-2 py-1 text-[10px] font-mono text-text-primary whitespace-nowrap z-10">
