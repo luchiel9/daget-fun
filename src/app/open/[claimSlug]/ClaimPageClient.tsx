@@ -8,6 +8,7 @@ import { Input } from '@/components/ui';
 import { nanoid } from 'nanoid';
 import confetti from 'canvas-confetti';
 import DOMPurify from 'isomorphic-dompurify';
+import { useRaffleStatusPolling } from '../useRaffleStatusPolling';
 
 type ViewState = 'claim' | 'processing' | 'success';
 
@@ -247,12 +248,20 @@ export default function ClaimPageClient() {
         }
     }, [viewState]);
 
-    const fetchDaget = async () => {
+    const fetchDaget = useCallback(async () => {
         try {
             const res = await fetch(`/api/claim/${claimSlug}`);
             if (res.ok) setDaget(await res.json());
         } catch { } finally { setLoading(false); }
-    };
+    }, [claimSlug]);
+
+    // Poll for status changes when raffle countdown expires
+    useRaffleStatusPolling({
+        dagetType: daget?.daget_type ?? null,
+        status: daget?.status ?? null,
+        raffleEndsAt: daget?.raffle_ends_at ?? null,
+        fetchDaget,
+    });
 
     const fetchActivityFeed = async () => {
         try {

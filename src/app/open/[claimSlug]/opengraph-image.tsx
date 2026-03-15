@@ -3,6 +3,8 @@ import { ImageResponse } from 'next/og';
 import { db } from '@/db';
 import { dagets } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { getOgModeLabel, getOgStatsLabel } from '../og-display-utils';
+import type { DagetType } from '../og-display-utils';
 
 // Route segment config
 export const runtime = 'nodejs'; // Use nodejs runtime for database access
@@ -62,7 +64,8 @@ export default async function Image({ params }: { params: Promise<{ claimSlug: s
         const authorName = creator?.discordUsername || 'Unknown';
         // Force PNG for Discord avatars to avoid webp issues in some environments
         const authorAvatar = creator?.discordAvatarUrl ? creator.discordAvatarUrl.replace('.webp', '.png') : null;
-        const spotsLeft = Math.max(0, totalWinners - claimedCount);
+        const modeLabel = getOgModeLabel(dagetType as DagetType);
+        const stats = getOgStatsLabel(dagetType as DagetType, claimedCount, totalWinners);
 
         return new ImageResponse(
             (
@@ -164,11 +167,11 @@ export default async function Image({ params }: { params: Promise<{ claimSlug: s
                         }}>
                             <div style={{ display: 'flex', flexDirection: 'column' }}>
                                 <span style={{ fontSize: '24px', color: '#6ee7b7', textTransform: 'uppercase', letterSpacing: '1px' }}>Mode</span>
-                                <span style={{ fontSize: '42px', color: 'white', fontWeight: 'bold' }}>{dagetType === 'fixed' ? 'Fixed' : 'Random'}</span>
+                                <span style={{ fontSize: '42px', color: 'white', fontWeight: 'bold' }}>{modeLabel}</span>
                             </div>
                         </div>
 
-                        {/* Spots Badge */}
+                        {/* Stats Badge */}
                         <div style={{
                             display: 'flex',
                             alignItems: 'center',
@@ -177,13 +180,31 @@ export default async function Image({ params }: { params: Promise<{ claimSlug: s
                             border: '1px solid rgba(255, 255, 255, 0.1)',
                             padding: '16px 24px',
                             borderRadius: '24px',
-                            marginLeft: 'auto' // Push to right if needed, or keep inline
+                            marginLeft: 'auto'
                         }}>
                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                                <span style={{ fontSize: '24px', color: '#a1a1aa', textTransform: 'uppercase', letterSpacing: '1px' }}>Claimed</span>
-                                <span style={{ fontSize: '42px', color: 'white', fontWeight: 'bold' }}>{claimedCount} / {totalWinners}</span>
+                                <span style={{ fontSize: '24px', color: '#a1a1aa', textTransform: 'uppercase', letterSpacing: '1px' }}>{stats.label}</span>
+                                <span style={{ fontSize: '42px', color: 'white', fontWeight: 'bold' }}>{stats.value}</span>
                             </div>
                         </div>
+
+                        {/* Secondary Stats Badge (raffle: winners count) */}
+                        {'secondaryLabel' in stats && (
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '12px',
+                                background: 'rgba(251, 191, 36, 0.1)',
+                                border: '1px solid rgba(251, 191, 36, 0.25)',
+                                padding: '16px 24px',
+                                borderRadius: '24px',
+                            }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                                    <span style={{ fontSize: '24px', color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '1px' }}>{stats.secondaryLabel}</span>
+                                    <span style={{ fontSize: '42px', color: 'white', fontWeight: 'bold' }}>{stats.secondaryValue}</span>
+                                </div>
+                            </div>
+                        )}
 
                     </div >
 
