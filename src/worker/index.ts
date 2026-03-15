@@ -1,5 +1,7 @@
 import { acquireJobs, processClaim, RpcError } from './processor';
+import { drawTick, recoveryTick, DRAW_TICK_INTERVAL_MS, RECOVERY_TICK_INTERVAL_MS } from './raffle-draw';
 import { WORKER_CONFIG } from '@/config/worker';
+import { validateDrandChainInfo } from '@/config/drand';
 import { logger } from '@/lib/logger';
 import { CircuitBreaker } from '@/lib/circuit-breaker';
 import { db } from '@/db';
@@ -32,7 +34,17 @@ async function clearStaleLocks() {
 async function runLoop() {
     log.info('Starting background transaction processor...');
     await clearStaleLocks();
+
+    // Validate external service config on startup
+    const { validateDiscordEnv } = await import('@/lib/discord-bot');
+    validateDiscordEnv();
+    await validateDrandChainInfo();
+
     running = true;
+
+    // Raffle draw tick (every 30s) — runs alongside claim processing
+    let lastDrawTick = 0;
+    let lastRecoveryTick = 0;
 
     while (running) {
         try {
@@ -68,6 +80,16 @@ async function runLoop() {
                         }
                     }
                 }
+            }
+            // Raffle draw tick (independent of RPC circuit breaker)
+            const now = Date.now();
+            if (now - lastDrawTick >= DRAW_TICK_INTERVAL_MS) {
+                lastDrawTick = now;
+                drawTick().catch((err) => log.error({ err }, 'Draw tick error'));
+            }
+            if (now - lastRecoveryTick >= RECOVERY_TICK_INTERVAL_MS) {
+                lastRecoveryTick = now;
+                recoveryTick().catch((err) => log.error({ err }, 'Recovery tick error'));
             }
         } catch (error) {
             log.error({ err: error }, 'Loop error');

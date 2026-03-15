@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { Errors } from '@/lib/errors';
 import { db } from '@/db';
 import { dagets, claims } from '@/db/schema';
-import { eq, and, desc, count } from 'drizzle-orm';
+import { eq, and, desc, count, ne } from 'drizzle-orm';
 import { checkRateLimit, rateLimiters, getClientIp } from '@/lib/rate-limit';
 import { paginationSchema } from '@/lib/validation';
 
@@ -37,13 +37,16 @@ export async function GET(
 
         if (!daget) return Errors.notFound('Daget');
 
+        // Exclude losers (released) from the activity feed
+        const activeFilter = and(eq(claims.dagetId, daget.id), ne(claims.status, 'released'));
+
         // Get total count for pagination
         const [{ value: total }] = await db.select({ value: count() })
             .from(claims)
-            .where(eq(claims.dagetId, daget.id));
+            .where(activeFilter);
 
         const recentClaims = await db.query.claims.findMany({
-            where: eq(claims.dagetId, daget.id),
+            where: activeFilter,
             orderBy: [desc(claims.createdAt)],
             limit: pageLimit,
             offset,

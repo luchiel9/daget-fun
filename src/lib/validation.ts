@@ -32,22 +32,46 @@ export const createDagetSchema = z.object({
         'Must be a positive decimal with max 9 fractional digits'
     ).refine((val) => parseFloat(val) > 0, 'Amount must be greater than 0'),
     total_winners: z.number().int().min(1).max(100000),
-    daget_type: z.enum(['fixed', 'random']),
+    daget_type: z.enum(['fixed', 'random', 'raffle']),
     random_min_percent: z.number().gt(0).lte(100).nullable().optional(),
     random_max_percent: z.number().gt(0).lte(100).nullable().optional(),
+
+    image_url: z.string().url().max(2048).refine((url) => url.startsWith('https://'), 'Image URL must use HTTPS').optional().nullable(),
+
+    // Raffle-specific fields
+    raffle_ends_at: z.string().datetime({ offset: true }).optional(),
+    post_to_discord: z.boolean().optional(),
+    discord_channel_id: discordSnowflakeSchema.optional(),
 }).refine((data) => {
     if (data.daget_type === 'random') {
         return data.random_min_percent != null && data.random_max_percent != null
             && data.random_min_percent <= data.random_max_percent;
     }
+    // Fixed and raffle both require null random percentages
     return data.random_min_percent == null && data.random_max_percent == null;
 }, {
-    message: 'Random mode requires valid min/max percentages; fixed mode must have null percentages',
+    message: 'Random mode requires valid min/max percentages; fixed/raffle mode must have null percentages',
+}).refine((data) => {
+    if (data.daget_type === 'raffle') {
+        if (!data.raffle_ends_at) return false; // required for raffles
+        const endsAt = new Date(data.raffle_ends_at);
+        const minEndTime = new Date(Date.now() + 60 * 1000); // 1 min minimum
+        return endsAt >= minEndTime;
+    }
+    return data.raffle_ends_at == null;
+}, {
+    message: 'Raffles require raffle_ends_at at least 1 min from now; non-raffle must not have it',
+}).refine((data) => {
+    if (data.post_to_discord) return !!data.discord_channel_id;
+    return true;
+}, {
+    message: 'post_to_discord requires discord_channel_id',
 });
 
 export const updateDagetSchema = z.object({
     name: z.string().min(1).max(120).optional(),
     message_html: z.string().max(50000).optional(),
+    image_url: z.string().url().max(2048).refine((url) => url.startsWith('https://'), 'Image URL must use HTTPS').optional().nullable(),
     discord_guild_id: discordSnowflakeSchema.optional(),
     discord_guild_name: z.string().optional(),
     discord_guild_icon: z.string().optional().nullable(),
@@ -64,7 +88,7 @@ export const updateDagetSchema = z.object({
         'Must be a positive decimal with max 9 fractional digits'
     ).refine((val) => parseFloat(val) > 0, 'Amount must be greater than 0').optional(),
     total_winners: z.number().int().min(1).max(100000).optional(),
-    daget_type: z.enum(['fixed', 'random']).optional(),
+    daget_type: z.enum(['fixed', 'random', 'raffle']).optional(),
     random_min_percent: z.number().gt(0).lte(100).nullable().optional(),
     random_max_percent: z.number().gt(0).lte(100).nullable().optional(),
 });
@@ -94,7 +118,7 @@ export const paginationSchema = z.object({
  * GET /api/dagets query params
  */
 export const listDagetsSchema = paginationSchema.extend({
-    status: z.enum(['active', 'stopped', 'closed']).optional(),
+    status: z.enum(['active', 'stopped', 'closed', 'drawing']).optional(),
 });
 
 /**

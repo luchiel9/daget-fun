@@ -1,5 +1,5 @@
 import { db } from '@/db';
-import { claims, dagets, notifications } from '@/db/schema';
+import { claims, dagets, notifications, idempotencyKeys, exportTokens } from '@/db/schema';
 import { eq, and, sql, lt } from 'drizzle-orm';
 import { getSolanaConnection } from '@/lib/solana';
 import { WORKER_CONFIG } from '@/config/worker';
@@ -16,6 +16,7 @@ const { SUBMITTED_TIMEOUT_SECONDS, MAX_ATTEMPTS } = WORKER_CONFIG;
  * 1. Find claims in 'submitted' older than timeout and re-check on-chain.
  * 2. Verify DB 'confirmed' claims still exist on-chain.
  * 3. Fix drift by transitioning statuses.
+ * 4. Purge expired idempotency keys and export tokens (TTL cleanup).
  * Idempotent: does not re-sign/re-send transactions.
  */
 export async function runReconciliation() {
@@ -112,7 +113,46 @@ export async function runReconciliation() {
         }
     }
 
+    // 4. Purge expired idempotency keys and export tokens
+    // These accumulate indefinitely without cleanup, leading to unbounded table growth.
+    await purgeExpiredRecords();
+
     log.info({ staleCount: staleSubmitted.length, confirmedCount: recentConfirmed.length }, 'Reconciliation complete');
+}
+
+/**
+ * Delete expired idempotency keys and export tokens.
+ * Both tables have an expiresAt column but no DB-level TTL enforcement.
+ * Deletes up to 500 rows per type per run to avoid long-running deletes.
+ */
+async function purgeExpiredRecords(): Promise<void> {
+    try {
+        const idempResult = await db.execute(sql`
+            DELETE FROM idempotency_keys
+            WHERE id IN (
+                SELECT id FROM idempotency_keys
+                WHERE expires_at < now()
+                LIMIT 500
+            )
+        `);
+        const idempDeleted = (idempResult as unknown as { rowCount?: number }).rowCount ?? 0;
+
+        const exportResult = await db.execute(sql`
+            DELETE FROM export_tokens
+            WHERE id IN (
+                SELECT id FROM export_tokens
+                WHERE expires_at < now()
+                LIMIT 500
+            )
+        `);
+        const exportDeleted = (exportResult as unknown as { rowCount?: number }).rowCount ?? 0;
+
+        if (idempDeleted > 0 || exportDeleted > 0) {
+            log.info({ idempDeleted, exportDeleted }, 'Purged expired records');
+        }
+    } catch (err) {
+        log.error({ err }, 'Failed to purge expired records');
+    }
 }
 
 const RECONCILIATION_FAIL_THRESHOLD = 3;

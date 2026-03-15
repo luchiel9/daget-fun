@@ -7,7 +7,7 @@
   },
   "packageManager": "pnpm@10.30.0",
   "scripts": {
-    "dev": "next dev --turbo",
+    "dev": "NODE_OPTIONS='--disable-warning=DEP0169' PORTLESS_PORT=1357 portless daget next dev --turbo",
     "build": "next build",
     "start": "npm run db:migrate && next start",
     "lint": "next lint",
@@ -32,6 +32,7 @@
     "@types/quill": "^2.0.14",
     "bs58": "^6.0.0",
     "canvas-confetti": "^1.9.4",
+    "discord-interactions": "^4.4.0",
     "driver.js": "^1.4.0",
     "drizzle-orm": "^0.38.0",
     "ioredis": "^5.9.3",

@@ -7,6 +7,7 @@ import { NATIVE_SOL_MINT } from '@/lib/tokens';
 import { decryptPrivateKey, zeroize } from '@/lib/crypto';
 import bs58 from 'bs58';
 import { WORKER_CONFIG } from '@/config/worker';
+import { randomInt } from 'crypto';
 import { logger } from '@/lib/logger';
 import { publishClaimStatus } from '@/lib/claim-events';
 import type { ClaimRow } from './types';
@@ -38,6 +39,7 @@ export async function acquireJobs() {
       SELECT id
       FROM claims
       WHERE status IN ('created', 'failed_retryable', 'submitted')
+        AND amount_base_units IS NOT NULL
         AND (next_retry_at IS NULL OR next_retry_at <= now())
         AND (locked_until IS NULL OR locked_until < now())
       ORDER BY created_at ASC
@@ -190,7 +192,7 @@ async function buildAndSendClaim(claim: ClaimRow, connection: Connection) {
         );
 
         if (confirmation.value.err) {
-            throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`);
+            throw new Error(sanitizeTxError(JSON.stringify(confirmation.value.err)));
         }
 
         // Success!
@@ -219,6 +221,17 @@ export async function confirmClaim(claimOrId: ClaimRow | { id: string }) {
     WHERE id = ${claimId}
   `);
 
+    // Update daget's running total — do this after confirming the claim
+    // so total_claimed_amount_base_units always reflects on-chain-confirmed funds only.
+    await db.execute(sql`
+    UPDATE dagets SET
+      total_claimed_amount_base_units = total_claimed_amount_base_units + (
+        SELECT COALESCE(amount_base_units, 0) FROM claims WHERE id = ${claimId}
+      ),
+      updated_at = now()
+    WHERE id = (SELECT daget_id FROM claims WHERE id = ${claimId})
+  `);
+
     // Look up the full claim row for notification details
     const fullClaim = await db.query.claims.findFirst({
         where: eq(claims.id, claimId),
@@ -242,7 +255,7 @@ export async function confirmClaim(claimOrId: ClaimRow | { id: string }) {
             userId: daget.creatorUserId,
             type: 'claim_confirmed',
             title: 'Claim Confirmed',
-            body: `**${discordName}** claimed **${amount} ${daget.tokenSymbol}**.`,
+            body: `<b>${discordName}</b> claimed <b>${amount} ${daget.tokenSymbol}</b>.`,
             relatedDagetId: daget.id,
             relatedClaimId: claimId,
         });
@@ -269,7 +282,7 @@ async function pollSubmittedClaim(claim: ClaimRow, connection: Connection) {
             const status = await connection.getSignatureStatus(claim.tx_signature);
             if (status.value?.confirmationStatus === 'finalized') {
                 if (status.value.err) {
-                    await setFailedRetryable(claim, `tx_error: ${JSON.stringify(status.value.err)}`);
+                    await setFailedRetryable(claim, sanitizeTxError(JSON.stringify(status.value.err)));
                 } else {
                     await confirmClaim(claim);
                 }
@@ -291,21 +304,22 @@ async function pollSubmittedClaim(claim: ClaimRow, connection: Connection) {
         const status = await connection.getSignatureStatus(claim.tx_signature);
         if (status.value?.confirmationStatus === 'finalized') {
             if (status.value.err) {
-                await setFailedRetryable(claim, `tx_error: ${JSON.stringify(status.value.err)}`);
+                await setFailedRetryable(claim, sanitizeTxError(JSON.stringify(status.value.err)));
             } else {
                 await confirmClaim(claim);
             }
         }
         // else: still pending — will be picked up next tick
-    } catch {
-        // Network error during poll — will retry next tick
+    } catch (err) {
+        // Transient network error — will retry next tick. Log for visibility.
+        log.warn({ claimId: claim.id, txSignature: claim.tx_signature, err }, 'Poll error — will retry next tick');
     }
 }
 
 async function setFailedRetryable(claim: ClaimRow, error: string) {
     const attempt = (claim.attempt_count || 0);
     const backoffSeconds = BACKOFF_SCHEDULE[Math.min(attempt, BACKOFF_SCHEDULE.length - 1)];
-    const jitter = Math.floor(backoffSeconds * 0.2 * Math.random());
+    const jitter = cryptoJitter(Math.floor(backoffSeconds * 0.2));
     const nextRetryAt = new Date(Date.now() + (backoffSeconds + jitter) * 1000);
 
     await db.execute(sql`
@@ -346,6 +360,40 @@ async function setFailedPermanent(claim: ClaimRow, error: string) {
             relatedClaimId: claim.id,
         });
     }
+}
+
+/**
+ * Cryptographically secure jitter: returns an integer in [0, maxValue].
+ * Replaces Math.random() for consistency with the project's crypto practices.
+ */
+export function cryptoJitter(maxValue: number): number {
+    if (maxValue <= 0) return 0;
+    return randomInt(0, maxValue + 1);
+}
+
+/**
+ * Sanitize Solana transaction error messages before storing in the database.
+ * Strips JSON structure that may contain sensitive account state details,
+ * preserving only the top-level error type for debugging.
+ */
+export function sanitizeTxError(error: string): string {
+    // Try to extract Solana error type from JSON (possibly prefixed with "Transaction failed: " etc.)
+    const jsonMatch = error.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+        try {
+            const parsed = JSON.parse(jsonMatch[0]);
+            // Extract only the top-level error key (e.g., "InstructionError")
+            const keys = Object.keys(parsed);
+            if (keys.length > 0) {
+                return `tx_error: ${keys[0]}`;
+            }
+        } catch {
+            // Not valid JSON — fall through to truncation
+        }
+    }
+
+    // For non-JSON errors, just truncate
+    return error.slice(0, 256);
 }
 
 function isUnrecoverableError(error: string): boolean {

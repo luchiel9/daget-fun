@@ -50,11 +50,74 @@ function solscanUrl(sig: string) {
     return `https://solscan.io/tx/${sig}${suffix}`;
 }
 
+function formatDrawDate(isoString: string): string {
+    const d = new Date(isoString);
+    const day = d.getDate();
+    const month = d.toLocaleString('en-US', { month: 'short' });
+    const year = d.getFullYear();
+    const hours = d.getHours();
+    const minutes = d.getMinutes().toString().padStart(2, '0');
+    const ampm = hours >= 12 ? 'pm' : 'am';
+    const h12 = hours % 12 || 12;
+    return `${day} ${month} ${year} ${h12}:${minutes}${ampm}`;
+}
+
 function getTokenIcon(symbol: string): string | null {
     if (symbol === 'USDC') return 'https://s2.coinmarketcap.com/static/img/coins/64x64/3408.png';
     if (symbol === 'USDT') return 'https://s2.coinmarketcap.com/static/img/coins/64x64/825.png';
     if (symbol === 'SOL') return 'https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png';
     return null;
+}
+
+function RaffleCountdown({ endsAt }: { endsAt: string }) {
+    const [timeLeft, setTimeLeft] = useState('');
+    const [isExpired, setIsExpired] = useState(false);
+
+    useEffect(() => {
+        const update = () => {
+            const end = new Date(endsAt).getTime();
+            const now = Date.now();
+            const diff = end - now;
+
+            if (diff <= 0) {
+                setTimeLeft('Draw starting...');
+                setIsExpired(true);
+                return;
+            }
+
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+            const parts = [];
+            if (days > 0) parts.push(`${days}d`);
+            if (hours > 0 || days > 0) parts.push(`${hours}h`);
+            parts.push(`${minutes}m`);
+            parts.push(`${seconds}s`);
+            setTimeLeft(parts.join(' '));
+        };
+
+        update();
+        const interval = setInterval(update, 1000);
+        return () => clearInterval(interval);
+    }, [endsAt]);
+
+    return (
+        <div className={`p-4 rounded-xl border flex items-center gap-3 ${isExpired ? 'bg-amber-500/10 border-amber-500/20' : 'bg-primary/5 border-primary/20'}`}>
+            <span className={`material-icons text-xl ${isExpired ? 'text-amber-400 animate-pulse' : 'text-primary'}`}>
+                {isExpired ? 'hourglass_empty' : 'timer'}
+            </span>
+            <div>
+                <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">
+                    {isExpired ? 'Entries closed' : 'Raffle ends in'}
+                </p>
+                <p className={`text-lg font-bold font-mono ${isExpired ? 'text-amber-400' : 'text-primary'}`}>
+                    {timeLeft}
+                </p>
+            </div>
+        </div>
+    );
 }
 
 export default function ClaimPageClient() {
@@ -375,6 +438,17 @@ export default function ClaimPageClient() {
             if (!res.ok) {
                 setError(data.error?.message || 'Claim failed');
                 setViewState('claim'); // Revert on error
+            } else if (data.status === 'entered') {
+                // Raffle entry — no on-chain processing, show success immediately
+                setClaimStatus({
+                    claim_id: data.claim_id,
+                    status: 'entered',
+                    amount_base_units: null,
+                    tx_signature: null,
+                    attempt_count: 0,
+                    last_error: null,
+                });
+                setViewState('success');
             } else {
                 setClaimStatus({
                     claim_id: data.claim_id,
@@ -512,17 +586,63 @@ export default function ClaimPageClient() {
                                         <span className="material-icons text-[12px]">paid</span>
                                         Token: {daget.token_symbol}
                                     </span>
-                                    <span className="flex items-center gap-1.5 bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-semibold tracking-wide">
-                                        <span className="material-icons text-[12px]">track_changes</span>
-                                        Spots: {spotsLeft} left
-                                    </span>
+                                    {daget.daget_type === 'raffle' ? (
+                                        <span className="flex items-center gap-1.5 bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-semibold tracking-wide">
+                                            <span className="material-icons text-[12px]">people</span>
+                                            {daget.claimed_count.toLocaleString()} Entries
+                                        </span>
+                                    ) : (
+                                        <span className="flex items-center gap-1.5 bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-semibold tracking-wide">
+                                            <span className="material-icons text-[12px]">track_changes</span>
+                                            Spots: {spotsLeft} left
+                                        </span>
+                                    )}
                                     <span className="flex items-center gap-1.5 bg-emerald-400/10 text-emerald-400 px-2.5 py-1 rounded-full text-[10px] font-semibold tracking-wide">
                                         <span className="material-icons text-[12px]">category</span>
-                                        Mode: {daget.daget_type === 'fixed' ? 'Fixed' : 'Random'}
+                                        Mode: {daget.daget_type === 'fixed' ? 'Fixed' : daget.daget_type === 'raffle' ? 'Raffle' : 'Random'}
                                     </span>
+                                    {daget.daget_type === 'raffle' && (
+                                        <span className="flex items-center gap-1.5 bg-amber-400/10 text-amber-400 px-2.5 py-1 rounded-full text-[10px] font-semibold tracking-wide">
+                                            <span className="material-icons text-[12px]">emoji_events</span>
+                                            {daget.total_winners} Winners
+                                        </span>
+                                    )}
                                 </div>
 
-                                {/* Progress Bar */}
+                                {/* Raffle Countdown */}
+                                {daget.daget_type === 'raffle' && daget.raffle_ends_at && daget.status === 'active' && (
+                                    <RaffleCountdown endsAt={daget.raffle_ends_at} />
+                                )}
+
+                                {/* Drawing Status */}
+                                {daget.daget_type === 'raffle' && daget.status === 'drawing' && (
+                                    <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-3">
+                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-amber-400" />
+                                        <div>
+                                            <p className="text-sm font-bold text-amber-400">Drawing winners...</p>
+                                            <p className="text-xs text-amber-400/70 mt-0.5">The raffle draw is in progress. Check back shortly.</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Raffle Drawn — Provably Fair Info */}
+                                {daget.daget_type === 'raffle' && daget.status === 'closed' && daget.drand_round && (
+                                    <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20 space-y-2">
+                                        <div className="flex items-center gap-2">
+                                            <span className="material-icons text-emerald-400 text-lg">verified</span>
+                                            <span className="text-sm font-bold text-emerald-400">Provably Fair Draw</span>
+                                        </div>
+                                        <p className="text-xs text-text-muted">
+                                            Randomness from <a href={`https://api.drand.sh/52db9ba70e0cc0f6eaf7803dd07447a1f5477735fd3f661792ba94600c84e971/public/${daget.drand_round}`} target="_blank" rel="noopener noreferrer" className="text-primary underline">drand round #{daget.drand_round}</a> (League of Entropy)
+                                        </p>
+                                        {daget.raffle_drawn_at && (
+                                            <p className="text-xs text-text-muted">Drawn on {new Date(daget.raffle_drawn_at).toLocaleString()}</p>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Progress Bar (non-raffle only) */}
+                                {daget.daget_type !== 'raffle' && (
                                 <div>
                                     <div className="flex items-center justify-between mb-2">
                                         <span className="text-[11px] font-semibold text-primary uppercase tracking-wider">Progress</span>
@@ -551,6 +671,25 @@ export default function ClaimPageClient() {
                                         </button>
                                     </div>
                                 </div>
+                                )}
+
+                                {/* Show Winners button for raffle (outside progress bar) */}
+                                {daget.daget_type === 'raffle' && (
+                                    <div className="flex items-center justify-between min-h-[24px]">
+                                        {daget.requirements_summary && daget.requirements_summary !== 'No specific roles required' ? (
+                                            <span className="text-[11px] font-semibold text-text-muted uppercase tracking-widest">Requirements</span>
+                                        ) : <span />}
+                                        {daget.status === 'closed' && (
+                                            <button
+                                                onClick={() => { setShowWinnersModal(true); setWinnersPage(0); fetchWinners(0); }}
+                                                className="group flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 text-[9px] font-bold text-white transition-all duration-200 border border-white/10 hover:bg-white/20 active:scale-95"
+                                            >
+                                                <span className="material-icons text-[11px] text-primary">emoji_events</span>
+                                                <span className="uppercase tracking-wide">Show Winners</span>
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
 
                                 {/* Requirements */}
                                 {daget.requirements_summary && daget.requirements_summary !== 'No specific roles required' && (
@@ -731,12 +870,16 @@ export default function ClaimPageClient() {
                                     </div>
                                 )}
 
-                                {/* Already Claimed */}
+                                {/* Already Claimed / Entered */}
                                 {isLoggedIn && eligibility.checked && eligibility.claimed && (
                                     <div className="p-4 rounded-xl bg-primary/10 border border-primary/20">
                                         <div className="flex items-center gap-2">
                                             <span className="material-icons text-primary text-lg">check_circle</span>
-                                            <span className="text-sm text-primary font-semibold">You have already claimed this Daget.</span>
+                                            <span className="text-sm text-primary font-semibold">
+                                                {daget.daget_type === 'raffle'
+                                                    ? 'You have already entered this raffle.'
+                                                    : 'You have already claimed this Daget.'}
+                                            </span>
                                         </div>
                                     </div>
                                 )}
@@ -782,11 +925,11 @@ export default function ClaimPageClient() {
                                                             {claiming ? (
                                                                 <>
                                                                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-                                                                    Claiming...
+                                                                    {daget.daget_type === 'raffle' ? 'Entering...' : 'Claiming...'}
                                                                 </>
                                                             ) : (
                                                                 <>
-                                                                    Claim Your Daget <span className="material-icons text-sm arrow-slide">arrow_forward</span>
+                                                                    {daget.daget_type === 'raffle' ? 'Enter Raffle' : 'Claim Your Daget'} <span className="material-icons text-sm arrow-slide">arrow_forward</span>
                                                                 </>
                                                             )}
                                                         </button>
@@ -812,7 +955,13 @@ export default function ClaimPageClient() {
 
                                 {daget.status !== 'active' && (
                                     <div className="text-center text-sm text-text-secondary p-4 bg-background-dark/50 rounded-xl">
-                                        This Daget is {daget.status}. No new claims can be made.
+                                        {daget.daget_type === 'raffle' && daget.status === 'drawing'
+                                            ? 'Raffle draw is in progress. Winners will be announced shortly.'
+                                            : daget.daget_type === 'raffle' && daget.status === 'closed'
+                                            ? 'This raffle has been drawn. Check the winners list above.'
+                                            : daget.daget_type === 'raffle' && daget.status === 'stopped'
+                                            ? 'This raffle was cancelled. No winners were drawn.'
+                                            : `This Daget is ${daget.status}. No new claims can be made.`}
                                     </div>
                                 )}
                             </div>
@@ -940,8 +1089,47 @@ export default function ClaimPageClient() {
                         </div>
                     )}
 
+                    {/* ═══════════ RAFFLE ENTRY SUCCESS ═══════════ */}
+                    {viewState === 'success' && claimStatus?.status === 'entered' && (
+                        <div className="w-full max-w-[560px] mx-auto bg-surface border border-purple-500/20 rounded-2xl shadow-2xl overflow-hidden scale-up-gentle">
+                            <div className="p-8 text-center relative">
+                                <div className="confetti-dot c1"></div>
+                                <div className="confetti-dot c2"></div>
+                                <div className="confetti-dot c3"></div>
+                                <div className="confetti-dot c4"></div>
+
+                                {/* Icon */}
+                                <div className="w-20 h-20 bg-purple-500/15 rounded-full flex items-center justify-center mx-auto mb-5 check-bounce relative group">
+                                    <div className="absolute inset-0 bg-purple-500/15 rounded-full animate-ping opacity-20"></div>
+                                    <span className="material-icons text-purple-400 text-4xl relative z-10 group-hover:scale-110 transition-transform duration-300">confirmation_number</span>
+                                </div>
+
+                                {/* Title */}
+                                <h3 className="text-2xl font-bold text-text-primary fade-in-up mb-1">You&apos;re In!</h3>
+                                <p className="text-text-secondary text-sm fade-in-up delay-100 mb-6">Your raffle entry has been registered</p>
+
+                                {/* Draw info card */}
+                                {daget.raffle_ends_at && (
+                                    <div className="bg-purple-500/[0.06] border border-purple-500/15 rounded-xl p-5 fade-in-up delay-200 mb-5">
+                                        <RaffleCountdown endsAt={daget.raffle_ends_at} />
+                                        <div className="mt-3 pt-3 border-t border-purple-500/10">
+                                            <p className="text-xs text-text-muted">
+                                                Draw on <span className="text-purple-400 font-medium">{formatDrawDate(daget.raffle_ends_at)}</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Footer */}
+                                <p className="text-xs text-text-muted fade-in-up delay-300">
+                                    Winners selected using provably fair randomness. Good luck!
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
                     {/* ═══════════ SUCCESS STATE ═══════════ */}
-                    {viewState === 'success' && claimStatus && (
+                    {viewState === 'success' && claimStatus && claimStatus.status !== 'entered' && (
                         <div className="w-full max-w-[560px] mx-auto bg-surface border border-green-500/20 rounded-2xl shadow-2xl overflow-hidden scale-up-gentle">
                             <div className="p-8 space-y-5 text-center relative">
                                 {/* Confetti dots */}

@@ -50,6 +50,11 @@ export default function EditDagetPage() {
                     daget_type: daget.daget_type,
                     random_min_percent: minPct,
                     random_max_percent: maxPct,
+                    raffle_ends_at: daget.raffle_ends_at
+                        ? new Date(daget.raffle_ends_at).toISOString()
+                        : '',
+                    post_to_discord: !!daget.discord_message_id,
+                    discord_channel_id: daget.discord_channel_id || '',
                 });
 
             } catch (err) {

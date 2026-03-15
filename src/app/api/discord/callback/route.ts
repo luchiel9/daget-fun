@@ -230,7 +230,7 @@ export async function GET(request: NextRequest) {
     if (isPopup) {
         const html = new NextResponse(
             `<!DOCTYPE html><html><head><script>
-                window.opener && window.opener.postMessage({ type: 'DISCORD_LOGIN_SUCCESS' }, window.location.origin);
+                window.opener && window.opener.postMessage({ type: 'DISCORD_LOGIN_SUCCESS' }, ${JSON.stringify(origin)});
                 window.close();
             </script></head><body>Authentication successful.</body></html>`,
             {
@@ -281,9 +281,10 @@ function cleanupFlowCookies(response: NextResponse, flowId: string) {
 
 /** Return a popup HTML page that posts DISCORD_LOGIN_ERROR to the opener. */
 function popupError() {
+    const trustedOrigin = getAppOrigin();
     return new NextResponse(
         `<!DOCTYPE html><html><head><script>
-            window.opener && window.opener.postMessage({ type: 'DISCORD_LOGIN_ERROR' }, window.location.origin);
+            window.opener && window.opener.postMessage({ type: 'DISCORD_LOGIN_ERROR' }, ${JSON.stringify(trustedOrigin)});
             window.close();
         </script></head><body>Authentication failed.</body></html>`,
         {
