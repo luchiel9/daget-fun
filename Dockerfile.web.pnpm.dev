@@ -35,5 +35,7 @@ COPY --from=migrate-deps /deps/node_modules/postgres ./node_modules/postgres
 ENV PORT=3000
 ENV AUTO_MIGRATE_ON_STARTUP=true
 
+USER node
+
 # Run DB migrations before starting the server (instrumentation.ts is not reliable in standalone)
 CMD ["sh", "-c", "node scripts/migrate.cjs && exec node server.js"]

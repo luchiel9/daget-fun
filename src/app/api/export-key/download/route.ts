@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
-import { Errors, ErrorCodes } from '@/lib/errors';
+import { Errors } from '@/lib/errors';
 import { db } from '@/db';
 import { wallets, exportTokens, walletExports } from '@/db/schema';
 import { eq, and, isNull, gt } from 'drizzle-orm';
@@ -47,14 +47,9 @@ export async function POST(request: Request) {
             .returning();
 
         if (!tokenRecord) {
-            // Distinguish between not-found, already-used, and expired for useful errors.
-            const existing = await db.query.exportTokens.findFirst({
-                where: eq(exportTokens.token, parsed.data.export_token),
-            });
-            if (!existing) return Errors.notFound('Token');
-            if (existing.userId !== user.id) return Errors.forbidden('Token does not belong to this session');
-            if (existing.usedAt) return Errors.conflict(ErrorCodes.EXPORT_TOKEN_USED, 'Token already used');
-            return Errors.conflict(ErrorCodes.EXPORT_TOKEN_EXPIRED, 'Token expired');
+            // Return a single generic error for all failure cases (not-found, wrong user,
+            // already-used, expired) to prevent token state enumeration attacks.
+            return Errors.forbidden('Invalid or expired token');
         }
 
         // Get wallet

@@ -24,12 +24,15 @@ const globalForSolana = globalThis as unknown as { _solanaConnection: Connection
  */
 export function getSolanaConnection(): Connection {
     if (!globalForSolana._solanaConnection) {
-        const cluster = (process.env.SOLANA_CLUSTER || 'mainnet-beta') as 'mainnet-beta';
+        const cluster = process.env.SOLANA_CLUSTER as 'mainnet-beta' | 'devnet' | undefined;
+        if (!cluster && process.env.NODE_ENV === 'production') {
+            throw new Error('SOLANA_CLUSTER is required in production — refusing to default to mainnet-beta');
+        }
         const rpcUrl = process.env.SOLANA_RPC_URL;
         if (!rpcUrl && process.env.NODE_ENV === 'production') {
             throw new Error('SOLANA_RPC_URL is required in production (public endpoints are rate-limited)');
         }
-        globalForSolana._solanaConnection = new Connection(rpcUrl || clusterApiUrl(cluster), 'finalized');
+        globalForSolana._solanaConnection = new Connection(rpcUrl || clusterApiUrl(cluster || 'mainnet-beta'), 'finalized');
     }
     return globalForSolana._solanaConnection;
 }

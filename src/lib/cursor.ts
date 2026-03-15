@@ -5,11 +5,11 @@ import crypto from 'crypto';
  * Cursors are opaque, signed, base64url tokens.
  */
 
-const CURSOR_SECRET = process.env.CURSOR_SECRET || 'dev-cursor-secret-key-change-me';
-
 if (process.env.NODE_ENV === 'production' && !process.env.CURSOR_SECRET) {
-    console.error('[SECURITY] CURSOR_SECRET is not set in production — cursors are forgeable!');
+    throw new Error('CURSOR_SECRET is required in production — cursors are forgeable without it');
 }
+
+const CURSOR_SECRET = process.env.CURSOR_SECRET || 'dev-cursor-secret-key-change-me';
 
 interface CursorPayload {
     /** The value to paginate on (typically created_at ISO string) */
