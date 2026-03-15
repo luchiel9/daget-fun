@@ -277,7 +277,7 @@ async function createDrawNotifications(
         userId: w.claimant_user_id,
         type: 'raffle_won' as const,
         title: 'You won!',
-        body: `You won the raffle **${daget.name}**! Your prize of **${amountDisplay} ${daget.token_symbol}** is being sent.`,
+        body: `You won the raffle <b>${daget.name}</b>! Your prize of <b>${amountDisplay} ${daget.token_symbol}</b> is being sent.`,
         relatedDagetId: daget.id,
     }));
 
@@ -286,7 +286,7 @@ async function createDrawNotifications(
         userId: daget.creator_user_id,
         type: 'raffle_drawn' as const,
         title: 'Raffle Drawn',
-        body: `Your raffle **${daget.name}** has been drawn. **${winners.length}** winner(s) selected from **${winners.length + losers.length}** entries.`,
+        body: `Your raffle <b>${daget.name}</b> has been drawn. <b>${winners.length}</b> winner(s) selected from <b>${winners.length + losers.length}</b> entries.`,
         relatedDagetId: daget.id,
     };
 
