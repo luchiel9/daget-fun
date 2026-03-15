@@ -120,12 +120,13 @@ export default function AdminPage() {
     const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
     const toggleSort = useCallback((key: keyof UserRow) => {
-        setSortKey(prev => {
-            if (prev === key) { setSortDir(d => d === 'asc' ? 'desc' : 'asc'); return key; }
+        if (sortKey === key) {
+            setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortKey(key);
             setSortDir('desc');
-            return key;
-        });
-    }, []);
+        }
+    }, [sortKey]);
 
     const sortedUsers = useMemo(() => {
         return [...users].sort((a, b) => {
