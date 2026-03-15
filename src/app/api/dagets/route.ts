@@ -182,6 +182,7 @@ export async function POST(request: NextRequest) {
                     claimSlug,
                     creatorDiscordUserId: user.discordUserId,
                     imageUrl: input.image_url,
+                    requiredRoles: rolesToInsert.map(r => ({ id: r.id, name: r.name })),
                 });
                 // Store the Discord message ID for later updates
                 await db.update(dagets)

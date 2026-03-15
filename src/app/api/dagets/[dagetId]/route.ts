@@ -250,10 +250,13 @@ export async function PATCH(
                 where: eq(dagets.id, dagetId),
             });
             if (updatedDaget?.discordChannelId && updatedDaget.discordMessageId) {
+                const reqs = await db.query.dagetRequirements.findMany({
+                    where: eq(dagetRequirements.dagetId, dagetId),
+                });
                 updateRaffleEmbed(
                     updatedDaget.discordChannelId,
                     updatedDaget.discordMessageId,
-                    buildRaffleEmbedData(updatedDaget, user.discordUserId),
+                    buildRaffleEmbedData(updatedDaget, user.discordUserId, reqs.map(r => ({ id: r.discordRoleId, name: r.discordRoleNameSnapshot }))),
                 ).catch((err) => {
                     console.error('Failed to update Discord embed after edit:', err);
                 });

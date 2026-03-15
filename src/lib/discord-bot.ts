@@ -165,6 +165,7 @@ export interface RaffleEmbedData {
     claimSlug?: string;
     creatorDiscordUserId?: string | null;
     imageUrl?: string | null;
+    requiredRoles?: { id: string; name?: string | null }[];
 }
 
 /**
@@ -186,6 +187,7 @@ export function buildRaffleEmbedData(
         imageUrl: string | null;
     },
     creatorDiscordUserId: string | null,
+    requiredRoles?: { id: string; name?: string | null }[],
 ): RaffleEmbedData {
     const amount = daget.totalAmountBaseUnits / Math.pow(10, daget.tokenDecimals);
     return {
@@ -200,6 +202,7 @@ export function buildRaffleEmbedData(
         claimSlug: daget.claimSlug,
         creatorDiscordUserId,
         imageUrl: daget.imageUrl,
+        requiredRoles,
     };
 }
 
@@ -262,11 +265,16 @@ export async function postRaffleEmbed(
     const claimUrl = data.claimSlug ? `${appUrl}/open/${data.claimSlug}` : appUrl;
     const byLine = data.creatorDiscordUserId ? `by: <@${data.creatorDiscordUserId}>` : null;
 
+    const rolesLine = data.requiredRoles && data.requiredRoles.length > 0
+        ? `**Requires:** ${data.requiredRoles.map(r => `<@&${r.id}>`).join(' ')}`
+        : null;
+
     const descriptionParts = [
         byLine,
         `**Prize Pool:** ${data.totalAmountDisplay} ${data.tokenSymbol}`,
         `**Winners:** ${data.totalWinners}`,
         endsLine,
+        rolesLine,
     ].filter(Boolean) as string[];
     if (messageText) descriptionParts.push('', messageText);
 
@@ -328,6 +336,10 @@ export async function updateRaffleEmbed(
     const byLine = data.creatorDiscordUserId ? `by: <@${data.creatorDiscordUserId}>` : null;
 
     const isClosed = status === 'closed' || status === 'stopped';
+    const rolesLine = data.requiredRoles && data.requiredRoles.length > 0
+        ? `**Requires:** ${data.requiredRoles.map(r => `<@&${r.id}>`).join(' ')}`
+        : null;
+
     const descriptionParts = [
         byLine,
         `**Prize Pool:** ${data.totalAmountDisplay} ${data.tokenSymbol}`,
@@ -336,6 +348,7 @@ export async function updateRaffleEmbed(
             isClosed ? `**Status:** ${status === 'stopped' ? 'Cancelled' : 'Drawn'}` :
                 endsAtUnix ? `**Ends:** <t:${endsAtUnix}:R>` : `**Ends:** No time limit`,
         data.entryCount != null ? `**Entries:** ${data.entryCount}` : '',
+        rolesLine,
     ].filter(Boolean) as string[];
     if (messageText) descriptionParts.push('', messageText);
 
