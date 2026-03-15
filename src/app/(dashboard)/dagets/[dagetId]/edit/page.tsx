@@ -51,7 +51,7 @@ export default function EditDagetPage() {
                     random_min_percent: minPct,
                     random_max_percent: maxPct,
                     raffle_ends_at: daget.raffle_ends_at
-                        ? new Date(daget.raffle_ends_at).toISOString().slice(0, 16)
+                        ? new Date(daget.raffle_ends_at).toISOString()
                         : '',
                     post_to_discord: !!daget.discord_message_id,
                     discord_channel_id: daget.discord_channel_id || '',
